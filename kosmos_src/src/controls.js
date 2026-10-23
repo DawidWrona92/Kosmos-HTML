@@ -88,6 +88,9 @@ function frameLoop(now) {
 
 resize();
 view.tilt = defaultTilt();
+/* start: kamera przypięta do Słońca */
+setSelection(true, 0);
+view.zoom = view.zoomGoal = clamp(focusRadius(bodies[0]) / (bodies[0].radius * fitScale()), 1, MAX_ZOOM);
 renderInfo();
 renderNotebook();
 renderControls();

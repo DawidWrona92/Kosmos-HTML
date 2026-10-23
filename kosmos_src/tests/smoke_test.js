@@ -241,10 +241,10 @@ async function complete(item, slot = 0) {
       act.onUp();
     }
   } else if (kind === 'neptune') {
-    // Tryton krąży wolniej (.0005 rad/s); łapiemy go w kilku klatkach ruchu
-    for (let t = 5000; t < 15000 && !itemDone(); t += 100) {
+    // Tryton (.0009 rad/s) + dwa małe dekoje; klikamy dokładnie w Trytona
+    for (let t = 5000; t < 20000 && !itemDone(); t += 60) {
       if (act.frame) act.frame(.016, t);
-      const angle = t * .0005;
+      const angle = t * .0009;
       act.onDown({x: 280 + Math.cos(angle) * 209, y: 170 + Math.sin(angle) * 114.95});
       act.onUp();
     }
@@ -293,7 +293,7 @@ async function complete(item, slot = 0) {
   } else {
     // znajdź-klik (sunspots, mercury, ceres, jupiter, saturn, heart):
     // klikamy gęstą siatką, aż zadanie się skończy
-    gridClicks(act, 10);
+    gridClicks(act, 4);
   }
   if (act.frame) act.frame(.016, performance.now() + 100);
   t.closeActivity();

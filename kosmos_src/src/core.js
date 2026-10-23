@@ -141,19 +141,42 @@ function sunRadius(scaleValue) {
 
 function followTarget(scaleValue) {
  const body = bodies[view.selected];
- if (!view.following || body.kind === 'star') return {x: 0, y: 0};
+ if (!view.following) return {x: 0, y: 0};
+ if (body.kind === 'star') return {x: 0, y: 0};
  const offset = bodyOffset(body, scaleValue);
  return {x: -offset.x, y: -offset.y};
+}
+
+/* pozycja podzaznaczenia (księżyc/sonda/pierścień) względem Słońca — liczona z celów
+ * ostatniej klatki i faktycznej pozycji Słońca w tej klatce, więc kamera dokładnie
+ * centruje na obiekcie i jedzie z nim */
+let lastParentScreen = null;
+function subTargetOffset() {
+ if (!lastParentScreen) return null;
+ if (view.moon) {
+  const target = view.moonTargets.find(item => item.moon === view.moon);
+  if (target) return {x: target.x - lastParentScreen.x, y: target.y - lastParentScreen.y};
+ }
+ if (view.find) {
+  const target = view.findTargets.find(item => item.find === view.find);
+  if (target) return {x: target.x - lastParentScreen.x, y: target.y - lastParentScreen.y};
+ }
+ if (view.ring) {
+  const ring = view.ringTarget;
+  if (ring) return {x: ring.x - lastParentScreen.x, y: ring.y - lastParentScreen.y};
+ }
+ return null;
 }
 
 function computeFrame() {
  const scaleValue = fitScale() * view.zoom;
  const target = followTarget(scaleValue);
- return {
-  scale: scaleValue,
-  sunX: (view.free.left + view.free.right) / 2 + target.x + view.carryX,
-  sunY: (view.free.top + view.free.bottom) / 2 + target.y + view.carryY
- };
+ const sub = subTargetOffset();
+ const centerX = (view.free.left + view.free.right) / 2 + target.x + view.carryX;
+ const centerY = (view.free.top + view.free.bottom) / 2 + target.y + view.carryY;
+ return sub
+  ? {scale: scaleValue, sunX: centerX - sub.x, sunY: centerY - sub.y}
+  : {scale: scaleValue, sunX: centerX, sunY: centerY};
 }
 
 function focusRadius(body) {
@@ -298,7 +321,7 @@ function drawAttention(x, y, radius, index) {
   ctx.arc(x, y, radius + 7 + pulse * 4, 0, TAU);
   ctx.stroke();
  }
- if (index === view.selected && !view.find && !view.following) {
+ if (index === view.selected && !view.moon && !view.find && !view.ring) {
   ctx.lineWidth = 2;
   ctx.strokeStyle = '#4cbaff';
   ctx.beginPath();
@@ -639,7 +662,7 @@ function drawComet(item, frame) {
  const nucleusRadius = zoomed ? Math.min(radius, 26) : Math.min(radius, 5);
  const activity = Math.pow(Math.max(0, 1 - distance / 950), .8);
  /* ogon zawsze od Słońca: jonowy (w±ski, prosty, niebieski) + py³owy (szerszy, ³agodnie zakrzywiony) */
- const tailLength = activity * 170 * (zoomed ? 2.2 : clamp(frame.scale, .5, 1.5));
+ const tailLength = activity * 170 * clamp(frame.scale, .5, 1.5);
  if (tailLength > 3) {
   const normalX = -unitY;
   const normalY = unitX;
@@ -944,7 +967,8 @@ function drawFinds(items, frame) {
  view.moonTargets = [];
  view.ringTarget = null;
  const parent = items[view.selected];
- if (!parent || !view.following || parent.radius < 40) return;
+ if (!parent || !view.following || parent.radius < 40) {lastParentScreen = null; return;}
+ lastParentScreen = {x: parent.x, y: parent.y};
  const parentId = parent.body.id;
  const list = finds.filter(find => find.parentId === parentId);
  const moonList = MOONS[parentId] || [];
@@ -1052,7 +1076,33 @@ function draw() {
  items[0] = view.sunTarget;
  drawFinds(items, frame);
  drawLabels(items);
+ drawSelectionRing();
  drawRipples();
+}
+
+/* złota obręcz wokół aktualnie zaznaczonego obiektu (planety, księżyca, sondy, pierścienia) —
+ * rysowana co klatkę na aktualnej pozycji celu, więc zawsze trzyma się obiektu */
+function drawSelectionRing() {
+ let target = null;
+ if (view.moon) target = view.moonTargets.find(item => item.moon === view.moon);
+ else if (view.find) target = view.findTargets.find(item => item.find === view.find);
+ else if (view.ring && view.ringTarget) target = {x: view.ringTarget.x, y: view.ringTarget.y, radius: view.ringTarget.outer};
+ else if (view.galaxy) {
+   const galactic = view.galaxyTargets.find(item => item.object === view.galaxy);
+   if (galactic) target = {x: galactic.x, y: galactic.y, radius: galactic.radius};
+ }
+ if (!target) return;
+ const pulse = Math.sin(frameTime * .004) * .5 + .5;
+ ctx.lineWidth = 3;
+ ctx.strokeStyle = `rgba(255,217,90,${.55 + .35 * pulse})`;
+ ctx.beginPath();
+ ctx.arc(target.x, target.y, target.radius + 6 + pulse * 3, 0, TAU);
+ ctx.stroke();
+ ctx.strokeStyle = 'rgba(255,217,90,.25)';
+ ctx.lineWidth = 1.5;
+ ctx.beginPath();
+ ctx.arc(target.x, target.y, target.radius + 12 + pulse * 3, 0, TAU);
+ ctx.stroke();
 }
 
 /* ---------- poziomy galaktyczne (Ramię Oriona, Droga Mleczna) ---------- */
@@ -1278,6 +1328,25 @@ canvas.addEventListener('pointercancel', endPointer);
 canvas.addEventListener('wheel', event => {
  event.preventDefault();
  const delta = event.deltaMode === 1 ? event.deltaY * 33 : event.deltaY;
+ /* oddalanie z podzaznaczenia: najpierw wróć do planety */
+ if (delta > 0 && view.following && (view.moon || view.find || view.ring)) {
+  const planetZoom = followZoom(view.selected);
+  if (view.zoomGoal <= planetZoom * 1.05) {
+   view.moon = null;
+   view.find = null;
+   view.ring = null;
+   view.carryX = 0;
+   view.carryY = 0;
+   view.zoomGoal = planetZoom;
+   factIndex = 0;
+   renderInfo();
+   readFrom(0, false);
+   fxPlay('whoosh');
+   return;
+  }
+  view.zoomGoal = planetZoom;
+  return;
+ }
  /* oddalanie: planeta -> Układ Słoneczny -> Ramię Oriona -> Droga Mleczna */
  if (delta > 0 && view.zoomGoal <= MIN_ZOOM * 1.001 && !view.following) {
   if (zoomOutLevel()) {fxPlay('whoosh'); return;}

@@ -171,7 +171,9 @@ function chooseFind(target) {
  fxPlay('whoosh');
  factIndex = 0;
  markDiscovered(target.find.id);
- addRipple(target);
+ view.carryX = 0;
+ view.carryY = 0;
+ view.zoomGoal = clamp(followZoom(view.selected) * 1.4, MIN_ZOOM, MAX_ZOOM);
  renderInfo();
  readFrom(0, true);
 }
@@ -190,11 +192,13 @@ function moonZoom(moon) {
 function chooseMoon(target) {
  hasChosen = true;
  view.find = null;
+ view.ring = null;
  view.moon = target.moon;
  fxPlay('whoosh');
  factIndex = 0;
  markDiscovered(target.moon.id);
- addRipple(target);
+ view.carryX = 0;
+ view.carryY = 0;
  view.zoomGoal = moonZoom(target.moon);
  renderInfo();
  readFrom(0, true);
@@ -208,7 +212,9 @@ function chooseRing(target) {
  fxPlay('whoosh');
  factIndex = 0;
  markDiscovered(target.ring.id);
- addRipple({x: target.x, y: target.y, radius: target.outer});
+ view.carryX = 0;
+ view.carryY = 0;
+ view.zoomGoal = clamp(followZoom(view.selected) * .8, MIN_ZOOM, MAX_ZOOM);
  renderInfo();
  readFrom(0, true);
 }
@@ -222,8 +228,11 @@ function resetView() {
  view.ring = null;
  view.galaxy = null;
  view.level = 0;
- setSelection(false, view.selected);
- view.zoomGoal = 1;
+ /* kamera przypięta do Słońca — pierwszego obiektu */
+ setSelection(true, 0);
+ view.carryX = 0;
+ view.carryY = 0;
+ view.zoomGoal = clamp(focusRadius(bodies[0]) / (bodies[0].radius * fitScale()), 1, MAX_ZOOM);
  view.angle = Math.atan2(Math.sin(view.angle), Math.cos(view.angle));
  view.angleGoal = 0;
  view.tiltGoal = defaultTilt();
@@ -294,7 +303,7 @@ function pickAt(clientX, clientY, pointerType) {
   if (best) chooseGalaxy(best);
   return;
  }
- if (view.following && !view.find && !view.ring) {
+ if (view.following) {
   for (const target of view.moonTargets) {
    if (Math.hypot(target.x - clientX, target.y - clientY) <= target.radius + padding * .5) {
     if (view.moon === target.moon) {

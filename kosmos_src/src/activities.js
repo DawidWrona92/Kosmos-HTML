@@ -337,7 +337,7 @@ function createSunspotsActivity() {
   found: false
  }));
  let done = false;
- const lead = 'Na Słońcu widać ciemne plamy. Znajdź wszystkie cztery!';
+ const lead = 'Na Słońcu widać ciemne plamy. Znajdź wszystkie sześć!';
  const render = () => {
   actCtx.drawImage(scene.canvas, 0, 0, width, height);
   spots.forEach(spot => {
@@ -346,7 +346,7 @@ function createSunspotsActivity() {
  };
  const tap = point => {
   if (done) return;
-  const spot = spots.find(item => !item.found && Math.hypot(point.x - item.x, point.y - item.y) <= item.r * 1.4);
+  const spot = spots.find(item => !item.found && Math.hypot(point.x - item.x, point.y - item.y) <= item.r * 1.1);
   if (!spot) return;
   spot.found = true;
   fxPlay('ok');
@@ -493,8 +493,9 @@ function createRoverActivity() {
 function createCeresActivity() {
  const width = 560, height = 340, cx = 280, cy = 170, radius = 140;
  const spots = [
-  {x: cx + radius * .12, y: cy + radius * .08, rx: 30, ry: 20, found: false},
-  {x: cx - radius * .32, y: cy - radius * .28, rx: 16, ry: 11, found: false}
+  {x: cx + radius * .12, y: cy + radius * .08, rx: 26, ry: 17, found: false},
+  {x: cx - radius * .32, y: cy - radius * .28, rx: 14, ry: 9, found: false},
+  {x: cx - radius * .05, y: cy + radius * .42, rx: 12, ry: 8, found: false}
  ];
  const scene = makeLayer(width, height);
  paintActStars(scene.ctx, width, height, 90);
@@ -516,7 +517,7 @@ function createCeresActivity() {
   scene.ctx.fill();
  });
  let done = false;
- const lead = 'Na Ceres świecą tajemnicze jasne plamy. Znajdź obie!';
+ const lead = 'Na Ceres świecą tajemnicze jasne plamy. Znajdź wszystkie trzy!';
  const render = () => {
   actCtx.drawImage(scene.canvas, 0, 0, width, height);
   spots.forEach(spot => {
@@ -525,7 +526,7 @@ function createCeresActivity() {
  };
  const tap = point => {
   if (done) return;
-  const spot = spots.find(item => !item.found && ((point.x - item.x) / (item.rx * 1.3)) ** 2 + ((point.y - item.y) / (item.ry * 1.3)) ** 2 <= 1);
+  const spot = spots.find(item => !item.found && ((point.x - item.x) / (item.rx * 1.05)) ** 2 + ((point.y - item.y) / (item.ry * 1.05)) ** 2 <= 1);
   if (!spot) return;
   spot.found = true;
   fxPlay('ok');
@@ -571,7 +572,7 @@ function createJupiterActivity() {
  };
  const tap = point => {
   if (done) return;
-  if (((point.x - grs.x) / (grs.rx * 1.3)) ** 2 + ((point.y - grs.y) / (grs.ry * 1.3)) ** 2 <= 1) {
+  if (((point.x - grs.x) / grs.rx) ** 2 + ((point.y - grs.y) / grs.ry) ** 2 <= 1) {
    done = true;
    fxPlay('ok');
    render();
@@ -623,12 +624,12 @@ function createBeltActivity() {
  paintActStars(bg.ctx, width, height, 100);
  let seed = 42;
  const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
- const rocks = Array.from({length: 26}, () => ({
+ const rocks = Array.from({length: 40}, () => ({
   x: 60 + random() * (width - 120),
   y: 40 + random() * (height - 80),
-  r: 3 + random() * 5
+  r: 3 + random() * 6
  }));
- const ceres = {x: 120 + random() * (width - 240), y: 90 + random() * (height - 180), r: 16};
+ const ceres = {x: 120 + random() * (width - 240), y: 90 + random() * (height - 180), r: 13};
  let found = false;
  const lead = 'To pas planetoid — miliony skał między Marsem a Jowiszem. Największa skała to planeta karłowata Ceres. Znajdź ją i dotknij!';
  const render = () => {
@@ -655,7 +656,7 @@ function createBeltActivity() {
  };
  const tap = point => {
   if (found) return;
-  if (Math.hypot(point.x - ceres.x, point.y - ceres.y) <= ceres.r + 6) {
+  if (Math.hypot(point.x - ceres.x, point.y - ceres.y) <= ceres.r + 3) {
    found = true;
    fxPlay('ok');
    render();
@@ -741,8 +742,14 @@ function createNeptuneActivity() {
  let angle = .8;
  const orbitX = radius * 1.9;
  const orbitY = radius * 1.9 * .55;
- const lead = 'Wokół Neptuna krąży jego księżyc Tryton. Dotknij go palcem, kiedy do Ciebie podejdzie!';
- const render = () => {
+ const lead = 'Wokół Neptuna krąży jego księżyc Tryton. Jest nieco szybkawy! Dotknij go dokładnie, kiedy do Ciebie podejdzie.';
+ /* Nereida i Proteusz — małe, krążą szybciej; ich dotknięcie to pudło z podpowiedzią */
+ const decoys = [
+  {r: 5, orbit: 1.45, speed: .0016, phase: 2.4, color: '#9fb0be'},
+  {r: 4, orbit: 2.3, speed: .0012, phase: 5.1, color: '#8d99a8'}
+ ];
+ let missed = 0;
+ const render = now => {
   actCtx.drawImage(bg.canvas, 0, 0, width, height);
   actCtx.strokeStyle = 'rgba(255,217,90,.25)';
   actCtx.lineWidth = 1.5;
@@ -751,23 +758,44 @@ function createNeptuneActivity() {
   actCtx.ellipse(cx, cy, orbitX, orbitY, 0, 0, TAU);
   actCtx.stroke();
   actCtx.setLineDash([]);
+  const drawMoonDot = (mx, my, r, color) => {
+   actCtx.fillStyle = color;
+   actCtx.beginPath();
+   actCtx.arc(mx, my, r, 0, TAU);
+   actCtx.fill();
+   actCtx.fillStyle = 'rgba(0,0,20,.25)';
+   actCtx.beginPath();
+   actCtx.arc(mx + r * .25, my + r * .25, r * .7, 0, TAU);
+   actCtx.fill();
+  };
+  for (const decoy of decoys) {
+   const t = now === undefined ? frameTime : now;
+   drawMoonDot(
+    cx + Math.cos(t * decoy.speed + decoy.phase) * radius * decoy.orbit,
+    cy + Math.sin(t * decoy.speed + decoy.phase) * radius * decoy.orbit * .55,
+    decoy.r, decoy.color
+   );
+  }
   const tx = cx + Math.cos(angle) * orbitX;
   const ty = cy + Math.sin(angle) * orbitY;
-  actCtx.fillStyle = '#e8f2ff';
-  actCtx.beginPath();
-  actCtx.arc(tx, ty, 9, 0, TAU);
-  actCtx.fill();
-  actCtx.fillStyle = 'rgba(120,160,220,.4)';
-  actCtx.beginPath();
-  actCtx.arc(tx - 2, ty - 2, 4, 0, TAU);
-  actCtx.fill();
+  drawMoonDot(tx, ty, 9, '#f2e4ec');
   if (caught) strokeHit(tx, ty, 20, 20, 0);
  };
  const tryCatch = point => {
   if (caught) return false;
   const tx = cx + Math.cos(angle) * orbitX;
   const ty = cy + Math.sin(angle) * orbitY;
-  if (Math.hypot(point.x - tx, point.y - ty) <= 38) {
+  for (const decoy of decoys) {
+   const dx = cx + Math.cos(frameTime * decoy.speed + decoy.phase) * radius * decoy.orbit;
+   const dy = cy + Math.sin(frameTime * decoy.speed + decoy.phase) * radius * decoy.orbit * .55;
+   if (Math.hypot(point.x - dx, point.y - dy) <= decoy.r + 14) {
+    missed++;
+    fxPlay('miss');
+    sayNow(missed === 1 ? 'Ojej, to mały Proteusz! Tryton jest większy i ma różowawy odcień.' : 'To znowu mały księżyc! Szukaj dużego, jasnego Trytona.');
+    return false;
+   }
+  }
+  if (Math.hypot(point.x - tx, point.y - ty) <= 30) {
    caught = true;
    fxPlay('ok');
    render();
@@ -782,8 +810,8 @@ function createNeptuneActivity() {
   start: render,
   onDown: tryCatch, onMove: tryCatch, onUp: () => {},
   frame: (dt, now) => {
-   angle = now * .0005;
-   render();
+   angle = now * .0009;
+   render(now);
   },
   repeatText: lead
  };
@@ -791,7 +819,8 @@ function createNeptuneActivity() {
 
 function createHeartActivity() {
  const width = 560, height = 340, cx = 280, cy = 172, radius = 138;
- const heart = heartPath(cx + radius * .18, cy - radius * .05, radius * .52);
+ const heartX = cx + radius * .18, heartY = cy - radius * .05, heartSize = radius * .52;
+ const heart = heartPath(heartX, heartY, heartSize);
  return createTorchActivity({
   title: '💗 Znajdź serce Plutona',
   lead: 'Na Plutonie jest bardzo ciemno. Poruszaj palcem, żeby oświetlać powierzchnię, i znajdź wielkie serce.',
@@ -810,7 +839,8 @@ function createHeartActivity() {
    c.fill(heart);
    c.restore();
   },
-  isReveal: point => actCtx.isPointInPath(heart, point.x * ACT_SCALE, point.y * ACT_SCALE),
+  /* wymaga trafienia blisko środka serca — elipsa ~45% rozmiaru serca */
+  isReveal: point => ((point.x - heartX) / (heartSize * .55)) ** 2 + ((point.y - (heartY + heartSize * .15)) / (heartSize * .4)) ** 2 <= 1,
   revealMark(c) {
    c.strokeStyle = '#ffd95a';
    c.lineWidth = 4;
@@ -1226,7 +1256,7 @@ function createPartsActivity(item) {
 const ORDER_PLANETS = [
  {key: 'mercury', color: '#9b8d7a', name: 'Merkury'},
  {key: 'venus_clouds', color: '#d7a75d', name: 'Wenus'},
- {key: null, color: '#268de0', name: 'Ziemia'},
+ {key: 'earth_photo', color: '#268de0', name: 'Ziemia'},
  {key: 'mars', color: '#d75a36', name: 'Mars'},
  {key: 'jupiter', color: '#d5b18a', name: 'Jowisz'},
  {key: 'saturn', color: '#d9bd83', name: 'Saturn', ring: true},
@@ -1241,27 +1271,27 @@ function drawActPlanet(c, planet, x, y, radius) {
 }
 
 function createOrderActivity() {
- const width = 560, height = 340;
+ const width = 760, height = 470;
  const bg = makeLayer(width, height);
- paintActStars(bg.ctx, width, height, 90);
- const slots = ORDER_PLANETS.map((planet, index) => ({x: 52 + index * 64, y: 92, r: 17, planet: null}));
- const chips = ORDER_PLANETS.map((planet, planetIndex) => ({...planet, planetIndex, x: 0, y: 0, r: 17}));
+ paintActStars(bg.ctx, width, height, 120);
+ const slots = ORDER_PLANETS.map((planet, index) => ({x: 70 + index * 90, y: 120, r: 24, planet: null}));
+ const chips = ORDER_PLANETS.map((planet, planetIndex) => ({...planet, planetIndex, x: 0, y: 0, r: 24, homeX: 0, homeY: 0, slot: null}));
  [3, 0, 6, 1, 7, 2, 5, 4].forEach((planetIndex, column) => {
-  chips[planetIndex].x = 52 + column * 64;
-  chips[planetIndex].y = 248;
+  chips[planetIndex].x = chips[planetIndex].homeX = 70 + column * 90;
+  chips[planetIndex].y = chips[planetIndex].homeY = 340;
  });
  let selected = null;
  const lead = 'Dotknij planetę, a potem dotknij jej miejsca. Ułóż wszystkie planety po kolei — od tej najbliżej Słońca do tej najdalej.';
  const render = () => {
   actCtx.drawImage(bg.canvas, 0, 0, width, height);
   actCtx.textAlign = 'center';
-  actCtx.font = '800 26px system-ui, sans-serif';
+  actCtx.font = '800 30px system-ui, sans-serif';
   actCtx.fillStyle = '#ffd95a';
-  actCtx.fillText('☀️', 280, 44);
+  actCtx.fillText('☀️', width / 2, 56);
   slots.forEach((slot, index) => {
-   actCtx.font = '700 13px system-ui, sans-serif';
+   actCtx.font = '800 16px system-ui, sans-serif';
    actCtx.fillStyle = '#8fb8e8';
-   actCtx.fillText(String(index + 1), slot.x, slot.y - slot.r - 8);
+   actCtx.fillText(String(index + 1), slot.x, slot.y - slot.r - 10);
    if (!slot.planet) {
     actCtx.strokeStyle = 'rgba(143,184,232,.4)';
     actCtx.lineWidth = 2;
@@ -1270,10 +1300,14 @@ function createOrderActivity() {
     actCtx.arc(slot.x, slot.y, slot.r, 0, TAU);
     actCtx.stroke();
     actCtx.setLineDash([]);
-   } else drawActPlanet(actCtx, slot.planet, slot.x, slot.y, slot.r);
+   }
   });
+  /* chipy są jedynym źródłem rysowania — slot tylko zaznacza zajętość, więc nie ma klonów */
   chips.forEach(chip => {
    drawActPlanet(actCtx, chip, chip.x, chip.y, chip.r);
+   actCtx.font = '700 13px system-ui, sans-serif';
+   actCtx.fillStyle = '#e6f1ff';
+   actCtx.fillText(chip.name.toUpperCase(), chip.x, chip.y + chip.r + 17);
    if (chip === selected) {
     actCtx.strokeStyle = '#ffd95a';
     actCtx.lineWidth = 3;
@@ -1283,26 +1317,63 @@ function createOrderActivity() {
    }
   });
  };
+ const releaseSelection = () => {
+  if (!selected) return;
+  const chip = selected;
+  if (chip.fromSlot) {
+   chip.fromSlot.planet = chip;
+   chip.slot = chip.fromSlot;
+   chip.x = chip.fromSlot.x;
+   chip.y = chip.fromSlot.y;
+  } else if (!chip.slot) {
+   chip.x = chip.homeX;
+   chip.y = chip.homeY;
+  }
+  chip.fromSlot = null;
+  selected = null;
+ };
  const tap = point => {
-  const chip = chips.find(c => Math.hypot(point.x - c.x, point.y - c.y) <= c.r + 8);
+  const chip = chips.find(c => Math.hypot(point.x - c.x, point.y - c.y) <= c.r + 12);
   if (chip) {
-   selected = selected === chip ? null : chip;
+   if (selected === chip) {
+    releaseSelection();
+    render();
+    return;
+   }
+   releaseSelection();
+   selected = chip;
+   chip.fromSlot = chip.slot || null;
+   if (chip.slot) {
+    chip.slot.planet = null;
+    chip.slot = null;
+   }
+   fxPlay('tap');
    render();
    return;
   }
-  const slot = slots.find(s => Math.hypot(point.x - s.x, point.y - s.y) <= s.r + 10);
+  const slot = slots.find(s => Math.hypot(point.x - s.x, point.y - s.y) <= s.r + 12);
   if (!slot || !selected) return;
-  const slotIndex = slots.indexOf(slot);
+  const moving = selected;
   if (slot.planet) {
    const other = slot.planet;
-   other.x = selected.x;
-   other.y = selected.y;
-   slot.planet = null;
+   other.slot = null;
+   if (moving.fromSlot) {
+    other.slot = moving.fromSlot;
+    moving.fromSlot.planet = other;
+    other.x = moving.fromSlot.x;
+    other.y = moving.fromSlot.y;
+   } else {
+    other.x = other.homeX;
+    other.y = other.homeY;
+   }
   }
-  selected.x = slot.x;
-  selected.y = slot.y;
-  slot.planet = selected;
-  fxPlay(slotIndex === selected.planetIndex ? 'ok' : 'pop');
+  moving.slot = slot;
+  slot.planet = moving;
+  moving.x = slot.x;
+  moving.y = slot.y;
+  moving.fromSlot = null;
+  const slotIndex = slots.indexOf(slot);
+  fxPlay(slotIndex === moving.planetIndex ? 'ok' : 'pop');
   selected = null;
   render();
   if (slots.every((s, index) => s.planet && s.planet.planetIndex === index)) {
