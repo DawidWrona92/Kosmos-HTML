@@ -63,7 +63,7 @@ const bodies = [
    'Jowisz kręci się szybciej niż wszystkie inne planety. Jeden dzień trwa tam niecałe 10 godzin. Dlatego Jowisz jest trochę spłaszczony, jak lekko ściśnięta piłka.'
   ]},
  {id: 'saturn', surface: 'saturn', kind: 'planet', name: 'Saturn', type: 'Szósta planeta od Słońca', color: '#d9bd83', radius: 18, orbit: 340, period: 10759, startPhase: 3.2, texture: 'saturn', activity: 'saturn',
-  ring: {angle: -.25, bands: [{scale: 1.34, width: .2, color: 'rgba(150,128,96,.55)'}, {scale: 1.74, width: .46, color: 'rgba(222,200,150,.92)'}, {scale: 2.17, width: .26, color: 'rgba(190,168,124,.82)'}, {scale: 2.33, width: .03, color: 'rgba(210,190,150,.55)'}]},
+  ring: {angle: -.25, photoKey: 'rings_photo', bands: [{scale: 1.34, width: .2, color: 'rgba(150,128,96,.55)'}, {scale: 1.74, width: .46, color: 'rgba(222,200,150,.92)'}, {scale: 2.17, width: .26, color: 'rgba(190,168,124,.82)'}, {scale: 2.33, width: .03, color: 'rgba(210,190,150,.55)'}]},
   ringInfo: {id: 'saturn_rings', parentId: 'saturn', name: 'Pierścienie Saturna', type: 'Pierścienie planety', intro: 'Pierścienie Saturna.',
    facts: [
     'Pierścienie Saturna to miliardy kawałków lodu i skał — od ziarenek piasku po bryły wielkości domu!',
@@ -180,7 +180,7 @@ const finds = [
    'W lipcu 2015 roku przeleciała tuż obok Plutona z prędkością około 50 tysięcy kilometrów na godzinę. Zrobiła zdjęcie serca Plutona i znalazła góry z lodu.',
    'Potem poleciała dalej, w stronę lodowych światów na krańcach Układu Słonecznego. W 2019 roku odwiedziła lodowo-skalny obiekt Arrokoth, który wygląda jak bałwanek z dwóch kul.'
   ]},
- {id: 'ingenuity', parentId: 'mars', name: 'Helikopter Ingenuity', type: 'Znajdźka: mały helikopter', intro: 'Helikopter Ingenuity.', sprite: null, draw: 'ingenuity', activity: 'parts',
+ {id: 'ingenuity', parentId: 'mars', name: 'Helikopter Ingenuity', type: 'Znajdźka: mały helikopter', intro: 'Helikopter Ingenuity.', sprite: 'ingenuity', draw: 'ingenuity', activity: 'parts',
   facts: [
    'Ingenuity to mały helikopter, który poleciał razem z łazikiem Perseverance. Był pierwszym helikopterem, który latał na innej planecie!',
    'Na Marsie powietrze jest bardzo cienkie, więc łopatki Ingenuity musiały kręcić się bardzo, bardzo szybko — ponad 2500 razy na minutę!',
@@ -255,13 +255,13 @@ const PARTS = {
  * Księżyc Ziemi jest osobno w bodies[] (kind 'moon') i ma własne zadanie. */
 const MOONS = {
  mars: [
-  {id: 'phobos', parentId: 'mars', name: 'Fobos', type: 'Księżyc Marsa', intro: 'Fobos.', color: '#a08a76', size: .38, moonOrbit: 2.6, period: .32, startPhase: 1.2, tilt: .5,
+  {id: 'phobos', parentId: 'mars', name: 'Fobos', type: 'Księżyc Marsa', intro: 'Fobos.', color: '#a08a76', texture: 'phobos', size: .38, moonOrbit: 2.6, period: .32, startPhase: 1.2, tilt: .5,
    facts: [
     'Fobos to jeden z dwóch księżyców Marsa. Okrąża planetę bardzo szybko — prawie trzy razy na dobę!',
     'Jest też znacznie mniejszy od naszego Księżyca — wygląda jak wielki, szary kartofel.',
     'Fobos powoli spada na Marsa. Za miliony lat może się na niego rozbić albo rozsypać w pierścień!'
    ]},
-  {id: 'deimos', parentId: 'mars', name: 'Deimos', type: 'Księżyc Marsa', intro: 'Deimos.', color: '#8f8072', size: .3, moonOrbit: 3.6, period: 1.26, startPhase: 4, tilt: -.4,
+  {id: 'deimos', parentId: 'mars', name: 'Deimos', type: 'Księżyc Marsa', intro: 'Deimos.', color: '#8f8072', texture: 'deimos', size: .3, moonOrbit: 3.6, period: 1.26, startPhase: 4, tilt: -.4,
    facts: [
     'Deimos to drugi, mniejszy księżyc Marsa. Jest tak mały, że wygląda jak ziarenko piasku przy planecie.',
     'Okrąża Marsa wolniej niż Fobos — potrzebuje na to ponad dnia.',
@@ -269,25 +269,25 @@ const MOONS = {
    ]}
  ],
  jupiter: [
-  {id: 'io', parentId: 'jupiter', name: 'Io', type: 'Księżyc Jowisza', intro: 'Io.', color: '#e8c07a', size: .3, moonOrbit: 2.2, period: 1.77, startPhase: .5, tilt: .3,
+  {id: 'io', parentId: 'jupiter', name: 'Io', type: 'Księżyc Jowisza', intro: 'Io.', color: '#e8c07a', texture: 'io', size: .3, moonOrbit: 2.2, period: 1.77, startPhase: .5, tilt: .3,
    facts: [
     'Io to księżyc Jowisza, który ma ponad 400 wulkanów! Wyrzucają one siarkę, która maluje Io na żółto i pomarańczowo.',
     'To najbardziej wulkaniczne miejsce w całym Układzie Słonecznym.',
     'Wulkany Io wypluwają lawę tak gorącą, że na zdjęciach z sondy świeci ona w ciemności!'
    ]},
-  {id: 'europa', parentId: 'jupiter', name: 'Europa', type: 'Księżyc Jowisza', intro: 'Europa.', color: '#d8e4f0', size: .27, moonOrbit: 2.9, period: 3.55, startPhase: 2.1, tilt: -.35,
+  {id: 'europa', parentId: 'jupiter', name: 'Europa', type: 'Księżyc Jowisza', intro: 'Europa.', color: '#d8e4f0', texture: 'europa', size: .27, moonOrbit: 2.9, period: 3.55, startPhase: 2.1, tilt: -.35,
    facts: [
     'Europa jest pokryta grubą skorupą lodu — pod nią może być ocean wody!',
     'Naukowcy myślą, że w tym oceanie mogą żyć małe stworzenia. Jeszcze ich nie znaleźliśmy!',
     'Lód na Europie pęka i przesuwa się, dlatego jej powierzchnia wygląda jak popękana skorupka jajka.'
    ]},
-  {id: 'ganymedes', parentId: 'jupiter', name: 'Ganimedes', type: 'Księżyc Jowisza', intro: 'Ganimedes.', color: '#b09a7a', size: .42, moonOrbit: 3.7, period: 7.15, startPhase: 4, tilt: .25,
+  {id: 'ganymedes', parentId: 'jupiter', name: 'Ganimedes', type: 'Księżyc Jowisza', intro: 'Ganimedes.', color: '#b09a7a', texture: 'ganymedes', size: .42, moonOrbit: 3.7, period: 7.15, startPhase: 4, tilt: .25,
    facts: [
     'Ganimedes to największy księżyc w całym Układzie Słonecznym — większy nawet od planety Merkury!',
     'Ma własne pole magnetyczne, jak Ziemia. To jedyny księżyc, który je ma!',
     'Na jego powierzchni są ciemne plamy i jasne, poprzecinane rowy — wygląda jak stary, zamarznięty tort.'
    ]},
-  {id: 'kallisto', parentId: 'jupiter', name: 'Kallisto', type: 'Księżyc Jowisza', intro: 'Kallisto.', color: '#8a7a66', size: .4, moonOrbit: 4.6, period: 16.7, startPhase: 1.2, tilt: -.2,
+  {id: 'kallisto', parentId: 'jupiter', name: 'Kallisto', type: 'Księżyc Jowisza', intro: 'Kallisto.', color: '#8a7a66', texture: 'kallisto', size: .4, moonOrbit: 4.6, period: 16.7, startPhase: 1.2, tilt: -.2,
    facts: [
     'Kallisto jest cały pokryty kraterami — to jeden z najstarszych księżyców Jowisza.',
     'Jego największy krater nazywa się Valhalla. Ma wielkość Polski!',
@@ -295,31 +295,31 @@ const MOONS = {
    ]}
  ],
  saturn: [
-  {id: 'tytan', parentId: 'saturn', name: 'Tytan', type: 'Księżyc Saturna', intro: 'Tytan.', color: '#d9a55b', size: .5, moonOrbit: 2.6, period: 15.9, startPhase: 2.8, tilt: .8,
+  {id: 'tytan', parentId: 'saturn', name: 'Tytan', type: 'Księżyc Saturna', intro: 'Tytan.', color: '#d9a55b', texture: 'tytan', size: .5, moonOrbit: 2.6, period: 15.9, startPhase: 2.8, tilt: .8,
    facts: [
     'Tytan to największy księżyc Saturna — większy od planety Merkury!',
     'Ma gęstą, pomarańczową atmosferę i prawdziwe jeziora. Tylko że zamiast wody płynie w nich ciekły gaz!',
     'Sonda Huygens wylądowała na Tytanie w 2005 roku. To był pierwszy lądownik na księżycu innej planety!'
    ]},
-  {id: 'enceladus', parentId: 'saturn', name: 'Enceladus', type: 'Księżyc Saturna', intro: 'Enceladus.', color: '#eef4fa', size: .22, moonOrbit: 1.9, period: 1.37, startPhase: .8, tilt: -.6,
+  {id: 'enceladus', parentId: 'saturn', name: 'Enceladus', type: 'Księżyc Saturna', intro: 'Enceladus.', color: '#eef4fa', texture: 'enceladus', size: .22, moonOrbit: 1.9, period: 1.37, startPhase: .8, tilt: -.6,
    facts: [
     'Enceladus to mały, ale niezwykły księżyc — jest cały pokryty świeżym, białym lodem.',
     'Z jego południowego bieguna tryskają w kosmos gejzery wody! Sonda Cassini przeleciała przez te strumienie.',
     'Pod lodem Enceladusa też może być ocean. To jedno z najlepszych miejsc do szukania życia!'
    ]},
-  {id: 'japetus', parentId: 'saturn', name: 'Japetus', type: 'Księżyc Saturna', intro: 'Japetus.', color: '#6e5f50', size: .28, moonOrbit: 3.4, period: 79.3, startPhase: 4.6, tilt: 1.4,
+  {id: 'japetus', parentId: 'saturn', name: 'Japetus', type: 'Księżyc Saturna', intro: 'Japetus.', color: '#6e5f50', texture: 'japetus', size: .28, moonOrbit: 3.4, period: 79.3, startPhase: 4.6, tilt: 1.4,
    facts: [
     'Japetus ma dwie twarze — jedna połowa jest biała jak śnieg, a druga czarna jak węgiel!',
     'Ciemna strona zbiera pył z pierścieni Saturna. Dlatego wygląda jak księżyc pomalowany na pół.',
     'Na równiku Japetusa biegnie wielki grzbiet — jak szew na piłce. Naukowcy wciąż nie wiedzą, skąd się wziął!'
    ]},
-  {id: 'reja', parentId: 'saturn', name: 'Reja', type: 'Księżyc Saturna', intro: 'Reja.', color: '#c8ccd4', size: .3, moonOrbit: 2.1, period: 4.52, startPhase: 1.9, tilt: -.3,
+  {id: 'reja', parentId: 'saturn', name: 'Reja', type: 'Księżyc Saturna', intro: 'Reja.', color: '#c8ccd4', texture: 'reja', size: .3, moonOrbit: 2.1, period: 4.52, startPhase: 1.9, tilt: -.3,
    facts: [
     'Reja to drugi co do wielkości księżyc Saturna. Jest szara i pełna kraterów.',
     'Reja może mieć własne, słabe pierścienie! To pierwszy księżyc, przy którym je znaleziono.',
     'Krąży blisko Saturna, więc okrąża go w niecałe 5 dni.'
    ]},
-  {id: 'dione', parentId: 'saturn', name: 'Dione', type: 'Księżyc Saturna', intro: 'Dione.', color: '#dde2ea', size: .28, moonOrbit: 2.8, period: 2.74, startPhase: 5.4, tilt: .5,
+  {id: 'dione', parentId: 'saturn', name: 'Dione', type: 'Księżyc Saturna', intro: 'Dione.', color: '#dde2ea', texture: 'dione', size: .28, moonOrbit: 2.8, period: 2.74, startPhase: 5.4, tilt: .5,
    facts: [
     'Dione wygląda jak lodowa kula z wielkimi, białymi urwiskami — to klify z lodu!',
     'Jedna jej połowa jest gładka, a druga pełna kraterów. Dlaczego tak jest? Naukowcy wciąż się zastanawiają.',
@@ -327,13 +327,13 @@ const MOONS = {
    ]}
  ],
  uranus: [
-  {id: 'tytania', parentId: 'uranus', name: 'Tytania', type: 'Księżyc Urana', intro: 'Tytania.', color: '#9fb4c0', size: .5, moonOrbit: 2.8, period: 8.7, startPhase: 1.6, tilt: .9,
+  {id: 'tytania', parentId: 'uranus', name: 'Tytania', type: 'Księżyc Urana', intro: 'Tytania.', color: '#9fb4c0', texture: 'tytania', size: .5, moonOrbit: 2.8, period: 8.7, startPhase: 1.6, tilt: .9,
    facts: [
     'Tytania to największy księżyc Urana — ma prawie połowę średnicy naszego Księżyca.',
     'Na jej powierzchni są ogromne kaniony — głębsze niż Wielki Kanion na Ziemi!',
     'Uran i jego księżyce są bardzo daleko od Słońca, więc jest tam strasznie zimno — około minus 200 stopni!'
    ]},
-  {id: 'oberon', parentId: 'uranus', name: 'Oberon', type: 'Księżyc Urana', intro: 'Oberon.', color: '#7d8f9a', size: .42, moonOrbit: 3.8, period: 13.5, startPhase: 3.9, tilt: -.7,
+  {id: 'oberon', parentId: 'uranus', name: 'Oberon', type: 'Księżyc Urana', intro: 'Oberon.', color: '#7d8f9a', texture: 'oberon', size: .42, moonOrbit: 3.8, period: 13.5, startPhase: 3.9, tilt: -.7,
    facts: [
     'Oberon to najdalszy wielki księżyc Urana. Jest ciemny i pokryty kraterami.',
     'Ma na sobie górę wysoką na 11 kilometrów — wyższą niż Mount Everest!',
@@ -341,7 +341,7 @@ const MOONS = {
    ]}
  ],
  neptune: [
-  {id: 'tryton', parentId: 'neptune', name: 'Tryton', type: 'Księżyc Neptuna', intro: 'Tryton.', color: '#e8d8e0', size: .55, moonOrbit: 2.7, period: -5.88, startPhase: 2.2, tilt: .6,
+  {id: 'tryton', parentId: 'neptune', name: 'Tryton', type: 'Księżyc Neptuna', intro: 'Tryton.', color: '#e8d8e0', texture: 'tryton', size: .55, moonOrbit: 2.7, period: -5.88, startPhase: 2.2, tilt: .6,
    facts: [
     'Tryton to największy księżyc Neptuna. Krąży w przeciwną stronę niż planeta się obraca!',
     'Ma lodowe gejzery, które wyrzucają azot wysoko w niebo — na wysokość ośmiu kilometrów!',
@@ -349,7 +349,7 @@ const MOONS = {
    ]}
  ],
  pluto: [
-  {id: 'charon', parentId: 'pluto', name: 'Charon', type: 'Księżyc Plutona', intro: 'Charon.', color: '#b8b0aa', size: .5, moonOrbit: 2.4, period: 6.39, startPhase: 1.1, tilt: .3,
+  {id: 'charon', parentId: 'pluto', name: 'Charon', type: 'Księżyc Plutona', intro: 'Charon.', color: '#b8b0aa', texture: 'charon', size: .5, moonOrbit: 2.4, period: 6.39, startPhase: 1.1, tilt: .3,
    facts: [
     'Charon to największy księżyc Plutona. Jest tak duży, że Pluton i Charon krążą razem wokół wspólnego punktu — jak w tańcu!',
     'Charon ma na sobie wielki ciemny obszar na biegunie. Naukowcy nazwali go Mordorem — tak jak złośliwą krainę z bajki!',

@@ -409,6 +409,15 @@ function paintSunSurface(c, size, withSpots) {
 
 function sunTexture() {
  if (sunSurface) return sunSurface;
+ /* prawdziwa mapa fotosfery Słońca (zdjęcia, z plamami) — fallback: proceduralny granulat */
+ const map = imageOf('sun_map');
+ if (map) {
+  sunSurface = document.createElement('canvas');
+  sunSurface.width = 512;
+  sunSurface.height = 256;
+  sunSurface.getContext('2d').drawImage(map, 0, 0, 512, 256);
+  return sunSurface;
+ }
  sunSurface = document.createElement('canvas');
  sunSurface.width = 512;
  sunSurface.height = 512;
@@ -428,7 +437,11 @@ function drawSun(frame) {
   ctx.clip();
   ctx.translate(x, y);
   ctx.rotate(frameTime * .000012);
-  ctx.drawImage(sunTexture(), -radius * 1.42, -radius * 1.42, radius * 2.84, radius * 2.84);
+  /* mapa 2:1 — docięta do koła przez clip; szerokość mapy owija równik */
+  const tex = sunTexture();
+  const texAspect = tex.height / tex.width;
+  const drawW = radius * 2.84;
+  ctx.drawImage(tex, -drawW / 2, -drawW * texAspect / 2, drawW, drawW * texAspect);
   ctx.restore();
   const limb = ctx.createRadialGradient(x, y, radius * .6, x, y, radius);
   limb.addColorStop(0, 'rgba(120,20,0,0)');
@@ -545,6 +558,22 @@ function drawRing(x, y, radius, ring, half) {
  ctx.save();
  ctx.translate(x, y);
  ctx.rotate(ring.angle);
+ /* prawdziwy obraz pierścieni Saturna (600x600, zakres 1.11-2.27 R);
+  * rysowany połówkami (tył przed planetą, przód po) z maską kątową */
+ const photo = ring.photoKey && imageOf(ring.photoKey);
+ if (photo) {
+  const outer = 2.27;
+  const size = radius * outer * 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(-size, half === 'back' ? -size : 0, size * 2, size);
+  ctx.clip();
+  ctx.rotate(0);
+  ctx.drawImage(photo, -size / 2, -size / 2, size, size);
+  ctx.restore();
+  ctx.restore();
+  return;
+ }
  for (const band of ring.bands) {
   ctx.strokeStyle = band.color;
   ctx.lineWidth = Math.max(1.5, radius * band.width);
@@ -864,6 +893,29 @@ function drawMoon(frame, parent, moon, parentX, parentY, parentRadius) {
 
 function drawMoonBody(x, y, radius, moon, sunAngle) {
  const lumpy = moon.id === 'phobos' || moon.id === 'deimos';
+ /* prawdziwa mapa księżyca (globus jak przy planetach), z fallbackiem na gradient */
+ const globe = moon.texture && radius >= 5 ? globeOf(moon.texture, radius > 60 ? 256 : 128, 0) : null;
+ if (globe) {
+  globe.render(moon.startPhase);
+  ctx.save();
+  ctx.beginPath();
+  if (lumpy) ctx.ellipse(x, y, radius * 1.14, radius * .8, moon.startPhase % TAU, 0, TAU);
+  else ctx.arc(x, y, radius, 0, TAU);
+  ctx.clip();
+  ctx.drawImage(globe.canvas, x - radius * 1.14, y - radius * 1.14, radius * 2.28, radius * 2.28);
+  /* cieniowanie terminalatora od strony Słońca */
+  const lightX = x + Math.cos(sunAngle) * radius * .4;
+  const lightY = y + Math.sin(sunAngle) * radius * .4;
+  const shade = ctx.createRadialGradient(lightX, lightY, radius * .3, x, y, radius * 1.12);
+  shade.addColorStop(0, 'rgba(2,4,12,0)');
+  shade.addColorStop(.55, 'rgba(2,4,12,.1)');
+  shade.addColorStop(1, 'rgba(2,4,12,.7)');
+  ctx.fillStyle = shade;
+  if (lumpy) {ctx.ellipse(x, y, radius * 1.14, radius * .8, moon.startPhase % TAU, 0, TAU); ctx.fill();}
+  else {ctx.beginPath(); ctx.arc(x, y, radius, 0, TAU); ctx.fill();}
+  ctx.restore();
+  return;
+ }
  ctx.save();
  ctx.beginPath();
  if (lumpy) ctx.ellipse(x, y, radius * 1.14, radius * .8, moon.startPhase % TAU, 0, TAU);
@@ -1125,6 +1177,15 @@ let galaxyImage = null;
 
 function buildGalaxyImage() {
  if (galaxyImage) return galaxyImage;
+ /* prawdziwa wizja Drogi Mlecznej (NASA/JPL R. Hurt) — fallback: proceduralna spirala */
+ const photo = imageOf('milky_way');
+ if (photo) {
+  galaxyImage = document.createElement('canvas');
+  galaxyImage.width = GALAXY_IMAGE_SIZE;
+  galaxyImage.height = GALAXY_IMAGE_SIZE;
+  galaxyImage.getContext('2d').drawImage(photo, 0, 0, GALAXY_IMAGE_SIZE, GALAXY_IMAGE_SIZE);
+  return galaxyImage;
+ }
  galaxyImage = document.createElement('canvas');
  galaxyImage.width = GALAXY_IMAGE_SIZE;
  galaxyImage.height = GALAXY_IMAGE_SIZE;
@@ -1278,18 +1339,28 @@ function drawGalaxyScene() {
  const andromedaX = centerX + scale * 1.35;
  const andromedaY = centerY - scale * .9;
  const andromedaScale = scale * .38;
- ctx.save();
- ctx.translate(andromedaX, andromedaY);
- ctx.rotate(rotation * -.7);
- ctx.drawImage(image, -andromedaScale, -andromedaScale, andromedaScale * 2, andromedaScale * 2);
- ctx.restore();
- const andromedaDim = ctx.createRadialGradient(andromedaX, andromedaY, andromedaScale * .1, andromedaX, andromedaY, andromedaScale);
- andromedaDim.addColorStop(0, 'rgba(2,6,17,0)');
- andromedaDim.addColorStop(1, 'rgba(2,6,17,.55)');
- ctx.fillStyle = andromedaDim;
- ctx.beginPath();
- ctx.arc(andromedaX, andromedaY, andromedaScale, 0, TAU);
- ctx.fill();
+ /* prawdziwe zdjęcie M31 (Stellarium) — fallback: przyciemniona Droga Mleczna */
+ const andromedaPhoto = imageOf('andromeda');
+ if (andromedaPhoto) {
+  ctx.save();
+  ctx.translate(andromedaX, andromedaY);
+  ctx.rotate(rotation * -.7);
+  ctx.drawImage(andromedaPhoto, -andromedaScale, -andromedaScale, andromedaScale * 2, andromedaScale * 2);
+  ctx.restore();
+ } else {
+  ctx.save();
+  ctx.translate(andromedaX, andromedaY);
+  ctx.rotate(rotation * -.7);
+  ctx.drawImage(image, -andromedaScale, -andromedaScale, andromedaScale * 2, andromedaScale * 2);
+  ctx.restore();
+  const andromedaDim = ctx.createRadialGradient(andromedaX, andromedaY, andromedaScale * .1, andromedaX, andromedaY, andromedaScale);
+  andromedaDim.addColorStop(0, 'rgba(2,6,17,0)');
+  andromedaDim.addColorStop(1, 'rgba(2,6,17,.55)');
+  ctx.fillStyle = andromedaDim;
+  ctx.beginPath();
+  ctx.arc(andromedaX, andromedaY, andromedaScale, 0, TAU);
+  ctx.fill();
+ }
  ctx.strokeStyle = 'rgba(150,180,220,.35)';
  ctx.lineWidth = 1;
  ctx.setLineDash([3, 6]);
