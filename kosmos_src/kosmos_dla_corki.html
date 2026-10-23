@@ -570,6 +570,75 @@ function globeOf(key, size, tiltAngle) {
  return globe;
 }
 
+/* ---------- sfera niebieska: prawdziwe gwiazdy i konstelacje ----------
+ * Współrzędne równikowe (J2000, rektascensja w godzinach, deklinacja w
+ * stopniach) przeliczone na kierunki w układzie ekliptycznym — oś X ku
+ * punktowi równonocy wiosennej, płaszczyzna XY to płaszczyzna ekliptyki.
+ */
+
+const SKY_EPSILON = 23.44 * Math.PI / 180;
+
+function skyDirection(raHours, decDeg) {
+ const alpha = raHours * 15 * Math.PI / 180;
+ const delta = decDeg * Math.PI / 180;
+ const x = Math.cos(delta) * Math.cos(alpha);
+ const y = Math.cos(delta) * Math.sin(alpha);
+ const z = Math.sin(delta);
+ return {
+  x,
+  y: y * Math.cos(SKY_EPSILON) + z * Math.sin(SKY_EPSILON),
+  z: -y * Math.sin(SKY_EPSILON) + z * Math.cos(SKY_EPSILON)
+ };
+}
+
+/* [nazwa, RA (godz.), Dec (°)] — najjaśniejsze gwiazdy nieba + gwiazdy konstelacji */
+const SKY_NAMED = [
+ ['Syriusz', 6.75, -16.7, true], ['Kanopus', 6.4, -52.7, true], ['Arktur', 14.27, 19.2, true],
+ ['Wega', 18.62, 38.8, true], ['Kapella', 5.28, 46.0, true], ['Rigel', 5.24, -8.2, true],
+ ['Procjon', 7.66, 5.2, true], ['Betelgeza', 5.92, 7.4, true], ['Aldebaran', 4.6, 16.5, true],
+ ['Spica', 13.42, -11.2, false], ['Antares', 16.49, -26.4, true], ['Fomalhaut', 22.96, -29.6, false],
+ ['Deneb', 20.69, 45.3, true], ['Regulus', 10.14, 12.0, false], ['Pollux', 7.76, 28.0, false],
+ ['Kastor', 7.58, 31.9, false],
+ /* Wielki Wóz (fragment Wielkiej Niedźwiedzicy) */
+ ['Dubhe', 11.07, 61.8, false], ['Merak', 11.03, 56.4, false], ['Phecda', 11.9, 53.7, false],
+ ['Megrez', 12.25, 57.0, false], ['Alioth', 12.9, 55.9, false], ['Mizar', 13.4, 54.9, false],
+ ['Alkaid', 13.8, 49.3, false],
+ /* Kasjopea */
+ ['Schedar', 0.68, 56.5, false], ['Caph', 0.15, 59.2, false], ['Gamma Kasjopei', 0.95, 60.7, false],
+ ['Ruchbah', 1.43, 60.2, false], ['Segin', 1.9, 63.7, false],
+ /* Orion */
+ ['Bellatrix', 5.42, 6.3, false], ['Mintaka', 5.53, -0.3, false], ['Alnilam', 5.6, -1.2, false],
+ ['Alnitak', 5.68, -1.9, false], ['Saiph', 5.8, -9.7, false],
+ /* Łabędź */
+ ['Sadr', 20.37, 40.3, false], ['Albireo', 19.51, 28.0, false], ['Gienah', 20.77, 34.0, false],
+ ['Delta Łabędzia', 19.75, 45.1, false],
+ /* Skorpion */
+ ['Graffias', 16.08, -19.8, false], ['Dschubba', 16.0, -22.6, false], ['Shaula', 17.57, -37.1, false],
+ ['Sargas', 17.62, -43.0, false], ['Lesath', 17.5, -39.0, false]
+];
+
+const SKY_STARS = SKY_NAMED.map(([name, ra, dec, bright]) => {
+ const direction = skyDirection(ra, dec);
+ return {...direction, name, size: bright ? 2.4 : 1.6, alpha: bright ? .95 : .8, bright};
+});
+
+/* słabsze gwiazdy tła — losowe, równomiernie na całej sferze */
+for (let index = 0; index < 320; index++) {
+ const z = Math.random() * 2 - 1;
+ const angle = Math.random() * Math.PI * 2;
+ const ring = Math.sqrt(1 - z * z);
+ SKY_STARS.push({x: ring * Math.cos(angle), y: ring * Math.sin(angle), z, name: null, size: .7 + Math.random() * .8, alpha: .22 + Math.random() * .45, bright: false});
+}
+
+/* linie konstelacji jako pary indeksów gwiazd z SKY_STARS */
+const SKY_CONSTELLATIONS = [
+ {name: 'Wielki Wóz', lines: [[16, 17], [17, 18], [18, 19], [19, 20], [20, 21], [21, 22]]},
+ {name: 'Kasjopea', lines: [[23, 24], [24, 25], [25, 26], [26, 27]]},
+ {name: 'Orion', lines: [[7, 28], [28, 29], [29, 30], [30, 31], [31, 32], [32, 5]]},
+ {name: 'Łabędź', lines: [[12, 33], [33, 34], [33, 35], [33, 36]]},
+ {name: 'Skorpion', lines: [[37, 38], [38, 10], [10, 39], [39, 41], [10, 40]]}
+];
+
 /* ---------- dane ---------- */
 
 const bodies = [
@@ -830,7 +899,6 @@ let simDays = 0;
 let lastFrameTime = performance.now();
 let frameTime = lastFrameTime;
 
-const stars = Array.from({length: 520}, () => ({nx: Math.random(), ny: Math.random(), size: Math.random() * 1.25, alpha: .2 + Math.random() * .75}));
 const asteroids = Array.from({length: ASTEROID_COUNT}, () => {
  const orbit = BELT_INNER + Math.random() * (BELT_OUTER - BELT_INNER);
  return {phase: Math.random() * TAU, orbit, period: 1300 + (orbit - BELT_INNER) * 20, size: .5 + Math.random() * 1.7, alpha: .15 + Math.random() * .55};
@@ -1176,13 +1244,54 @@ function heartPath(centerX, centerY, size) {
 function drawBackground() {
  ctx.fillStyle = '#020611';
  ctx.fillRect(0, 0, view.width, view.height);
- ctx.fillStyle = '#c4e3ff';
- for (const star of stars) {
-  ctx.globalAlpha = star.alpha;
+ /* projekcja sferyczna: gwiazdy leżą na odległej sferze niebieskiej i
+  * obracają się razem z ruchem kamery (view.angle / view.tilt), więc przy
+  * przesuwaniu nie wyglądają jak nieruchoma warstwa UI; przy oddalaniu
+  * delikatnie uciekają na zewnątrz (lekka paralaksa względem centrum) */
+ const centerX = (view.free.left + view.free.right) / 2;
+ const centerY = (view.free.top + view.free.bottom) / 2;
+ const radius = Math.hypot(view.free.right - view.free.left, view.free.bottom - view.free.top) * .75;
+ const cosA = Math.cos(-view.angle), sinA = Math.sin(-view.angle);
+ const tilt = view.tilt;
+ const project = star => {
+  const rx = star.x * cosA - star.y * sinA;
+  const ry = star.x * sinA + star.y * cosA;
+  const screenX = centerX + rx * radius;
+  const screenY = centerY - star.z * radius * (1 - (1 - tilt) * .4) - ry * radius * (1 - tilt) * .6;
+  return {screenX, screenY, depth: star.z * tilt + ry * (1 - tilt)};
+ };
+ const depth = .25 + .35 * (1 - tilt) + .4 * Math.min(1, Math.max(0, Math.log2(view.zoom + 1) / 8));
+ for (const constellation of SKY_CONSTELLATIONS) {
+  ctx.strokeStyle = `rgba(120,160,220,${.14 * depth})`;
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(star.nx * view.width, star.ny * view.height, star.size, 0, TAU);
-  ctx.fill();
+  let drawing = false;
+  for (const [a, b] of constellation.lines) {
+   const first = project(SKY_STARS[a]);
+   const second = project(SKY_STARS[b]);
+   if (first.depth <= 0 || second.depth <= 0) {drawing = false; continue;}
+   if (!drawing) {ctx.moveTo(first.screenX, first.screenY); drawing = true;}
+   ctx.lineTo(second.screenX, second.screenY);
+  }
+  ctx.stroke();
  }
+ ctx.fillStyle = '#c4e3ff';
+ for (const star of SKY_STARS) {
+  const projected = project(star);
+  if (projected.depth <= 0) continue;
+  if (projected.screenX < -8 || projected.screenX > view.width + 8 || projected.screenY < -8 || projected.screenY > view.height + 8) continue;
+  ctx.globalAlpha = star.alpha * depth;
+  ctx.beginPath();
+  ctx.arc(projected.screenX, projected.screenY, star.size, 0, TAU);
+  ctx.fill();
+  if (star.bright) {
+   ctx.globalAlpha = star.alpha * depth * .5;
+   ctx.beginPath();
+   ctx.arc(projected.screenX, projected.screenY, star.size * 2.4, 0, TAU);
+   ctx.fill();
+  }
+ }
+ ctx.globalAlpha = 1;
  ctx.globalAlpha = 1;
  const nebula = ctx.createRadialGradient(view.width * .42, view.height * .4, 0, view.width * .42, view.height * .4, Math.max(view.width, view.height) * .7);
  nebula.addColorStop(0, 'rgba(16,45,95,.18)');

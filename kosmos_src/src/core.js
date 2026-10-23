@@ -14,7 +14,6 @@ let simDays = 0;
 let lastFrameTime = performance.now();
 let frameTime = lastFrameTime;
 
-const stars = Array.from({length: 520}, () => ({nx: Math.random(), ny: Math.random(), size: Math.random() * 1.25, alpha: .2 + Math.random() * .75}));
 const asteroids = Array.from({length: ASTEROID_COUNT}, () => {
  const orbit = BELT_INNER + Math.random() * (BELT_OUTER - BELT_INNER);
  return {phase: Math.random() * TAU, orbit, period: 1300 + (orbit - BELT_INNER) * 20, size: .5 + Math.random() * 1.7, alpha: .15 + Math.random() * .55};
@@ -227,13 +226,54 @@ function heartPath(centerX, centerY, size) {
 function drawBackground() {
  ctx.fillStyle = '#020611';
  ctx.fillRect(0, 0, view.width, view.height);
- ctx.fillStyle = '#c4e3ff';
- for (const star of stars) {
-  ctx.globalAlpha = star.alpha;
+ /* projekcja sferyczna: gwiazdy leżą na odległej sferze niebieskiej i
+  * obracają się razem z ruchem kamery (view.angle / view.tilt), więc przy
+  * przesuwaniu nie wyglądają jak nieruchoma warstwa UI; przy oddalaniu
+  * delikatnie uciekają na zewnątrz (lekka paralaksa względem centrum) */
+ const centerX = (view.free.left + view.free.right) / 2;
+ const centerY = (view.free.top + view.free.bottom) / 2;
+ const radius = Math.hypot(view.free.right - view.free.left, view.free.bottom - view.free.top) * .75;
+ const cosA = Math.cos(-view.angle), sinA = Math.sin(-view.angle);
+ const tilt = view.tilt;
+ const project = star => {
+  const rx = star.x * cosA - star.y * sinA;
+  const ry = star.x * sinA + star.y * cosA;
+  const screenX = centerX + rx * radius;
+  const screenY = centerY - star.z * radius * (1 - (1 - tilt) * .4) - ry * radius * (1 - tilt) * .6;
+  return {screenX, screenY, depth: star.z * tilt + ry * (1 - tilt)};
+ };
+ const depth = .25 + .35 * (1 - tilt) + .4 * Math.min(1, Math.max(0, Math.log2(view.zoom + 1) / 8));
+ for (const constellation of SKY_CONSTELLATIONS) {
+  ctx.strokeStyle = `rgba(120,160,220,${.14 * depth})`;
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(star.nx * view.width, star.ny * view.height, star.size, 0, TAU);
-  ctx.fill();
+  let drawing = false;
+  for (const [a, b] of constellation.lines) {
+   const first = project(SKY_STARS[a]);
+   const second = project(SKY_STARS[b]);
+   if (first.depth <= 0 || second.depth <= 0) {drawing = false; continue;}
+   if (!drawing) {ctx.moveTo(first.screenX, first.screenY); drawing = true;}
+   ctx.lineTo(second.screenX, second.screenY);
+  }
+  ctx.stroke();
  }
+ ctx.fillStyle = '#c4e3ff';
+ for (const star of SKY_STARS) {
+  const projected = project(star);
+  if (projected.depth <= 0) continue;
+  if (projected.screenX < -8 || projected.screenX > view.width + 8 || projected.screenY < -8 || projected.screenY > view.height + 8) continue;
+  ctx.globalAlpha = star.alpha * depth;
+  ctx.beginPath();
+  ctx.arc(projected.screenX, projected.screenY, star.size, 0, TAU);
+  ctx.fill();
+  if (star.bright) {
+   ctx.globalAlpha = star.alpha * depth * .5;
+   ctx.beginPath();
+   ctx.arc(projected.screenX, projected.screenY, star.size * 2.4, 0, TAU);
+   ctx.fill();
+  }
+ }
+ ctx.globalAlpha = 1;
  ctx.globalAlpha = 1;
  const nebula = ctx.createRadialGradient(view.width * .42, view.height * .4, 0, view.width * .42, view.height * .4, Math.max(view.width, view.height) * .7);
  nebula.addColorStop(0, 'rgba(16,45,95,.18)');

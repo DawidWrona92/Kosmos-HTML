@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Skleja moduły z src/ w jeden działający plik kosmos_dla_corki.html.
 
-Kolejność: head.html, consts.js, fx.js, music.js, assets.js, data.js, core.js
-(ze speech.js i ui.js w znacznikach //__SPEECH__ oraz //__UI__), probes.js,
-activities.js, controls.js. Obrazy z src/img/ lądują w assets.js jako data URI.
+Kolejność: head.html, consts.js, fx.js, music.js, assets.js, sky.js, data.js,
+core.js (ze speech.js i ui.js w znacznikach //__SPEECH__ oraz //__UI__),
+probes.js, activities.js, controls.js. Obrazy z src/img/ lądują w assets.js
+jako data URI.
 """
 import base64
 import json
@@ -42,6 +43,7 @@ def main():
         read('fx.js'),
         read('music.js'),
         assets,
+        read('sky.js'),
         read('data.js'),
         core,
         read('probes.js'),
