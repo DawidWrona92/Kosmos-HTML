@@ -1514,7 +1514,10 @@ actCanvas.addEventListener('pointercancel', () => {
 byId('actClose').addEventListener('click', closeActivity);
 byId('actSay').addEventListener('click', () => {
  if (!activeActivity) return;
- sayNow(activeActivity.repeatText || activeActivity.lead);
+ const item = activeItem;
+ const slot = activeSlot;
+ closeActivity();
+ openActivity(item, slot);
 });
 
 renderTaskbook();

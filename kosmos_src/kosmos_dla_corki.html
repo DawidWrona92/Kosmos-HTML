@@ -1056,6 +1056,7 @@ const view = {
 let speed = clamp(parseFloat(loadStored('kosmos3.speed', String(DEFAULT_SPEED))) || DEFAULT_SPEED, MIN_SPEED, MAX_SPEED);
 let playing = true;
 let simDays = 0;
+let moonDays = 0;
 let lastFrameTime = performance.now();
 let frameTime = lastFrameTime;
 
@@ -1291,7 +1292,7 @@ function bodyOffset(body, scaleValue) {
  }
  if (body.kind === 'moon') {
   const parentOffset = bodyOffset(bodies[bodyIndex(body.parentId)], scaleValue);
-  const phase = orbitPhase(body);
+  const phase = body.startPhase + moonDays / Math.max(Math.abs(body.period) * 30, 45) * TAU * Math.sign(body.period);
   return {
    x: parentOffset.x + Math.cos(phase) * body.moonOrbit * scaleValue,
    y: parentOffset.y + Math.sin(phase) * body.moonOrbit * scaleValue * view.tilt,
@@ -1737,74 +1738,51 @@ function drawSurface(x, y, radius, body) {
 }
 
 function drawNucleus(x, y, radius, sunDirX, sunDirY) {
- glow(x, y, radius * .9, 'rgba(190,235,255,.3)');
- const rotation = .5;
- const localSunX = sunDirX * Math.cos(-rotation) - sunDirY * Math.sin(-rotation);
- const localSunY = sunDirX * Math.sin(-rotation) + sunDirY * Math.cos(-rotation);
- let seed = 5;
- const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
- const count = 20;
- const shape = [];
- for (let step = 0; step < count; step++) {
-  const angle = step / count * TAU;
-  const wobble = .86 + random() * .26;
-  shape.push({x: Math.cos(angle) * radius * 1.3 * wobble, y: Math.sin(angle) * radius * .78 * wobble});
- }
+ glow(x, y, radius * 1.1, 'rgba(190,235,255,.25)');
+ /* jądro: nieregularna bryłka lodu i pyłu (jak zdjęcia z Giotto):
+  * gładki kontur z niewielkimi wypukłościami + cieniowanie od Słońca */
  ctx.save();
  ctx.translate(x, y);
- ctx.rotate(rotation);
- ctx.beginPath();
- shape.forEach((point, step) => {
-  const next = shape[(step + 1) % count];
-  const midX = (point.x + next.x) / 2;
-  const midY = (point.y + next.y) / 2;
-  if (step === 0) ctx.moveTo(midX, midY);
-  else ctx.quadraticCurveTo(point.x, point.y, midX, midY);
- });
- const first = shape[0];
- const second = shape[1];
- ctx.quadraticCurveTo(first.x, first.y, (first.x + second.x) / 2, (first.y + second.y) / 2);
- ctx.closePath();
- const body = ctx.createRadialGradient(localSunX * radius * .6, localSunY * radius * .5, radius * .1, 0, 0, radius * 1.5);
- body.addColorStop(0, '#5d544c');
- body.addColorStop(.55, '#28221e');
- body.addColorStop(1, '#0a0807');
+ ctx.rotate(.5);
+ const body = ctx.createRadialGradient(-sunDirX * radius * .5, -sunDirY * radius * .5, radius * .15, 0, 0, radius * 1.05);
+ body.addColorStop(0, '#8d857c');
+ body.addColorStop(.45, '#5d544c');
+ body.addColorStop(1, '#17120e');
  ctx.fillStyle = body;
+ ctx.beginPath();
+ let seed = 5;
+ const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+ for (let step = 0; step <= 24; step++) {
+  const angle = step / 24 * TAU;
+  const squash = 1 + Math.sin(angle * 2 + 1.3) * .07 + Math.sin(angle * 3 + .4) * .05;
+  const px = Math.cos(angle) * radius * squash;
+  const py = Math.sin(angle) * radius * .8 * squash;
+  if (step === 0) ctx.moveTo(px, py);
+  else ctx.lineTo(px, py);
+ }
+ ctx.closePath();
  ctx.fill();
+ /* fontanny pary — strumienie od strony Słońca */
  ctx.save();
  ctx.clip();
- for (let crater = 0; crater < 14; crater++) {
-  const angle = random() * TAU;
-  const distance = random() * radius * .8;
-  const craterSize = radius * (.06 + random() * .13);
-  const craterX = Math.cos(angle) * distance * 1.2;
-  const craterY = Math.sin(angle) * distance * .7;
-  ctx.fillStyle = 'rgba(0,0,0,.35)';
+ ctx.strokeStyle = 'rgba(230,245,255,.5)';
+ ctx.lineWidth = Math.max(1.2, radius * .07);
+ for (let jet = 0; jet < 6; jet++) {
+  const angle = Math.atan2(-sunDirY, -sunDirX) + (jet - 2.5) * .3 + (random() - .5) * .2;
+  const length = radius * (.5 + random() * .6);
   ctx.beginPath();
-  ctx.ellipse(craterX, craterY, craterSize, craterSize * .8, 0, 0, TAU);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(190,175,160,.14)';
-  ctx.beginPath();
-  ctx.ellipse(craterX - craterSize * .2, craterY - craterSize * .2, craterSize * .7, craterSize * .5, 0, 0, TAU);
-  ctx.fill();
- }
- ctx.restore();
- ctx.lineCap = 'round';
- for (let jet = 0; jet < 5; jet++) {
-  const angle = Math.atan2(localSunY, localSunX) + (jet - 2) * .38;
-  const startX = Math.cos(angle) * radius * 1.05;
-  const startY = Math.sin(angle) * radius * .7;
-  const length = radius * (.35 + random() * .35);
-  const gradient = ctx.createLinearGradient(startX, startY, startX + Math.cos(angle) * length, startY + Math.sin(angle) * length);
-  gradient.addColorStop(0, 'rgba(210,240,255,.8)');
-  gradient.addColorStop(1, 'rgba(210,240,255,0)');
-  ctx.strokeStyle = gradient;
-  ctx.lineWidth = Math.max(2, radius * .06);
-  ctx.beginPath();
-  ctx.moveTo(startX, startY);
-  ctx.lineTo(startX + Math.cos(angle) * length, startY + Math.sin(angle) * length);
+  ctx.moveTo(Math.cos(angle) * radius * .5, Math.sin(angle) * radius * .4);
+  ctx.lineTo(Math.cos(angle) * (radius * .5 + length), Math.sin(angle) * (radius * .4 + length));
   ctx.stroke();
  }
+ ctx.restore();
+ /* kraterki i ciemne plamy na powierzchni */
+ ctx.fillStyle = 'rgba(0,0,0,.25)';
+ [[-.3, -.2, .18], [.25, .3, .14], [.05, -.4, .12]].forEach(([ox, oy, size]) => {
+  ctx.beginPath();
+  ctx.arc(ox * radius, oy * radius * .8, size * radius, 0, TAU);
+  ctx.fill();
+ });
  ctx.restore();
 }
 
@@ -1819,10 +1797,10 @@ function drawComet(item, frame) {
  const normalY = unitX;
  const zoomed = radius > 22;
  /* jądro: małe i ciemne, coma: duża, jasna otoczka — proporcja jak w naturze */
- const nucleusRadius = zoomed ? Math.min(radius, 34) : Math.min(radius, 4);
- const comaRadius = nucleusRadius * (zoomed ? 3.2 : 7.5);
+ const nucleusRadius = zoomed ? Math.min(radius, 26) : Math.min(radius, 4);
+ const comaRadius = nucleusRadius * (zoomed ? 2.4 : 7.5);
  const activity = Math.pow(Math.max(0, 1 - distance / 950), .8);
- const tailLength = activity * 170 * (zoomed ? 4.2 : clamp(frame.scale, .5, 1.5));
+ const tailLength = activity * 170 * (zoomed ? 2.6 : clamp(frame.scale, .5, 1.5));
  /* ogon jonowy — wąski, prosty, niebieskawy; ogon pyłowy — szerszy, lekko zakrzywiony, żółtawy */
  if (tailLength > 4) {
   const ionEndX = x + unitX * tailLength;
@@ -1993,10 +1971,11 @@ function drawProbeSprite(find, x, y, width) {
  drawProbeIcon(x, y, width / 5, 0);
 }
 
-function drawMoon(item, moon, parentX, parentY, parentRadius) {
- const moonRadius = Math.max(3.5, parentRadius * moon.size);
+function drawMoon(frame, parent, moon, parentX, parentY, parentRadius) {
+ const moonRadius = Math.max(2.5, parentRadius * moon.size * .6);
  const orbit = parentRadius * moon.moonOrbit;
- const phase = moon.startPhase + simDays / Math.abs(moon.period) * TAU * Math.sign(moon.period) + frameTime * .00013;
+ const periodDays = Math.max(Math.abs(moon.period) * 30, 45);
+ const phase = moon.startPhase + moonDays / periodDays * TAU * Math.sign(moon.period);
  ctx.save();
  ctx.translate(parentX, parentY);
  ctx.rotate(moon.tilt);
@@ -2014,20 +1993,8 @@ function drawMoon(item, moon, parentX, parentY, parentRadius) {
  const sinTilt = Math.sin(moon.tilt);
  const x = parentX + localX * cosTilt - localY * sinTilt;
  const y = parentY + localX * sinTilt + localY * cosTilt;
- const gradient = ctx.createRadialGradient(x - moonRadius * .35, y - moonRadius * .4, moonRadius * .2, x, y, moonRadius * 1.25);
- gradient.addColorStop(0, lighten(moon.color, 1.4));
- gradient.addColorStop(.55, moon.color);
- gradient.addColorStop(1, '#0a0e18');
- ctx.fillStyle = gradient;
- ctx.beginPath();
- ctx.arc(x, y, moonRadius, 0, TAU);
- ctx.fill();
- ctx.fillStyle = 'rgba(0,0,0,.18)';
- [[-.3, -.2, .22], [.35, .3, .18], [.1, .45, .12]].forEach(([ox, oy, r]) => {
-  ctx.beginPath();
-  ctx.arc(x + ox * moonRadius, y + oy * moonRadius, r * moonRadius, 0, TAU);
-  ctx.fill();
- });
+ const sunAngle = Math.atan2(frame.sunY - y, frame.sunX - x);
+ drawMoonBody(x, y, moonRadius, moon, sunAngle);
  if (!discovered.has(moon.id)) {
   const pulse = Math.sin(frameTime * .003 + moon.startPhase) * .5 + .5;
   ctx.strokeStyle = `rgba(255,226,110,${.15 + .3 * pulse})`;
@@ -2040,10 +2007,120 @@ function drawMoon(item, moon, parentX, parentY, parentRadius) {
  ctx.font = '700 11px ui-rounded, system-ui, sans-serif';
  ctx.textAlign = 'center';
  ctx.fillText(moon.name, x, y - moonRadius - 7);
- view.moonTargets.push({moon, x, y, radius: moonRadius});
+ view.moonTargets.push({moon, x, y, radius: moonRadius + 7});
 }
 
-function drawFinds(items) {
+function drawMoonBody(x, y, radius, moon, sunAngle) {
+ const lumpy = moon.id === 'phobos' || moon.id === 'deimos';
+ ctx.save();
+ ctx.beginPath();
+ if (lumpy) ctx.ellipse(x, y, radius * 1.14, radius * .8, moon.startPhase % TAU, 0, TAU);
+ else ctx.arc(x, y, radius, 0, TAU);
+ ctx.clip();
+ ctx.translate(x, y);
+ const lightX = Math.cos(sunAngle) * radius * .4;
+ const lightY = Math.sin(sunAngle) * radius * .4;
+ const gradient = ctx.createRadialGradient(lightX, lightY, radius * .12, 0, 0, radius * 1.3);
+ gradient.addColorStop(0, lighten(moon.color, 1.5));
+ gradient.addColorStop(.55, moon.color);
+ gradient.addColorStop(1, lighten(moon.color, .5));
+ ctx.fillStyle = gradient;
+ ctx.fillRect(-radius * 1.3, -radius * 1.3, radius * 2.6, radius * 2.6);
+ drawMoonDetail(radius, moon);
+ const shade = ctx.createRadialGradient(lightX, lightY, radius * .3, 0, 0, radius * 1.12);
+ shade.addColorStop(0, 'rgba(2,4,12,0)');
+ shade.addColorStop(.55, 'rgba(2,4,12,.1)');
+ shade.addColorStop(1, 'rgba(2,4,12,.7)');
+ ctx.fillStyle = shade;
+ ctx.fillRect(-radius * 1.3, -radius * 1.3, radius * 2.6, radius * 2.6);
+ ctx.restore();
+}
+
+function drawMoonDetail(radius, moon) {
+ const crater = (px, py, size) => {
+  ctx.fillStyle = 'rgba(0,0,0,.2)';
+  ctx.beginPath();
+  ctx.arc(px * radius, py * radius, size * radius, 0, TAU);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.14)';
+  ctx.beginPath();
+  ctx.arc(px * radius - size * radius * .3, py * radius - size * radius * .3, size * radius * .6, 0, TAU);
+  ctx.fill();
+ };
+ switch (moon.id) {
+  case 'io':
+   [[-.25, -.2, .13], [.3, .1, .1], [.05, .4, .12], [-.35, .3, .08]].forEach(([px, py, size]) => {
+    ctx.fillStyle = 'rgba(40,25,8,.45)';
+    ctx.beginPath();
+    ctx.arc(px * radius, py * radius, size * radius, 0, TAU);
+    ctx.fill();
+   });
+   break;
+  case 'europa':
+   ctx.strokeStyle = 'rgba(150,95,60,.5)';
+   ctx.lineWidth = Math.max(.7, radius * .05);
+   [[-.6, -.5, .5, .2], [-.2, .3, .6, .6], [.1, -.6, .4, .1]].forEach(([x1, y1, x2, y2]) => {
+    ctx.beginPath();
+    ctx.moveTo(x1 * radius, y1 * radius);
+    ctx.quadraticCurveTo((x1 + x2) / 2 * radius, (y1 + y2) / 2 * radius + radius * .15, x2 * radius, y2 * radius);
+    ctx.stroke();
+   });
+   break;
+  case 'ganymede':
+   ctx.fillStyle = 'rgba(240,235,225,.22)';
+   ctx.beginPath();
+   ctx.arc(-.2 * radius, -.25 * radius, radius * .3, 0, TAU);
+   ctx.arc(.3 * radius, .3 * radius, radius * .22, 0, TAU);
+   ctx.fill();
+   crater(.15, -.4, .09);
+   break;
+  case 'kallisto':
+   [[-.3, -.25, .1], [.25, -.3, .08], [.4, .25, .11], [-.15, .35, .09], [.05, 0, .07], [-.45, .15, .06]].forEach(([px, py, size]) => crater(px, py, size));
+   break;
+  case 'tytan':
+   ctx.fillStyle = 'rgba(255,225,170,.2)';
+   ctx.beginPath();
+   ctx.ellipse(0, 0, radius * .95, radius * .95, 0, 0, TAU);
+   ctx.fill();
+   break;
+  case 'enceladus':
+   ctx.strokeStyle = 'rgba(110,170,220,.55)';
+   ctx.lineWidth = Math.max(.7, radius * .05);
+   [-.18, 0, .18].forEach(px => {
+    ctx.beginPath();
+    ctx.moveTo(px * radius, radius * .35);
+    ctx.quadraticCurveTo(px * radius * 1.6, radius * .55, px * radius, radius * .8);
+    ctx.stroke();
+   });
+   break;
+  case 'japetus': {
+   const twoTone = ctx.createLinearGradient(-radius, 0, 0, 0);
+   twoTone.addColorStop(0, 'rgba(22,16,10,.85)');
+   twoTone.addColorStop(1, 'rgba(22,16,10,0)');
+   ctx.fillStyle = twoTone;
+   ctx.fillRect(-radius, -radius, radius, radius * 2);
+   crater(.4, -.3, .08);
+   break;
+  }
+  case 'tryton':
+   ctx.fillStyle = 'rgba(245,205,195,.4)';
+   ctx.beginPath();
+   ctx.ellipse(0, radius * .5, radius * .6, radius * .3, 0, 0, TAU);
+   ctx.fill();
+   crater(-.3, -.2, .08);
+   break;
+  case 'phobos':
+  case 'deimos':
+   crater(-.3, -.1, .14);
+   crater(.25, .2, .1);
+   break;
+  default:
+   crater(-.25, -.15, .11);
+   crater(.3, .25, .08);
+ }
+}
+
+function drawFinds(items, frame) {
  view.findTargets = [];
  view.moonTargets = [];
  view.ringTarget = null;
@@ -2055,7 +2132,7 @@ function drawFinds(items) {
  const freeWidth = view.free.right - view.free.left;
  const freeHeight = view.free.bottom - view.free.top;
  if (moonList.length) {
-  moonList.forEach(moon => drawMoon(parent, moon, parent.x, parent.y, parent.radius));
+  moonList.forEach(moon => drawMoon(frame, parent, moon, parent.x, parent.y, parent.radius));
  }
  if (parent.body.ring && parent.body.id === 'saturn') {
   const outer = Math.max(...parent.body.ring.bands.map(band => band.scale + band.width / 2));
@@ -2149,7 +2226,7 @@ function draw() {
  drawSun(frame);
  inFront.forEach(paint);
  items[0] = view.sunTarget;
- drawFinds(items);
+ drawFinds(items, frame);
  drawLabels(items);
  drawRipples();
 }
@@ -2673,7 +2750,14 @@ byId('voiceTest').addEventListener('click', () => {
 byId('resetNotebook').addEventListener('click', () => {
  discovered.clear();
  saveStored('kosmos2.discovered', '[]');
+ doneTasks.clear();
+ saveStored('kosmos3.tasks', '[]');
  renderNotebook();
+ renderTaskbook();
+ if (activeItem && !activityOverlay.hidden) {
+  byId('actDone').hidden = !doneTasks.has(taskKey(activeItem, activeSlot));
+  byId('actSay').classList.toggle('done', doneTasks.has(taskKey(activeItem, activeSlot)));
+ }
 });
 
 /* ---------- listy postępów (po kliknięciu w dzienniczek / zadania) ---------- */
@@ -4554,7 +4638,10 @@ actCanvas.addEventListener('pointercancel', () => {
 byId('actClose').addEventListener('click', closeActivity);
 byId('actSay').addEventListener('click', () => {
  if (!activeActivity) return;
- sayNow(activeActivity.repeatText || activeActivity.lead);
+ const item = activeItem;
+ const slot = activeSlot;
+ closeActivity();
+ openActivity(item, slot);
 });
 
 renderTaskbook();
@@ -4631,7 +4718,10 @@ function frameLoop(now) {
  const dt = clamp((now - lastFrameTime) / 1000, 0, .1);
  lastFrameTime = now;
  frameTime = now;
- if (playing && speed > 0) simDays += dt * speed * DAYS_PER_SPEED_UNIT;
+ if (playing && speed > 0) {
+  simDays += dt * speed * DAYS_PER_SPEED_UNIT;
+  moonDays += Math.min(dt * speed * DAYS_PER_SPEED_UNIT, dt * 4);
+ }
  updateCamera(dt);
  if (view.following && view.selected !== null && Math.abs(view.zoom / view.zoomGoal - 1) < .35) {
   const spinBody = bodies[view.selected];

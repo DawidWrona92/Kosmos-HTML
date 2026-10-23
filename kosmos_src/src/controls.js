@@ -68,7 +68,10 @@ function frameLoop(now) {
  const dt = clamp((now - lastFrameTime) / 1000, 0, .1);
  lastFrameTime = now;
  frameTime = now;
- if (playing && speed > 0) simDays += dt * speed * DAYS_PER_SPEED_UNIT;
+ if (playing && speed > 0) {
+  simDays += dt * speed * DAYS_PER_SPEED_UNIT;
+  moonDays += Math.min(dt * speed * DAYS_PER_SPEED_UNIT, dt * 4);
+ }
  updateCamera(dt);
  if (view.following && view.selected !== null && Math.abs(view.zoom / view.zoomGoal - 1) < .35) {
   const spinBody = bodies[view.selected];

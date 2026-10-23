@@ -372,7 +372,14 @@ byId('voiceTest').addEventListener('click', () => {
 byId('resetNotebook').addEventListener('click', () => {
  discovered.clear();
  saveStored('kosmos2.discovered', '[]');
+ doneTasks.clear();
+ saveStored('kosmos3.tasks', '[]');
  renderNotebook();
+ renderTaskbook();
+ if (activeItem && !activityOverlay.hidden) {
+  byId('actDone').hidden = !doneTasks.has(taskKey(activeItem, activeSlot));
+  byId('actSay').classList.toggle('done', doneTasks.has(taskKey(activeItem, activeSlot)));
+ }
 });
 
 /* ---------- listy postępów (po kliknięciu w dzienniczek / zadania) ---------- */
