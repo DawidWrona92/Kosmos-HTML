@@ -23,13 +23,21 @@ const bodies = [
    'Wenus kręci się w drugą stronę niż prawie wszystkie planety. Dlatego Słońce wschodzi tam na zachodzie! Jeden obrót trwa 243 ziemskie dni, a rok tylko 225 dni. Obrót trwa więc dłużej niż rok.',
    'Wenus jest prawie tak duża jak Ziemia, więc nazywa się ją siostrą Ziemi. Na niebie widać ją wieczorem albo rano jako bardzo jasny punkt. Ludzie nazywają ją Gwiazdą Wieczorną, ale to wcale nie gwiazda, tylko planeta.'
   ]},
- {id: 'earth', surface: 'earth', kind: 'planet', name: 'Ziemia', type: 'Trzecia planeta od Słońca', color: '#268de0', radius: 8, orbit: 145, period: 365.25, startPhase: 4.1, texture: 'earth_photo', photo: true, activity: 'moon',
+ {id: 'earth', surface: 'earth', kind: 'planet', name: 'Ziemia', type: 'Trzecia planeta od Słońca', color: '#268de0', radius: 8, orbit: 145, period: 365.25, startPhase: 4.1, texture: 'earth_photo', photo: true,
   facts: [
    'Ziemia to nasz dom! To jedyne miejsce, na którym znamy życie: ludzi, zwierzęta i rośliny. Mamy tu powietrze do oddychania i wodę do picia. Ziemia jest w sam raz daleko od Słońca, więc nie jest ani za gorąca, ani za zimna.',
    'Z kosmosu Ziemia wygląda jak niebieska kula. Aż 71 procent jej powierzchni pokrywa woda. Widać też białe chmury i brązowe lądy. Dlatego mówimy na nią Błękitna Planeta.',
    'Ziemia kręci się wokół własnej osi. Jeden obrót trwa 24 godziny, czyli jedną dobę. Dzięki temu jest dzień i noc. Wokół Słońca Ziemia okrąża się raz na rok, czyli w 365 dni.',
    'Wokół Ziemi krąży Księżyc. To nasz jedyny naturalny księżyc. Zawsze pokazuje nam tę samą stronę. W 1969 roku stanęli na nim pierwsi ludzie.',
    'Ziemię chroni atmosfera, czyli warstwa powietrza. Większość małych skał, które lecą z kosmosu, spala się w niej wysoko nad nami. My widzimy to jako spadające gwiazdy. Możesz wtedy pomyśleć życzenie!'
+  ]},
+ {id: 'moon', kind: 'moon', parentId: 'earth', name: 'Księżyc', type: 'Nasz księżyc', intro: 'Księżyc.', color: '#b9b9c4', radius: 3, orbit: 145, moonOrbit: 26, period: 27.3, startPhase: .5, texture: 'moon_photo', photo: true, activity: 'moon',
+  facts: [
+   'Księżyc to nasz najbliższy sąsiad w kosmosie. Krąży wokół Ziemi raz na około 27 dni. Zawsze pokazuje nam tę samą stronę — jakby patrzył na nas jednym okiem!',
+   'Na Księżycu nie ma powietrza, wiatru ani deszczu. Niebo jest tam czarne nawet w dzień. Astronauci musieli mieć specjalne skafandry, żeby móc tam oddychać.',
+   'W 1969 roku wylądowali na Księżycu pierwsi ludzie — Neil Armstrong i Buzz Aldrin. Neil powiedział słynne słowa: „To mały krok dla człowieka, a wielki skok dla ludzkości”.',
+   'Księżyc nie świeci sam z siebie — odbija światło Słońca, dlatego świeci na niebie. Gdy Ziemia zasłania Słońce, Księżyc robi się ciemny — to zaćmienie Księżyca.',
+   'Księżyc przyciąga wodę w oceanach. Dzięki temu mamy przypływy i odpływy — morze podnosi się i opada dwa razy na dobę!'
   ]},
  {id: 'mars', surface: 'mars', kind: 'planet', name: 'Mars', type: 'Czwarta planeta od Słońca', color: '#d75a36', radius: 6, orbit: 184, period: 687, startPhase: 5.5, texture: 'mars', activity: 'rover',
   facts: [
@@ -159,6 +167,12 @@ const finds = [
    'W lipcu 2015 roku przeleciała tuż obok Plutona z prędkością około 50 tysięcy kilometrów na godzinę. Zrobiła zdjęcie serca Plutona i znalazła góry z lodu.',
    'Potem poleciała dalej, w stronę lodowych światów na krańcach Układu Słonecznego. W 2019 roku odwiedziła lodowo-skalny obiekt Arrokoth, który wygląda jak bałwanek z dwóch kul.'
   ]},
+ {id: 'ingenuity', parentId: 'mars', name: 'Helikopter Ingenuity', type: 'Znajdźka: mały helikopter', intro: 'Helikopter Ingenuity.', sprite: null, draw: 'ingenuity', activity: 'parts',
+  facts: [
+   'Ingenuity to mały helikopter, który poleciał razem z łazikiem Perseverance. Był pierwszym helikopterem, który latał na innej planecie!',
+   'Na Marsie powietrze jest bardzo cienkie, więc łopatki Ingenuity musiały kręcić się bardzo, bardzo szybko — ponad 2500 razy na minutę!',
+   'Ingenuity był planowany na 5 lotów, a zrobił ich aż 72! Pracował prawie 3 lata.'
+  ]},
  {id: 'giotto', parentId: 'halley', name: 'Sonda Giotto', type: 'Sonda kosmiczna', intro: 'Sonda Giotto.', sprite: null, draw: 'giotto', activity: 'parts',
   facts: [
    'W 1986 roku europejska sonda Giotto podleciała do jądra komety Halleya. Zbliżyła się do niego na około 600 kilometrów.',
@@ -211,6 +225,11 @@ const PARTS = {
   {name: 'Antena', ask: 'Gdzie jest antena? To duży, biały talerz.', hint: 'Szukaj dużego, białego talerza na górze.', ok: 'To antena. Dzięki niej sonda wysłała na Ziemię zdjęcia Plutona.', hits: [[.5, .27, .17]]},
   {name: 'Generator prądu', ask: 'Teraz znajdź generator prądu. To szary walec z boku.', hint: 'Szukaj szarego walca z prawej strony.', ok: 'To generator prądu. Przy Plutonie Słońce prawie nie świeci, więc sonda nie ma paneli, tylko taki mały generator.', hits: [[.82, .55, .12]]}
  ]},
+ ingenuity: {draw: 'ingenuity', parts: [
+  {name: 'Wirniki', ask: 'Gdzie są wirniki? To dwa duże śmigła na górze.', hint: 'Szukaj dwóch dużych, białych kół na górze.', ok: 'To wirniki — dwa śmigła kręcące się w przeciwnych stronach. Dzięki nim helikopter unosi się w cienkim marsjańskim powietrzu.', hits: [[.28, .18, .16], [.72, .18, .16]]},
+  {name: 'Kadłub', ask: 'Teraz znajdź kadłub. To małe pudełko na dole.', hint: 'Szukaj małego, biało-pomarańczowego pudełka pod wirnikami.', ok: 'To kadłub. W środku są kamery i komputer. Ingenuity jest wielkości pudełka na chusteczki!', hits: [[.5, .68, .18]]},
+  {name: 'Nóżki', ask: 'Na koniec znajdź nóżki. To cienkie patyczki na dole.', hint: 'Szukaj cienkich czarnych patyczków pod kadłubem.', ok: 'To nóżki. Dzięki nim Ingenuity ląduje na kamieniach i piasku Marsa.', hits: [[.38, .92, .08], [.62, .92, .08]]}
+ ]},
  giotto: {draw: 'giotto', parts: [
   {name: 'Antena', ask: 'Gdzie jest antena? To okrągły talerz na górze.', hint: 'Szukaj okrągłego talerza na górze.', ok: 'To antena. Dzięki niej Giotto przesłała zdjęcia komety.', hits: [[.5, .2, .15]]},
   {name: 'Tarcza przed pyłem', ask: 'Teraz znajdź tarczę przed pyłem. To płaski dysk na dole sondy.', hint: 'Szukaj płaskiego dysku na samym dole.', ok: 'To tarcza przed pyłem. Chroniła sondę przed drobinkami pyłu z komety.', hits: [[.5, .82, .17]]}
@@ -218,5 +237,7 @@ const PARTS = {
 };
 
 const TOTAL_ITEMS = bodies.length + finds.length;
+const taskCount = item => (item.activity ? 1 : 0) + (item.activity2 ? 1 : 0);
+const TOTAL_TASKS = bodies.reduce((sum, body) => sum + taskCount(body), 0) + finds.reduce((sum, find) => sum + taskCount(find), 0);
 const bodyIndex = id => bodies.findIndex(body => body.id === id);
 const knownIds = new Set([...bodies.map(body => body.id), ...finds.map(find => find.id)]);

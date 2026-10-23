@@ -10,7 +10,12 @@ byId('readAgain').addEventListener('click', () => {
  } else if (hasChosen) readFrom(0, true);
 });
 document.querySelectorAll('[data-home]').forEach(button => button.addEventListener('click', resetView));
-byId('activityBtn').addEventListener('click', () => openActivity(currentItem()));
+let activitySlot = 0;
+byId('activityBtn').addEventListener('click', () => {
+ const item = currentItem();
+ activitySlot = item.activity2 && doneTasks.has(item.id) && !doneTasks.has(`${item.id}#2`) ? 1 : 0;
+ openActivity(item, activitySlot);
+});
 byId('fact').addEventListener('click', () => {
  if (!hasChosen) return;
  readFrom((factIndex + 1) % currentItem().facts.length, false);

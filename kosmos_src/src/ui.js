@@ -84,7 +84,7 @@ function renderInfo() {
    icon.style.background = `#0b1c3a url(${ASSET_DATA[item.sprite]}) center/78% no-repeat`;
   } else icon.textContent = '🛰';
  } else {
-  icon.textContent = body.kind === 'star' ? '☀️' : '';
+  icon.textContent = body.kind === 'star' ? '☀️' : body.kind === 'moon' ? '🌙' : '';
   const photo = body.photo && ASSET_DATA[body.texture];
   icon.style.background = photo ? `url(${photo}) center/cover` : `radial-gradient(circle at 30% 28%,${lighten(body.color, 1.5)},${body.color} 48%,#060b18)`;
  }
@@ -253,6 +253,7 @@ function bodyEmoji(body) {
   case 'mercury': return '⚪';
   case 'venus': return '🟡';
   case 'earth': return '🌍';
+  case 'moon': return '🌙';
   case 'mars': return '🔴';
   case 'ceres': return '🪨';
   case 'jupiter': return '🟤';
@@ -272,8 +273,9 @@ function renderLists() {
   const label = done ? `${emoji} ${escapeHtml(item.name)}` : '❓ ???';
   return `<div class="listitem${done ? ' done' : ' locked'}"><span class="listico">${emoji}</span><span class="listlabel">${label}</span><span class="listcheck">✓</span></div>`;
  };
+ const tasksDone = item => doneTasks.has(item.id) && (!item.activity2 || doneTasks.has(`${item.id}#2`));
  byId('discoverList').innerHTML = all.map(item => itemHtml(item, discovered.has(item.id))).join('');
- byId('taskList').innerHTML = all.map(item => itemHtml(item, doneTasks.has(item.id))).join('');
+ byId('taskList').innerHTML = all.map(item => itemHtml(item, tasksDone(item))).join('');
 }
 
 function openLists() {

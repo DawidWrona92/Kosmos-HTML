@@ -112,6 +112,15 @@ function bodyOffset(body, scaleValue) {
   const state = cometState(body);
   return {x: state.x * scaleValue, y: state.y * scaleValue * view.tilt, distance: state.distance};
  }
+ if (body.kind === 'moon') {
+  const parentOffset = bodyOffset(bodies[bodyIndex(body.parentId)], scaleValue);
+  const phase = orbitPhase(body);
+  return {
+   x: parentOffset.x + Math.cos(phase) * body.moonOrbit * scaleValue,
+   y: parentOffset.y + Math.sin(phase) * body.moonOrbit * scaleValue * view.tilt,
+   distance: parentOffset.distance
+  };
+ }
  const phase = orbitPhase(body);
  return {x: Math.cos(phase) * body.orbit * scaleValue, y: Math.sin(phase) * body.orbit * scaleValue * view.tilt, distance: body.orbit};
 }
@@ -366,7 +375,7 @@ function drawSun(frame) {
 function drawOrbits(frame) {
  ctx.lineWidth = 1;
  bodies.forEach((body, index) => {
-  if (body.kind === 'star') return;
+  if (body.kind === 'star' || body.kind === 'moon') return;
   const selected = index === view.selected;
   ctx.strokeStyle = selected ? 'rgba(88,185,255,.6)' : 'rgba(104,171,239,.29)';
   ctx.setLineDash(body.kind === 'planet' ? [] : [4, 6]);
@@ -382,6 +391,15 @@ function drawOrbits(frame) {
   } else {
    ctx.ellipse(frame.sunX, frame.sunY, body.orbit * frame.scale, body.orbit * frame.scale * view.tilt, 0, 0, TAU);
   }
+  ctx.stroke();
+ });
+ bodies.forEach((body, index) => {
+  if (body.kind !== 'moon') return;
+  const parentOffset = bodyOffset(bodies[bodyIndex(body.parentId)], frame.scale);
+  ctx.strokeStyle = index === view.selected ? 'rgba(88,185,255,.6)' : 'rgba(104,171,239,.29)';
+  ctx.setLineDash([3, 5]);
+  ctx.beginPath();
+  ctx.ellipse(frame.sunX + parentOffset.x, frame.sunY + parentOffset.y, body.moonOrbit * frame.scale, body.moonOrbit * frame.scale * view.tilt, 0, 0, TAU);
   ctx.stroke();
  });
  ctx.setLineDash([]);

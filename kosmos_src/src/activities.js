@@ -5,6 +5,7 @@ const actCanvas = byId('actCanvas');
 const actCtx = actCanvas.getContext('2d');
 let activeActivity = null;
 let activeItem = null;
+let activeSlot = 0;
 
 function makeLayer(width, height) {
  const layer = document.createElement('canvas');
@@ -24,8 +25,10 @@ try {
  });
 } catch (error) {}
 
+function taskKey(item, slot) { return slot ? `${item.id}#2` : item.id; }
+
 function renderTaskbook() {
- byId('taskbook').textContent = `⭐ Zadania ${doneTasks.size} z ${TOTAL_ITEMS}`;
+ byId('taskbook').textContent = `⭐ Zadania ${doneTasks.size} z ${TOTAL_TASKS}`;
 }
 
 function markTaskDone(id) {
@@ -46,7 +49,7 @@ function logActivity(text) {
 function finishActivity(text) {
  fxPlay('win');
  logActivity(text);
- if (activeItem) markTaskDone(activeItem.id);
+ if (activeItem) markTaskDone(taskKey(activeItem, activeSlot));
  byId('actDone').hidden = false;
 }
 
@@ -1042,9 +1045,11 @@ function createMoonActivity() {
   found.add(hit.id);
   fxPlay('ok');
   render();
-  const summary = found.size === MOON_DIFFS.length ? ' Znalazłaś wszystkie różnice! Prawdziwy Księżyc wygląda jak Obrazek 1.' : '';
-  logActivity(`Znaleziono ${found.size} z ${MOON_DIFFS.length}. ${hit.text}${summary}`);
-  if (found.size === MOON_DIFFS.length) markTaskDone('earth');
+  if (found.size === MOON_DIFFS.length) {
+   finishActivity(`Znaleziono ${found.size} z ${MOON_DIFFS.length}. ${hit.text} Znalazłaś wszystkie różnice! Prawdziwy Księżyc wygląda jak Obrazek 1.`);
+  } else {
+   logActivity(`Znaleziono ${found.size} z ${MOON_DIFFS.length}. ${hit.text}`);
+  }
  };
  return {title: '🌙 Księżyc: znajdź 5 różnic', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
 }
@@ -1178,20 +1183,22 @@ const activityFactories = {
  tail: createTailActivity
 };
 
-function openActivity(item) {
- if (!item || !item.activity || activeActivity) return;
+function openActivity(item, slot = 0) {
+ const kind = slot ? item.activity2 : item.activity;
+ if (!item || !kind || activeActivity) return;
  stopSpeech();
  setReading(false);
  highlightSentence(-1);
- const factory = item.activity === 'parts' ? () => createPartsActivity(item) : activityFactories[item.activity];
+ const factory = kind === 'parts' ? () => createPartsActivity(item) : activityFactories[kind];
  if (!factory) return;
  activeItem = item;
+ activeSlot = slot;
  activeActivity = factory();
  byId('actTitle').textContent = activeActivity.title;
  byId('actLead').textContent = activeActivity.lead;
  byId('actLog').innerHTML = '';
- byId('actDone').hidden = !doneTasks.has(item.id);
- byId('actSay').classList.toggle('done', doneTasks.has(item.id));
+ byId('actDone').hidden = !doneTasks.has(taskKey(item, slot));
+ byId('actSay').classList.toggle('done', doneTasks.has(taskKey(item, slot)));
  actCanvas.width = activeActivity.width * ACT_SCALE;
  actCanvas.height = activeActivity.height * ACT_SCALE;
  actCtx.setTransform(ACT_SCALE, 0, 0, ACT_SCALE, 0, 0);
@@ -1205,6 +1212,7 @@ function openActivity(item) {
 function closeActivity() {
  activeActivity = null;
  activeItem = null;
+ activeSlot = 0;
  activityOverlay.hidden = true;
  stopSpeech();
 }

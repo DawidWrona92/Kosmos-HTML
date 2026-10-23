@@ -492,13 +492,21 @@ const bodies = [
    'Wenus kręci się w drugą stronę niż prawie wszystkie planety. Dlatego Słońce wschodzi tam na zachodzie! Jeden obrót trwa 243 ziemskie dni, a rok tylko 225 dni. Obrót trwa więc dłużej niż rok.',
    'Wenus jest prawie tak duża jak Ziemia, więc nazywa się ją siostrą Ziemi. Na niebie widać ją wieczorem albo rano jako bardzo jasny punkt. Ludzie nazywają ją Gwiazdą Wieczorną, ale to wcale nie gwiazda, tylko planeta.'
   ]},
- {id: 'earth', surface: 'earth', kind: 'planet', name: 'Ziemia', type: 'Trzecia planeta od Słońca', color: '#268de0', radius: 8, orbit: 145, period: 365.25, startPhase: 4.1, texture: 'earth_photo', photo: true, activity: 'moon',
+ {id: 'earth', surface: 'earth', kind: 'planet', name: 'Ziemia', type: 'Trzecia planeta od Słońca', color: '#268de0', radius: 8, orbit: 145, period: 365.25, startPhase: 4.1, texture: 'earth_photo', photo: true,
   facts: [
    'Ziemia to nasz dom! To jedyne miejsce, na którym znamy życie: ludzi, zwierzęta i rośliny. Mamy tu powietrze do oddychania i wodę do picia. Ziemia jest w sam raz daleko od Słońca, więc nie jest ani za gorąca, ani za zimna.',
    'Z kosmosu Ziemia wygląda jak niebieska kula. Aż 71 procent jej powierzchni pokrywa woda. Widać też białe chmury i brązowe lądy. Dlatego mówimy na nią Błękitna Planeta.',
    'Ziemia kręci się wokół własnej osi. Jeden obrót trwa 24 godziny, czyli jedną dobę. Dzięki temu jest dzień i noc. Wokół Słońca Ziemia okrąża się raz na rok, czyli w 365 dni.',
    'Wokół Ziemi krąży Księżyc. To nasz jedyny naturalny księżyc. Zawsze pokazuje nam tę samą stronę. W 1969 roku stanęli na nim pierwsi ludzie.',
    'Ziemię chroni atmosfera, czyli warstwa powietrza. Większość małych skał, które lecą z kosmosu, spala się w niej wysoko nad nami. My widzimy to jako spadające gwiazdy. Możesz wtedy pomyśleć życzenie!'
+  ]},
+ {id: 'moon', kind: 'moon', parentId: 'earth', name: 'Księżyc', type: 'Nasz księżyc', intro: 'Księżyc.', color: '#b9b9c4', radius: 3, orbit: 145, moonOrbit: 26, period: 27.3, startPhase: .5, texture: 'moon_photo', photo: true, activity: 'moon',
+  facts: [
+   'Księżyc to nasz najbliższy sąsiad w kosmosie. Krąży wokół Ziemi raz na około 27 dni. Zawsze pokazuje nam tę samą stronę — jakby patrzył na nas jednym okiem!',
+   'Na Księżycu nie ma powietrza, wiatru ani deszczu. Niebo jest tam czarne nawet w dzień. Astronauci musieli mieć specjalne skafandry, żeby móc tam oddychać.',
+   'W 1969 roku wylądowali na Księżycu pierwsi ludzie — Neil Armstrong i Buzz Aldrin. Neil powiedział słynne słowa: „To mały krok dla człowieka, a wielki skok dla ludzkości”.',
+   'Księżyc nie świeci sam z siebie — odbija światło Słońca, dlatego świeci na niebie. Gdy Ziemia zasłania Słońce, Księżyc robi się ciemny — to zaćmienie Księżyca.',
+   'Księżyc przyciąga wodę w oceanach. Dzięki temu mamy przypływy i odpływy — morze podnosi się i opada dwa razy na dobę!'
   ]},
  {id: 'mars', surface: 'mars', kind: 'planet', name: 'Mars', type: 'Czwarta planeta od Słońca', color: '#d75a36', radius: 6, orbit: 184, period: 687, startPhase: 5.5, texture: 'mars', activity: 'rover',
   facts: [
@@ -628,6 +636,12 @@ const finds = [
    'W lipcu 2015 roku przeleciała tuż obok Plutona z prędkością około 50 tysięcy kilometrów na godzinę. Zrobiła zdjęcie serca Plutona i znalazła góry z lodu.',
    'Potem poleciała dalej, w stronę lodowych światów na krańcach Układu Słonecznego. W 2019 roku odwiedziła lodowo-skalny obiekt Arrokoth, który wygląda jak bałwanek z dwóch kul.'
   ]},
+ {id: 'ingenuity', parentId: 'mars', name: 'Helikopter Ingenuity', type: 'Znajdźka: mały helikopter', intro: 'Helikopter Ingenuity.', sprite: null, draw: 'ingenuity', activity: 'parts',
+  facts: [
+   'Ingenuity to mały helikopter, który poleciał razem z łazikiem Perseverance. Był pierwszym helikopterem, który latał na innej planecie!',
+   'Na Marsie powietrze jest bardzo cienkie, więc łopatki Ingenuity musiały kręcić się bardzo, bardzo szybko — ponad 2500 razy na minutę!',
+   'Ingenuity był planowany na 5 lotów, a zrobił ich aż 72! Pracował prawie 3 lata.'
+  ]},
  {id: 'giotto', parentId: 'halley', name: 'Sonda Giotto', type: 'Sonda kosmiczna', intro: 'Sonda Giotto.', sprite: null, draw: 'giotto', activity: 'parts',
   facts: [
    'W 1986 roku europejska sonda Giotto podleciała do jądra komety Halleya. Zbliżyła się do niego na około 600 kilometrów.',
@@ -680,6 +694,11 @@ const PARTS = {
   {name: 'Antena', ask: 'Gdzie jest antena? To duży, biały talerz.', hint: 'Szukaj dużego, białego talerza na górze.', ok: 'To antena. Dzięki niej sonda wysłała na Ziemię zdjęcia Plutona.', hits: [[.5, .27, .17]]},
   {name: 'Generator prądu', ask: 'Teraz znajdź generator prądu. To szary walec z boku.', hint: 'Szukaj szarego walca z prawej strony.', ok: 'To generator prądu. Przy Plutonie Słońce prawie nie świeci, więc sonda nie ma paneli, tylko taki mały generator.', hits: [[.82, .55, .12]]}
  ]},
+ ingenuity: {draw: 'ingenuity', parts: [
+  {name: 'Wirniki', ask: 'Gdzie są wirniki? To dwa duże śmigła na górze.', hint: 'Szukaj dwóch dużych, białych kół na górze.', ok: 'To wirniki — dwa śmigła kręcące się w przeciwnych stronach. Dzięki nim helikopter unosi się w cienkim marsjańskim powietrzu.', hits: [[.28, .18, .16], [.72, .18, .16]]},
+  {name: 'Kadłub', ask: 'Teraz znajdź kadłub. To małe pudełko na dole.', hint: 'Szukaj małego, biało-pomarańczowego pudełka pod wirnikami.', ok: 'To kadłub. W środku są kamery i komputer. Ingenuity jest wielkości pudełka na chusteczki!', hits: [[.5, .68, .18]]},
+  {name: 'Nóżki', ask: 'Na koniec znajdź nóżki. To cienkie patyczki na dole.', hint: 'Szukaj cienkich czarnych patyczków pod kadłubem.', ok: 'To nóżki. Dzięki nim Ingenuity ląduje na kamieniach i piasku Marsa.', hits: [[.38, .92, .08], [.62, .92, .08]]}
+ ]},
  giotto: {draw: 'giotto', parts: [
   {name: 'Antena', ask: 'Gdzie jest antena? To okrągły talerz na górze.', hint: 'Szukaj okrągłego talerza na górze.', ok: 'To antena. Dzięki niej Giotto przesłała zdjęcia komety.', hits: [[.5, .2, .15]]},
   {name: 'Tarcza przed pyłem', ask: 'Teraz znajdź tarczę przed pyłem. To płaski dysk na dole sondy.', hint: 'Szukaj płaskiego dysku na samym dole.', ok: 'To tarcza przed pyłem. Chroniła sondę przed drobinkami pyłu z komety.', hits: [[.5, .82, .17]]}
@@ -687,6 +706,8 @@ const PARTS = {
 };
 
 const TOTAL_ITEMS = bodies.length + finds.length;
+const taskCount = item => (item.activity ? 1 : 0) + (item.activity2 ? 1 : 0);
+const TOTAL_TASKS = bodies.reduce((sum, body) => sum + taskCount(body), 0) + finds.reduce((sum, find) => sum + taskCount(find), 0);
 const bodyIndex = id => bodies.findIndex(body => body.id === id);
 const knownIds = new Set([...bodies.map(body => body.id), ...finds.map(find => find.id)]);
 
@@ -936,6 +957,15 @@ function bodyOffset(body, scaleValue) {
  if (body.kind === 'comet') {
   const state = cometState(body);
   return {x: state.x * scaleValue, y: state.y * scaleValue * view.tilt, distance: state.distance};
+ }
+ if (body.kind === 'moon') {
+  const parentOffset = bodyOffset(bodies[bodyIndex(body.parentId)], scaleValue);
+  const phase = orbitPhase(body);
+  return {
+   x: parentOffset.x + Math.cos(phase) * body.moonOrbit * scaleValue,
+   y: parentOffset.y + Math.sin(phase) * body.moonOrbit * scaleValue * view.tilt,
+   distance: parentOffset.distance
+  };
  }
  const phase = orbitPhase(body);
  return {x: Math.cos(phase) * body.orbit * scaleValue, y: Math.sin(phase) * body.orbit * scaleValue * view.tilt, distance: body.orbit};
@@ -1191,7 +1221,7 @@ function drawSun(frame) {
 function drawOrbits(frame) {
  ctx.lineWidth = 1;
  bodies.forEach((body, index) => {
-  if (body.kind === 'star') return;
+  if (body.kind === 'star' || body.kind === 'moon') return;
   const selected = index === view.selected;
   ctx.strokeStyle = selected ? 'rgba(88,185,255,.6)' : 'rgba(104,171,239,.29)';
   ctx.setLineDash(body.kind === 'planet' ? [] : [4, 6]);
@@ -1207,6 +1237,15 @@ function drawOrbits(frame) {
   } else {
    ctx.ellipse(frame.sunX, frame.sunY, body.orbit * frame.scale, body.orbit * frame.scale * view.tilt, 0, 0, TAU);
   }
+  ctx.stroke();
+ });
+ bodies.forEach((body, index) => {
+  if (body.kind !== 'moon') return;
+  const parentOffset = bodyOffset(bodies[bodyIndex(body.parentId)], frame.scale);
+  ctx.strokeStyle = index === view.selected ? 'rgba(88,185,255,.6)' : 'rgba(104,171,239,.29)';
+  ctx.setLineDash([3, 5]);
+  ctx.beginPath();
+  ctx.ellipse(frame.sunX + parentOffset.x, frame.sunY + parentOffset.y, body.moonOrbit * frame.scale, body.moonOrbit * frame.scale * view.tilt, 0, 0, TAU);
   ctx.stroke();
  });
  ctx.setLineDash([]);
@@ -1709,7 +1748,7 @@ function renderInfo() {
    icon.style.background = `#0b1c3a url(${ASSET_DATA[item.sprite]}) center/78% no-repeat`;
   } else icon.textContent = '🛰';
  } else {
-  icon.textContent = body.kind === 'star' ? '☀️' : '';
+  icon.textContent = body.kind === 'star' ? '☀️' : body.kind === 'moon' ? '🌙' : '';
   const photo = body.photo && ASSET_DATA[body.texture];
   icon.style.background = photo ? `url(${photo}) center/cover` : `radial-gradient(circle at 30% 28%,${lighten(body.color, 1.5)},${body.color} 48%,#060b18)`;
  }
@@ -1878,6 +1917,7 @@ function bodyEmoji(body) {
   case 'mercury': return '⚪';
   case 'venus': return '🟡';
   case 'earth': return '🌍';
+  case 'moon': return '🌙';
   case 'mars': return '🔴';
   case 'ceres': return '🪨';
   case 'jupiter': return '🟤';
@@ -1897,8 +1937,9 @@ function renderLists() {
   const label = done ? `${emoji} ${escapeHtml(item.name)}` : '❓ ???';
   return `<div class="listitem${done ? ' done' : ' locked'}"><span class="listico">${emoji}</span><span class="listlabel">${label}</span><span class="listcheck">✓</span></div>`;
  };
+ const tasksDone = item => doneTasks.has(item.id) && (!item.activity2 || doneTasks.has(`${item.id}#2`));
  byId('discoverList').innerHTML = all.map(item => itemHtml(item, discovered.has(item.id))).join('');
- byId('taskList').innerHTML = all.map(item => itemHtml(item, doneTasks.has(item.id))).join('');
+ byId('taskList').innerHTML = all.map(item => itemHtml(item, tasksDone(item))).join('');
 }
 
 function openLists() {
@@ -1978,7 +2019,7 @@ canvas.addEventListener('wheel', event => {
 }, {passive: false});
 
 
-/* ---------- rysowane sondy (New Horizons, Giotto) ---------- */
+/* ---------- rysowane sondy (New Horizons, Giotto, Ingenuity) ---------- */
 
 function drawDish(c, x, y, rx, ry, tilt, rim, inner) {
  c.save();
@@ -2127,6 +2168,87 @@ const PROBE_BOX = {
   c.beginPath();
   c.arc(w * .5, h * .19, w * .012, 0, TAU);
   c.fill();
+ },
+ ingenuity(c, w, h) {
+  c.lineJoin = 'round';
+  c.lineCap = 'round';
+  /* nóżki: cztery cienkie patyczki rozchylone na boki */
+  c.strokeStyle = '#2a2d33';
+  c.lineWidth = Math.max(2, w * .012);
+  c.beginPath();
+  c.moveTo(w * .42, h * .78);
+  c.lineTo(w * .36, h * .94);
+  c.moveTo(w * .58, h * .78);
+  c.lineTo(w * .64, h * .94);
+  c.moveTo(w * .46, h * .8);
+  c.lineTo(w * .42, h * .96);
+  c.moveTo(w * .54, h * .8);
+  c.lineTo(w * .58, h * .96);
+  c.stroke();
+  /* małe kółka na końcach nóżek */
+  c.fillStyle = '#2a2d33';
+  [[.36, .94], [.64, .94], [.42, .96], [.58, .96]].forEach(([px, py]) => {
+   c.beginPath();
+   c.arc(w * px, h * py, w * .018, 0, TAU);
+   c.fill();
+  });
+  /* słupki od kadłuba do wirników */
+  c.strokeStyle = '#6a7284';
+  c.lineWidth = Math.max(2, w * .014);
+  c.beginPath();
+  c.moveTo(w * .28, h * .3);
+  c.lineTo(w * .4, h * .62);
+  c.moveTo(w * .72, h * .3);
+  c.lineTo(w * .6, h * .62);
+  c.stroke();
+  /* kadłub: małe pudełko, białe z pomarańczowym panelem na górze */
+  const body = c.createLinearGradient(w * .34, 0, w * .66, 0);
+  body.addColorStop(0, '#cfc9bd');
+  body.addColorStop(.5, '#f5f1e8');
+  body.addColorStop(1, '#b8b1a3');
+  c.fillStyle = body;
+  c.fillRect(w * .34, h * .56, w * .32, h * .24);
+  c.strokeStyle = 'rgba(90,80,60,.5)';
+  c.lineWidth = Math.max(1, w * .006);
+  c.stroke();
+  /* panel słoneczny na górze kadłuba */
+  c.fillStyle = '#e8862e';
+  c.fillRect(w * .38, h * .56, w * .24, h * .07);
+  c.fillStyle = 'rgba(255,255,255,.35)';
+  for (let stripe = 0; stripe < 4; stripe++) c.fillRect(w * (.4 + stripe * .055), h * .565, w * .012, h * .06);
+  /* kamera pod kadłubem */
+  c.fillStyle = '#394050';
+  c.beginPath();
+  c.arc(w * .5, h * .82, w * .035, 0, TAU);
+  c.fill();
+  c.fillStyle = '#9fd8ff';
+  c.beginPath();
+  c.arc(w * .49, h * .81, w * .014, 0, TAU);
+  c.fill();
+  /* wirniki: dwa duże śmigła u góry, po lewej i prawej */
+  const rotor = cx => {
+   c.fillStyle = '#454b57';
+   c.beginPath();
+   c.arc(w * cx, h * .18, w * .025, 0, TAU);
+   c.fill();
+   c.strokeStyle = '#33373f';
+   c.lineWidth = Math.max(2, w * .014);
+   c.beginPath();
+   c.ellipse(w * cx, h * .18, w * .16, h * .035, 0, 0, TAU);
+   c.stroke();
+   c.beginPath();
+   c.ellipse(w * cx, h * .18, w * .035, h * .16, 0, 0, TAU);
+   c.stroke();
+   c.fillStyle = '#c9cfda';
+   c.beginPath();
+   c.arc(w * cx - w * .15, h * .18, w * .018, 0, TAU);
+   c.arc(w * cx + w * .15, h * .18, w * .018, 0, TAU);
+   c.arc(w * cx, h * .18 - h * .15, w * .018, 0, TAU);
+   c.arc(w * cx, h * .18 + h * .15, w * .018, 0, TAU);
+   c.fill();
+  };
+  rotor(.28);
+  rotor(.72);
  }
 };
 
@@ -2137,6 +2259,7 @@ const actCanvas = byId('actCanvas');
 const actCtx = actCanvas.getContext('2d');
 let activeActivity = null;
 let activeItem = null;
+let activeSlot = 0;
 
 function makeLayer(width, height) {
  const layer = document.createElement('canvas');
@@ -2156,8 +2279,10 @@ try {
  });
 } catch (error) {}
 
+function taskKey(item, slot) { return slot ? `${item.id}#2` : item.id; }
+
 function renderTaskbook() {
- byId('taskbook').textContent = `⭐ Zadania ${doneTasks.size} z ${TOTAL_ITEMS}`;
+ byId('taskbook').textContent = `⭐ Zadania ${doneTasks.size} z ${TOTAL_TASKS}`;
 }
 
 function markTaskDone(id) {
@@ -2178,7 +2303,7 @@ function logActivity(text) {
 function finishActivity(text) {
  fxPlay('win');
  logActivity(text);
- if (activeItem) markTaskDone(activeItem.id);
+ if (activeItem) markTaskDone(taskKey(activeItem, activeSlot));
  byId('actDone').hidden = false;
 }
 
@@ -3174,9 +3299,11 @@ function createMoonActivity() {
   found.add(hit.id);
   fxPlay('ok');
   render();
-  const summary = found.size === MOON_DIFFS.length ? ' Znalazłaś wszystkie różnice! Prawdziwy Księżyc wygląda jak Obrazek 1.' : '';
-  logActivity(`Znaleziono ${found.size} z ${MOON_DIFFS.length}. ${hit.text}${summary}`);
-  if (found.size === MOON_DIFFS.length) markTaskDone('earth');
+  if (found.size === MOON_DIFFS.length) {
+   finishActivity(`Znaleziono ${found.size} z ${MOON_DIFFS.length}. ${hit.text} Znalazłaś wszystkie różnice! Prawdziwy Księżyc wygląda jak Obrazek 1.`);
+  } else {
+   logActivity(`Znaleziono ${found.size} z ${MOON_DIFFS.length}. ${hit.text}`);
+  }
  };
  return {title: '🌙 Księżyc: znajdź 5 różnic', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
 }
@@ -3310,20 +3437,22 @@ const activityFactories = {
  tail: createTailActivity
 };
 
-function openActivity(item) {
- if (!item || !item.activity || activeActivity) return;
+function openActivity(item, slot = 0) {
+ const kind = slot ? item.activity2 : item.activity;
+ if (!item || !kind || activeActivity) return;
  stopSpeech();
  setReading(false);
  highlightSentence(-1);
- const factory = item.activity === 'parts' ? () => createPartsActivity(item) : activityFactories[item.activity];
+ const factory = kind === 'parts' ? () => createPartsActivity(item) : activityFactories[kind];
  if (!factory) return;
  activeItem = item;
+ activeSlot = slot;
  activeActivity = factory();
  byId('actTitle').textContent = activeActivity.title;
  byId('actLead').textContent = activeActivity.lead;
  byId('actLog').innerHTML = '';
- byId('actDone').hidden = !doneTasks.has(item.id);
- byId('actSay').classList.toggle('done', doneTasks.has(item.id));
+ byId('actDone').hidden = !doneTasks.has(taskKey(item, slot));
+ byId('actSay').classList.toggle('done', doneTasks.has(taskKey(item, slot)));
  actCanvas.width = activeActivity.width * ACT_SCALE;
  actCanvas.height = activeActivity.height * ACT_SCALE;
  actCtx.setTransform(ACT_SCALE, 0, 0, ACT_SCALE, 0, 0);
@@ -3337,6 +3466,7 @@ function openActivity(item) {
 function closeActivity() {
  activeActivity = null;
  activeItem = null;
+ activeSlot = 0;
  activityOverlay.hidden = true;
  stopSpeech();
 }
@@ -3378,7 +3508,12 @@ byId('readAgain').addEventListener('click', () => {
  } else if (hasChosen) readFrom(0, true);
 });
 document.querySelectorAll('[data-home]').forEach(button => button.addEventListener('click', resetView));
-byId('activityBtn').addEventListener('click', () => openActivity(currentItem()));
+let activitySlot = 0;
+byId('activityBtn').addEventListener('click', () => {
+ const item = currentItem();
+ activitySlot = item.activity2 && doneTasks.has(item.id) && !doneTasks.has(`${item.id}#2`) ? 1 : 0;
+ openActivity(item, activitySlot);
+});
 byId('fact').addEventListener('click', () => {
  if (!hasChosen) return;
  readFrom((factIndex + 1) % currentItem().facts.length, false);

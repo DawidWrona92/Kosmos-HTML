@@ -18,7 +18,6 @@ const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const BUILT = path.join(ROOT, 'kosmos_dla_corki.html');
-const EXPECTED_DONE = 23;
 
 /* ---------- mock płótna 2d ---------- */
 
@@ -177,6 +176,11 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 /* ---------- przejście wszystkich zadań ---------- */
 
 const items = [...t.bodies, ...t.finds];
+const jobs = [];
+for (const item of items) {
+  if (item.activity) jobs.push([item, 0]);
+  if (item.activity2) jobs.push([item, 1]);
+}
 let failures = 0;
 
 function gridClicks(act, step = 10) {
@@ -194,12 +198,13 @@ function itemDone() {
   return currentItemId && t.doneTasks.has(currentItemId);
 }
 
-async function complete(item) {
-  currentItemId = item.id;
-  t.openActivity(item);
+async function complete(item, slot = 0) {
+  currentItemId = slot ? `${item.id}#2` : item.id;
+  t.openActivity(item, slot);
   const act = t.getActive();
   if (!act) throw new Error('aktywność nie została utworzona');
-  if (item.activity === 'venus' || item.activity === 'rover') {
+  const kind = slot ? item.activity2 : item.activity;
+  if (kind === 'venus' || kind === 'rover') {
     // wycieranie: siatka przeciągnięć; test czeka między krokami, bo aplikacja
     // sprawdza ilość pozostałego brudu nie częściej niż co 120 ms
     act.onDown({x: 0, y: 0});
@@ -211,15 +216,15 @@ async function complete(item) {
       await sleep(140);
     }
     act.onUp();
-  } else if (item.activity === 'uranus') {
+  } else if (kind === 'uranus') {
     act.onDown({x: act.width / 2, y: act.height / 2});
     for (let x = act.width / 2; x <= act.width; x += 8) act.onMove({x, y: act.height / 2});
     act.onUp();
-  } else if (item.activity === 'tail') {
+  } else if (kind === 'tail') {
     act.onDown({x: 96 + 178, y: 252});
     for (let a = 0; a < 2.6; a += .04) act.onMove({x: 96 + Math.cos(a) * 178, y: 252 + Math.sin(a) * 178});
     act.onUp();
-  } else if (item.activity === 'moon') {
+  } else if (kind === 'moon') {
     const diffs = [
       {x: 343, y: 100}, {x: 470, y: 42}, {x: 168, y: 172}, {x: 445, y: 178}, {x: 280, y: 50}
     ];
@@ -229,13 +234,13 @@ async function complete(item) {
       act.onDown({x: d.x, y: d.y + 212});
       act.onUp();
     }
-  } else if (item.activity === 'neptune') {
+  } else if (kind === 'neptune') {
     // Tryton siedzi w miejscu wynikającym z czasu ostatniej klatki
     if (act.frame) act.frame(.016, 5000);
     const angle = 5000 * .0016;
     act.onDown({x: 280 + Math.cos(angle) * 209, y: 170 + Math.sin(angle) * 114.95});
     act.onUp();
-  } else if (item.activity === 'parts') {
+  } else if (kind === 'parts') {
     // klikamy dokładnie w hit areas kolejnych części (różne miejsca przy count > 1)
     // imgRect liczymy tak samo jak aplikacja: obraz „contain” w 560x340 z marginesem 60
     const spec = t.PARTS[item.sprite || item.draw];
@@ -259,28 +264,28 @@ async function complete(item) {
   if (act.frame) act.frame(.016, performance.now() + 100);
   t.closeActivity();
   currentItemId = null;
-  if (!t.doneTasks.has(item.id)) throw new Error('zadanie nie zostało oznaczone jako wykonane');
+  if (!t.doneTasks.has(slot ? `${item.id}#2` : item.id)) throw new Error('zadanie nie zostało oznaczone jako wykonane');
 }
 
 (async () => {
-  for (const item of items) {
+  for (const [item, slot] of jobs) {
     try {
-      await complete(item);
-      console.log(`OK   ${item.id} (${item.activity})`);
+      await complete(item, slot);
+      console.log(`OK   ${item.id}${slot ? ' (zadanie 2)' : ''} (${slot ? item.activity2 : item.activity})`);
     } catch (error) {
       failures++;
-      console.error(`FAIL ${item.id} (${item.activity}): ${error.message}`);
+      console.error(`FAIL ${item.id}${slot ? ' (zadanie 2)' : ''} (${slot ? item.activity2 : item.activity}): ${error.message}`);
     }
   }
   const doneCount = t.doneTasks.size;
-  console.log(`wykonanych zadań: ${doneCount}/${items.length}`);
-  if (doneCount !== EXPECTED_DONE) {
-    console.error(`OCZEKIWANO ${EXPECTED_DONE} wykonanych zadań`);
+  console.log(`wykonanych zadań: ${doneCount}/${jobs.length}`);
+  if (doneCount !== jobs.length) {
+    console.error(`OCZEKIWANO ${jobs.length} wykonanych zadań`);
     failures++;
   }
   if (failures) {
     console.error(`PORAŻKI: ${failures}`);
     process.exit(1);
   }
-  console.log(`WSZYSTKIE ${items.length} ZADANIA PRZESZŁY`);
+  console.log(`WSZYSTKIE ${jobs.length} ZADANIA PRZESZŁY`);
 })();

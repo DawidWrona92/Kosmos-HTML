@@ -1,4 +1,4 @@
-/* ---------- rysowane sondy (New Horizons, Giotto) ---------- */
+/* ---------- rysowane sondy (New Horizons, Giotto, Ingenuity) ---------- */
 
 function drawDish(c, x, y, rx, ry, tilt, rim, inner) {
  c.save();
@@ -147,5 +147,86 @@ const PROBE_BOX = {
   c.beginPath();
   c.arc(w * .5, h * .19, w * .012, 0, TAU);
   c.fill();
+ },
+ ingenuity(c, w, h) {
+  c.lineJoin = 'round';
+  c.lineCap = 'round';
+  /* nóżki: cztery cienkie patyczki rozchylone na boki */
+  c.strokeStyle = '#2a2d33';
+  c.lineWidth = Math.max(2, w * .012);
+  c.beginPath();
+  c.moveTo(w * .42, h * .78);
+  c.lineTo(w * .36, h * .94);
+  c.moveTo(w * .58, h * .78);
+  c.lineTo(w * .64, h * .94);
+  c.moveTo(w * .46, h * .8);
+  c.lineTo(w * .42, h * .96);
+  c.moveTo(w * .54, h * .8);
+  c.lineTo(w * .58, h * .96);
+  c.stroke();
+  /* małe kółka na końcach nóżek */
+  c.fillStyle = '#2a2d33';
+  [[.36, .94], [.64, .94], [.42, .96], [.58, .96]].forEach(([px, py]) => {
+   c.beginPath();
+   c.arc(w * px, h * py, w * .018, 0, TAU);
+   c.fill();
+  });
+  /* słupki od kadłuba do wirników */
+  c.strokeStyle = '#6a7284';
+  c.lineWidth = Math.max(2, w * .014);
+  c.beginPath();
+  c.moveTo(w * .28, h * .3);
+  c.lineTo(w * .4, h * .62);
+  c.moveTo(w * .72, h * .3);
+  c.lineTo(w * .6, h * .62);
+  c.stroke();
+  /* kadłub: małe pudełko, białe z pomarańczowym panelem na górze */
+  const body = c.createLinearGradient(w * .34, 0, w * .66, 0);
+  body.addColorStop(0, '#cfc9bd');
+  body.addColorStop(.5, '#f5f1e8');
+  body.addColorStop(1, '#b8b1a3');
+  c.fillStyle = body;
+  c.fillRect(w * .34, h * .56, w * .32, h * .24);
+  c.strokeStyle = 'rgba(90,80,60,.5)';
+  c.lineWidth = Math.max(1, w * .006);
+  c.stroke();
+  /* panel słoneczny na górze kadłuba */
+  c.fillStyle = '#e8862e';
+  c.fillRect(w * .38, h * .56, w * .24, h * .07);
+  c.fillStyle = 'rgba(255,255,255,.35)';
+  for (let stripe = 0; stripe < 4; stripe++) c.fillRect(w * (.4 + stripe * .055), h * .565, w * .012, h * .06);
+  /* kamera pod kadłubem */
+  c.fillStyle = '#394050';
+  c.beginPath();
+  c.arc(w * .5, h * .82, w * .035, 0, TAU);
+  c.fill();
+  c.fillStyle = '#9fd8ff';
+  c.beginPath();
+  c.arc(w * .49, h * .81, w * .014, 0, TAU);
+  c.fill();
+  /* wirniki: dwa duże śmigła u góry, po lewej i prawej */
+  const rotor = cx => {
+   c.fillStyle = '#454b57';
+   c.beginPath();
+   c.arc(w * cx, h * .18, w * .025, 0, TAU);
+   c.fill();
+   c.strokeStyle = '#33373f';
+   c.lineWidth = Math.max(2, w * .014);
+   c.beginPath();
+   c.ellipse(w * cx, h * .18, w * .16, h * .035, 0, 0, TAU);
+   c.stroke();
+   c.beginPath();
+   c.ellipse(w * cx, h * .18, w * .035, h * .16, 0, 0, TAU);
+   c.stroke();
+   c.fillStyle = '#c9cfda';
+   c.beginPath();
+   c.arc(w * cx - w * .15, h * .18, w * .018, 0, TAU);
+   c.arc(w * cx + w * .15, h * .18, w * .018, 0, TAU);
+   c.arc(w * cx, h * .18 - h * .15, w * .018, 0, TAU);
+   c.arc(w * cx, h * .18 + h * .15, w * .018, 0, TAU);
+   c.fill();
+  };
+  rotor(.28);
+  rotor(.72);
  }
 };
