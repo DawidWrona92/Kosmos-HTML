@@ -1,0 +1,1719 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#020611">
+<title>Mój Kosmos</title>
+<style>
+:root{color-scheme:dark;--blue:#40b8ff;--gold:#ffd95a;--panel:rgba(5,16,36,.92);--line:rgba(110,180,255,.38)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#020611;color:#f2f8ff;font-family:ui-rounded,"Nunito","Baloo 2",Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none}
+canvas{display:block}
+#space{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:pointer}
+.top{position:absolute;top:16px;left:18px;display:flex;align-items:center;gap:12px;pointer-events:none;text-shadow:0 2px 18px #000}
+.logo{width:50px;height:50px;border:2px solid var(--gold);border-radius:50%;display:grid;place-items:center;font-size:28px;box-shadow:0 0 24px #ffb43a66;flex:none}
+h1{font-size:clamp(22px,2.6vw,30px);margin:0;font-weight:800;letter-spacing:-.3px;line-height:1.1}
+.sub{font-size:14px;color:#ffe9a8;margin-top:3px;font-weight:600}
+.notebook{margin-left:8px;padding:8px 14px;border-radius:999px;background:rgba(5,16,36,.88);border:1px solid var(--line);color:#cfe6ff;font-weight:700;font-size:15px;white-space:nowrap;text-shadow:none}
+.panel{position:absolute;background:var(--panel);border:1px solid var(--line);box-shadow:0 14px 50px #0009,inset 0 1px #ffffff10;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-radius:22px}
+.dock{display:contents}
+.info{right:18px;top:18px;width:min(380px,calc(100vw - 36px));padding:18px;max-height:calc(100vh - 130px);overflow:auto}
+.infohead{display:flex;align-items:center;gap:14px}
+.planet-icon{width:64px;height:64px;border-radius:50%;flex:none;box-shadow:inset -10px -6px 14px #0009,0 0 20px #ffb43a33;display:grid;place-items:center;font-size:30px}
+.infotext{min-width:0}
+.info h2{font-size:28px;margin:0;line-height:1.1;font-weight:800}
+.muted{color:#b9d0ee;font-size:14px;margin-top:3px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{background:#0b2a4d;border:1px solid #2f6aa8;border-radius:999px;padding:6px 12px;font-size:14px;font-weight:700}
+.chip.hint{border-color:var(--gold);color:var(--gold)}
+.factbox{margin-top:14px;padding:14px 16px;border-radius:18px;background:linear-gradient(160deg,#112d55,#0a1c38);border:1px solid #2f6aa8}
+.factlabel{font-size:13px;color:var(--gold);font-weight:800;margin-bottom:6px}
+.fact{font-size:19px;line-height:1.4;font-weight:700;margin:0;min-height:calc(1.4em * 5)}
+.fact.pop{animation:pop .35s}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.dots{display:flex;gap:6px;margin-top:10px}
+.dots i{width:10px;height:10px;border-radius:50%;background:#2d4f78}
+.dots i.on{background:var(--gold)}
+.row{display:flex;gap:8px;margin-top:12px}
+button{font:inherit;color:#f2f8ff;border:2px solid #3a78b8;background:#08203c;border-radius:16px;cursor:pointer;transition:.12s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:hover{border-color:var(--blue);background:#0c335c}
+button:active{transform:scale(.96)}
+button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px rgba(255,217,90,.3)}
+.btn{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:58px;padding:6px 8px;font-size:13px;font-weight:700;line-height:1.15}
+.row.facts{flex-wrap:wrap}
+#activityBtn{flex:1 1 100%}
+.btn .ico{font-size:24px;line-height:1}
+.btn.wide{flex-direction:row;gap:8px;font-size:15px}
+.btn.wide .ico{font-size:21px}
+.controls{left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;padding:10px;border-radius:24px}
+.controls .btn{width:88px;flex:none}
+.activity{position:fixed;inset:0;background:rgba(2,6,17,.82);z-index:20;overflow:auto;padding:16px;display:grid;align-items:start;justify-items:center}
+.activity .card{width:min(620px,100%);margin:auto;padding:16px;border-radius:24px;background:linear-gradient(160deg,#102a52,#0a1c38);border:2px solid #2f6aa8;box-shadow:0 0 60px #000}
+.acthead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.acthead h2{margin:0;font-size:24px}
+.acthead button{width:48px;height:48px;font-size:20px;flex:none}
+.actlead{margin:10px 0 12px;font-size:17px;line-height:1.4;font-weight:600;color:#d8e8ff}
+#actCanvas{width:auto;height:auto;max-width:100%;max-height:calc(100vh - 230px);margin:0 auto;border-radius:16px;touch-action:none;background:#000;cursor:crosshair}
+.actlog{margin-top:12px}
+.actlog p{margin:0 0 10px;padding:10px 14px;border-radius:14px;background:#0b2a4d;border:1px solid #2f6aa8;font-size:16px;line-height:1.4;font-weight:600;animation:pop .35s}
+
+@media (max-width:1200px){
+ .top{top:12px;left:14px}
+ .logo{width:40px;height:40px;font-size:22px}
+ h1{font-size:21px}
+ .sub{font-size:12px}
+ .notebook{font-size:12px;padding:5px 10px;margin-left:4px}
+ .dock{position:absolute;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"info" "controls";gap:8px;pointer-events:none}
+ .dock>.panel{position:static;transform:none;width:auto;pointer-events:auto}
+ .info{grid-area:info;padding:12px;max-height:none;border-radius:20px}
+ .planet-icon{width:48px;height:48px;font-size:24px}
+ .info h2{font-size:22px}
+ .muted{font-size:12px}
+ .chips{margin-top:10px;gap:6px}
+ .chip{font-size:12px;padding:4px 9px}
+ .factbox{margin-top:10px;padding:10px 12px}
+ .factlabel{font-size:12px;margin-bottom:4px}
+ .fact{font-size:16px;min-height:calc(1.4em * 4)}
+ .dots{display:none}
+ .row{margin-top:8px}
+ .btn{min-height:50px;font-size:12px}
+ .row.facts{flex-wrap:nowrap}
+ #activityBtn{flex:1 1 0}
+ .btn.wide{flex-direction:column;font-size:12px;gap:2px;padding:4px}
+ .btn.wide .ico{font-size:20px}
+ .controls{grid-area:controls;display:grid;grid-template-columns:repeat(6,1fr);padding:8px;gap:6px;border-radius:20px}
+ .controls .btn{width:auto;min-height:54px;padding:4px 2px;font-size:11px}
+ .controls .btn .ico{font-size:22px}
+}
+@media (max-width:700px) and (max-height:780px){
+ .chips{display:none}
+}
+@media (max-width:1200px) and (max-height:520px) and (orientation:landscape){
+ .dock{left:auto;width:min(400px,52vw);top:10px;align-content:end}
+ .info{max-height:calc(100vh - 92px);overflow:auto;padding:8px 12px}
+ .chips{display:none}
+ .planet-icon{width:34px;height:34px;font-size:18px}
+ .info h2{font-size:19px}
+ .muted{font-size:11px}
+ .factbox{margin-top:6px;padding:8px 12px}
+ .factlabel{margin-bottom:2px}
+ .fact{font-size:14px;min-height:calc(1.35em * 3)}
+ .row{margin-top:6px}
+ .info .btn{min-height:40px}
+ .btn.wide{flex-direction:row;gap:6px}
+ .btn.wide .ico{font-size:17px}
+ .controls{padding:6px}
+ .controls .btn{min-height:46px}
+ .controls .btn .ico{font-size:18px}
+}
+</style>
+</head>
+<body>
+<canvas id="space" role="img" aria-label="Układ Słoneczny. Dotknij planety, żeby się o niej czegoś dowiedzieć."></canvas>
+<div class="top">
+ <div class="logo">☀️</div>
+ <div><h1>Mój Kosmos</h1><div class="sub">Dotknij planetę, żeby ją poznać</div></div>
+ <div class="notebook" id="notebook">📓 Odkryto 0 z 0</div>
+</div>
+<div class="dock" id="dock">
+ <section class="panel info" id="info">
+  <div class="infohead">
+   <div class="planet-icon" id="planetIcon"></div>
+   <div class="infotext"><h2 id="planetName">Ziemia</h2><div class="muted" id="planetType"></div></div>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="factbox">
+   <div class="factlabel">💡 Czy wiesz, że…</div>
+   <p class="fact" id="fact"></p>
+   <div class="dots" id="dots"></div>
+  </div>
+  <div class="row facts">
+   <button class="btn wide" id="nextFact"><span class="ico">💡</span>Ciekawostka</button>
+   <button class="btn wide" id="readAgain"><span class="ico">🔊</span>Posłuchaj</button>
+   <button class="btn wide" id="activityBtn" hidden><span class="ico">🔬</span>Zadanie</button>
+  </div>
+  <div class="row">
+   <button class="btn" id="prev" aria-label="Poprzedni obiekt"><span class="ico">◀️</span>Wstecz</button>
+   <button class="btn" id="focusBtn"><span class="ico">🔍</span>Przybliż</button>
+   <button class="btn" id="resetBtn"><span class="ico">🏠</span>Cały układ</button>
+   <button class="btn" id="next" aria-label="Następny obiekt"><span class="ico">▶️</span>Dalej</button>
+  </div>
+ </section>
+ <section class="panel controls" id="controls">
+  <button class="btn" data-speed="10"><span class="ico">🐢</span><span class="lbl">Wolno</span></button>
+  <button class="btn active" data-speed="35"><span class="ico">🚶</span><span class="lbl">Normalnie</span></button>
+  <button class="btn" data-speed="100"><span class="ico">🐇</span><span class="lbl">Szybko</span></button>
+  <button class="btn" data-speed="200"><span class="ico">🚀</span><span class="lbl">Super</span></button>
+  <button class="btn" id="play"><span class="ico">⏸</span><span class="lbl">Stop</span></button>
+  <button class="btn" id="sound"><span class="ico">🔊</span><span class="lbl">Głos</span></button>
+ </section>
+</div>
+<div class="activity" id="activity" hidden>
+ <div class="card">
+  <div class="acthead"><h2 id="actTitle"></h2><button id="actClose" aria-label="Zamknij">✖</button></div>
+  <p class="actlead" id="actLead"></p>
+  <canvas id="actCanvas"></canvas>
+  <div class="actlog" id="actLog"></div>
+ </div>
+</div>
+<script>
+(() => {
+'use strict';
+
+const TAU = Math.PI * 2;
+const MAX_ORBIT = 570;
+const MIN_TILT = .12;
+const MAX_TILT = .95;
+const MIN_ZOOM = .5;
+const MAX_ZOOM = 16;
+const DEFAULT_SPEED = 35;
+const DAYS_PER_SPEED_UNIT = 1.2;
+const BELT_INNER = 208;
+const BELT_OUTER = 238;
+const ASTEROID_COUNT = 850;
+const ACT_SCALE = 2;
+
+const byId = id => document.getElementById(id);
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const canvas = byId('space');
+const ctx = canvas.getContext('2d');
+const infoPanel = byId('info');
+const dock = byId('dock');
+const controlsPanel = byId('controls');
+const compactQuery = window.matchMedia('(max-width:1200px)');
+const speechSupported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+
+/* ---------- dane ---------- */
+
+const bodies = [
+ {id: 'sun', kind: 'star', name: 'Słońce', type: 'Nasza gwiazda', color: '#ffb43a', radius: 25, followRadius: 100,
+  chips: ['⭐ Gwiazda', '🌡 Powierzchnia ok. 5500°C', '📏 109 razy szersze niż Ziemia'],
+  facts: [
+   'Słońce to gwiazda, czyli wielka kula gorącego gazu. Świeci własnym światłem.',
+   'Światło ze Słońca leci do nas około 8 minut. Widzimy je więc takie, jakie było 8 minut temu!',
+   'W Słońcu zmieściłoby się ponad milion Ziem.',
+   'Słońce ma około 5 miliardów lat i będzie świecić jeszcze bardzo, bardzo długo.',
+   'Nigdy nie patrz prosto na Słońce, bo to szkodzi oczom!'
+  ]},
+ {id: 'mercury', kind: 'planet', name: 'Merkury', type: 'Pierwsza planeta od Słońca', color: '#9b8d7a', radius: 4, orbit: 70, period: 88, startPhase: .8,
+  chips: ['🌙 Księżyce: 0', '🗓 Rok: 88 dni', '🔥❄️ Gorąco i zimno'],
+  facts: [
+   'Merkury jest najmniejszą planetą Układu Słonecznego. Jest tylko trochę większy od naszego Księżyca.',
+   'Rok na Merkurym trwa tylko 88 dni. To jakby urodziny co trzy miesiące!',
+   'W dzień na Merkurym jest około 430 stopni ciepła, a w nocy około 180 stopni mrozu. Prawie nie ma tam powietrza, które trzymałoby ciepło.',
+   'Od jednego wschodu Słońca do drugiego mija na Merkurym aż 176 ziemskich dni!'
+  ]},
+ {id: 'venus', kind: 'planet', name: 'Wenus', type: 'Druga planeta od Słońca', color: '#d7a75d', radius: 7, orbit: 106, period: 225, startPhase: 2.4,
+  chips: ['🌙 Księżyce: 0', '🗓 Rok: 225 dni', '🔥 Bardzo gorąco'],
+  facts: [
+   'Wenus jest najgorętszą planetą. Jest tam około 465 stopni, goręcej niż w piekarniku. Choć Merkury jest bliżej Słońca!',
+   'Wenus ma bardzo gęstą atmosferę, jak gruba kołdra. Zatrzymuje ciepło, a chmury składają się z kwaśnych kropelek.',
+   'Jeden obrót wokół własnej osi trwa na Wenus 243 dni, a rok 225 dni. Dzień jest więc dłuższy niż rok!',
+   'Wenus kręci się w drugą stronę niż Ziemia. Słońce wschodzi tam na zachodzie!',
+   'Wenus widać na niebie jako bardzo jasny punkt wieczorem lub rano. To planeta, nie gwiazda.'
+  ]},
+ {id: 'earth', kind: 'planet', name: 'Ziemia', type: 'Trzecia planeta od Słońca', color: '#268de0', radius: 8, orbit: 145, period: 365.25, startPhase: 4.1, surface: 'earth', activity: 'moon',
+  chips: ['🌙 Księżyce: 1', '🗓 Rok: 365 dni', '😊 W sam raz'],
+  facts: [
+   'Ziemia to nasz dom! To jedyna planeta, na której znamy życie: ludzi, zwierzęta i rośliny.',
+   'Ziemia jest niebieska, bo około 71 procent jej powierzchni pokrywa woda.',
+   'Księżyc krąży wokół Ziemi i zawsze pokazuje nam tę samą stronę. W 1969 roku stanęli na nim pierwsi ludzie.',
+   'Ziemia obraca się wokół własnej osi. Jeden obrót to doba, czyli dzień i noc.',
+   'Większość meteorów spala się w atmosferze Ziemi. Widzimy je jako spadające gwiazdy.'
+  ]},
+ {id: 'mars', kind: 'planet', name: 'Mars', type: 'Czwarta planeta od Słońca', color: '#d75a36', radius: 6, orbit: 184, period: 687, startPhase: 5.5, surface: 'mars', activity: 'rover',
+  chips: ['🌙 Księżyce: 2', '🗓 Rok: 687 dni', '❄️ Zimno'],
+  facts: [
+   'Mars jest czerwony, bo jego piasek zawiera dużo żelaza, które zardzewiało.',
+   'Na Marsie jest Olympus Mons, największy wulkan w Układzie Słonecznym. Jest około 2,5 raza wyższy niż Mount Everest!',
+   'Mars ma dwa małe księżyce, Fobosa i Deimosa. Wyglądają jak wielkie ziemniaki.',
+   'Po Marsie jeżdżą łaziki, czyli roboty badacze. W 2021 roku poleciał tam nawet mały helikopter Ingenuity!',
+   'Niebo na Marsie w dzień jest różowo-pomarańczowe, a zachód Słońca niebieski.'
+  ]},
+ {id: 'ceres', kind: 'dwarf', name: 'Ceres', type: 'Planeta karłowata w pasie planetoid', color: '#9a948c', radius: 2.5, orbit: 223, period: 1682, startPhase: .5, surface: 'ceres',
+  chips: ['🌙 Księżyce: 0', '🗓 Rok: 4,6 roku', '📏 Szerokość: 940 km'],
+  facts: [
+   'Ceres to największa skała w pasie planetoid i planeta karłowata. Ma około 940 kilometrów szerokości.',
+   'Pas planetoid to miliony skał krążących między Marsem a Jowiszem. Wszystkie razem są lżejsze niż nasz Księżyc!',
+   'Ceres odkrył 1 stycznia 1801 roku włoski astronom Giuseppe Piazzi.',
+   'Na Ceres są jasne plamy. To sól, która została po wyparowaniu słonej wody.'
+  ]},
+ {id: 'jupiter', kind: 'planet', name: 'Jowisz', type: 'Piąta planeta od Słońca', color: '#d5b18a', radius: 22, orbit: 260, period: 4333, startPhase: 1.3, surface: 'jupiter',
+  chips: ['🌙 Księżyce: ponad 90', '🗓 Rok: 12 lat', '❄️ Bardzo zimno'],
+  facts: [
+   'Jowisz jest największą planetą. Zmieściłoby się w nim ponad tysiąc Ziem!',
+   'Jowisz nie ma twardej powierzchni. To wielka kula z gazu, czyli gazowy olbrzym.',
+   'Wielka Czerwona Plama to burza większa niż Ziemia. Ludzie widzą ją od ponad 150 lat.',
+   'Cztery największe księżyce Jowisza odkrył w 1610 roku Galileusz. Ganimedes jest większy niż Merkury!',
+   'Dzień na Jowiszu trwa tylko około 10 godzin. Jowisz kręci się najszybciej ze wszystkich planet.'
+  ]},
+ {id: 'saturn', kind: 'planet', name: 'Saturn', type: 'Szósta planeta od Słońca', color: '#d9bd83', radius: 18, orbit: 340, period: 10759, startPhase: 3.2, surface: 'saturn',
+  ring: {angle: -.25, bands: [{scale: 1.7, width: .25, color: '#cbb38b'}, {scale: 1.95, width: .1, color: '#8d785b'}]},
+  chips: ['🌙 Księżyce: ponad 100', '🗓 Rok: 29 lat', '❄️ Bardzo zimno'],
+  facts: [
+   'Pierścienie Saturna składają się z lodu i skał. Są tam kawałki od ziarenek piasku po bryły wielkie jak dom.',
+   'Saturn jest tak lekki, że gdyby miał wielką wannę z wodą, pływałby jak kaczuszka!',
+   'Księżyc Tytan ma gęstą atmosferę i jeziora z ciekłego gazu zwanego metanem.',
+   'Księżyc Enceladus wyrzuca w kosmos fontanny wody z lodu.',
+   'Saturn ma ponad 100 księżyców. Jeden jego rok trwa aż 29 naszych lat.'
+  ]},
+ {id: 'uranus', kind: 'planet', name: 'Uran', type: 'Siódma planeta od Słońca', color: '#7ed9e5', radius: 13, orbit: 420, period: 30687, startPhase: 5,
+  ring: {angle: -.4, bands: [{scale: 1.6, width: .14, color: 'rgba(171,231,245,.5)'}]},
+  chips: ['🌙 Księżyce: ponad 25', '🗓 Rok: 84 lata', '❄️ Bardzo zimno'],
+  facts: [
+   'Uran leży na boku i toczy się wokół Słońca jak piłka.',
+   'Uran jest błękitno-zielony, bo gaz zwany metanem pochłania czerwone światło.',
+   'Atmosfera Urana jest najzimniejsza w całym Układzie Słonecznym. Jest tam około 224 stopni mrozu.',
+   'Uran był pierwszą planetą odkrytą przez teleskop. Znalazł go w 1781 roku William Herschel.',
+   'Rok na Uranie trwa 84 nasze lata. Każda pora roku trwa tam ponad 20 lat!'
+  ]},
+ {id: 'neptune', kind: 'planet', name: 'Neptun', type: 'Ósma planeta od Słońca', color: '#356ce0', radius: 12, orbit: 500, period: 60190, startPhase: .3,
+  chips: ['🌙 Księżyce: około 16', '🗓 Rok: 165 lat', '❄️ Bardzo zimno'],
+  facts: [
+   'Neptun jest najdalszą planetą od Słońca. Jest ciemnoniebieski.',
+   'Na Neptunie wieją najsilniejsze wiatry w Układzie Słonecznym, około 2000 kilometrów na godzinę!',
+   'Neptuna najpierw wyliczyli matematycy, a dopiero potem zobaczono go w teleskopie. To było w 1846 roku.',
+   'Neptun ma księżyc Trytona, który krąży w odwrotną stronę niż sama planeta.',
+   'Rok na Neptunie trwa 165 naszych lat. W 2011 roku skończył pierwsze okrążenie od swojego odkrycia!'
+  ]},
+ {id: 'pluto', kind: 'dwarf', name: 'Pluton', type: 'Planeta karłowata', color: '#c8a98c', radius: 3, orbit: 570, period: 90560, startPhase: 3.6, surface: 'pluto', activity: 'heart',
+  chips: ['🌙 Księżyce: 5', '🗓 Rok: 248 lat', '❄️ Mroźno: −230°C'],
+  facts: [
+   'Pluton ma na powierzchni wielkie serce! To jasna równina o nazwie Tombaugh Regio.',
+   'Plutona odkrył w 1930 roku młody astronom Clyde Tombaugh. Serce nazwano na jego cześć.',
+   'W 2006 roku naukowcy uznali Plutona za planetę karłowatą. Jest bardzo mały i krąży wśród wielu podobnych lodowych światów.',
+   'W lipcu 2015 roku sonda New Horizons przeleciała obok Plutona i zrobiła zdjęcia jego serca.',
+   'Największy księżyc Plutona, Charon, jest tak duży, że razem krążą wokół wspólnego punktu, jak w tańcu.',
+   'Rok na Plutonie trwa 248 naszych lat.'
+  ]},
+ {id: 'halley', kind: 'comet', name: 'Kometa Halleya', type: 'Kometa', color: '#dff1ff', radius: 2.5, followRadius: 16, period: 27759, startAnomaly: 5.68, semiMajor: 303.5, eccentricity: .797, perihelionAngle: 2.2,
+  chips: ['🗓 Wraca co 76 lat', '☄️ Ogon z pary i pyłu', '🔭 Znana od 2000 lat'],
+  facts: [
+   'Kometa to wielka, brudna kula z lodu i pyłu. Gdy zbliża się do Słońca, lód paruje i robi się z niego ogon.',
+   'Ogon komety zawsze wskazuje od Słońca, bo odpycha go wiatr słoneczny. Nawet gdy kometa leci do tyłu!',
+   'Kometa Halleya wraca co około 76 lat. Ostatnio było ją widać w 1986 roku, a następnym razem zobaczymy ją w 2061 roku.',
+   'Blisko Słońca kometa pędzi bardzo szybko, a daleko od Słońca zwalnia. Zobacz to na orbicie!',
+   'Ludzie obserwują kometę Halleya od ponad 2000 lat.'
+  ]}
+];
+
+const finds = [
+ {id: 'iss', parentId: 'earth', icon: '🛰', name: 'Międzynarodowa Stacja Kosmiczna', type: 'Znajdźka: stacja kosmiczna',
+  chips: ['📅 W kosmosie od 1998', '⏱ Okrążenie: 90 minut', '📏 Wysokość: 400 km'],
+  facts: ['Stacja okrąża Ziemię co około 90 minut. Astronauci widzą tam około 16 wschodów Słońca w ciągu doby!', 'Na stacji ludzie mieszkają bez przerwy od roku 2000.', 'Astronauci unoszą się w powietrzu, bo razem ze stacją cały czas spadają wokół Ziemi.']},
+ {id: 'parker', parentId: 'sun', icon: '🛰', name: 'Sonda Parker Solar Probe', type: 'Znajdźka: sonda kosmiczna',
+  chips: ['📅 Start: 2018', '🚀 Ok. 690 000 km/h', '🛡 Tarcza cieplna'],
+  facts: ['Parker jako pierwsza sonda weszła do atmosfery Słońca, zwanej koroną.', 'To najszybszy obiekt zbudowany przez ludzi. Okrążyłaby Ziemię w niecałe 4 minuty!', 'Chroni ją specjalna tarcza cieplna, bo sonda leci bardzo blisko Słońca.']},
+ {id: 'messenger', parentId: 'mercury', icon: '🛰', name: 'Sonda MESSENGER', type: 'Znajdźka: sonda kosmiczna',
+  chips: ['📅 Start: 2004', '🪐 Przy Merkurym: 2011–2015'],
+  facts: ['MESSENGER jako pierwsza sonda okrążała Merkurego, w latach 2011–2015.', 'Znalazła lód w kraterach na biegunach Merkurego. Do tych kraterów nigdy nie zagląda Słońce!']},
+ {id: 'magellan', parentId: 'venus', icon: '🛰', name: 'Sonda Magellan', type: 'Znajdźka: sonda kosmiczna',
+  chips: ['📅 Start: 1989', '🪐 Przy Wenus: 1990–1994'],
+  facts: ['Przez grube chmury Wenus nie widać powierzchni. Magellan użył więc radaru, który „widzi” przez chmury.', 'Dzięki niemu mamy mapę prawie całej powierzchni Wenus, z wulkanami i górami.']},
+ {id: 'mro', parentId: 'mars', icon: '🛰', name: 'Sonda Mars Reconnaissance Orbiter', type: 'Znajdźka: sonda kosmiczna',
+  chips: ['📅 Przy Marsie od 2006', '📷 Bardzo ostre zdjęcia'],
+  facts: ['Ta sonda krąży wokół Marsa od 2006 roku i robi bardzo dokładne zdjęcia.', 'Jej kamera widzi na Marsie przedmioty wielkości stołu.', 'Zdjęcia pomagają wybierać bezpieczne miejsca do lądowania dla łazików.']},
+ {id: 'dawn', parentId: 'ceres', icon: '🛰', name: 'Sonda Dawn', type: 'Znajdźka: sonda kosmiczna',
+  chips: ['📅 Start: 2007', '🪐 Przy Ceres: 2015–2018'],
+  facts: ['Dawn jako pierwsza sonda okrążała dwa różne ciała w pasie planetoid: najpierw Westę, a potem Ceres.', 'Napędzały ją silniki jonowe. Są bardzo delikatne, ale potrafią pracować latami.']},
+ {id: 'juno', parentId: 'jupiter', icon: '🛰', name: 'Sonda Juno', type: 'Znajdźka: sonda kosmiczna',
+  chips: ['📅 Start: 2011', '🪐 Przy Jowiszu od 2016'],
+  facts: ['Juno krąży wokół Jowisza od 2016 roku i zagląda pod jego chmury.', 'Zasilają ją wielkie panele słoneczne, choć Słońce świeci tam bardzo słabo.']},
+ {id: 'cassini', parentId: 'saturn', icon: '🛰', name: 'Sonda Cassini', type: 'Znajdźka: sonda kosmiczna',
+  chips: ['📅 Start: 1997', '🪐 Przy Saturnie: 2004–2017'],
+  facts: ['Cassini badała Saturna 13 lat. Na koniec zanurzyła się w jego atmosferze.', 'Zawiozła lądownik Huygens, który w 2005 roku wylądował na księżycu Tytanie.']},
+ {id: 'voyager2', parentId: 'uranus', icon: '🛰', name: 'Sonda Voyager 2', type: 'Znajdźka: sonda kosmiczna',
+  chips: ['📅 Start: 1977', '🪐 Uran 1986, Neptun 1989'],
+  facts: ['Voyager 2 jest jedyną sondą, która odwiedziła Urana, w 1986 roku, i Neptuna, w 1989 roku.', 'Na pokładzie ma złotą płytę z dźwiękami i obrazami z Ziemi.', 'Od 2018 roku Voyager 2 jest już poza Układem Słonecznym, w przestrzeni między gwiazdami.']},
+ {id: 'newhorizons', parentId: 'pluto', icon: '🛰', name: 'Sonda New Horizons', type: 'Znajdźka: sonda kosmiczna',
+  chips: ['📅 Start: 2006', '🪐 Pluton: lipiec 2015'],
+  facts: ['New Horizons leciała do Plutona prawie 9,5 roku.', 'Zrobiła zdjęcie serca Plutona i znalazła tam góry z lodu.', 'Po drodze obok Plutona poleciała dalej, w stronę lodowych światów na krańcach Układu Słonecznego.']},
+ {id: 'giotto', parentId: 'halley', icon: '🛰', name: 'Sonda Giotto', type: 'Znajdźka: sonda kosmiczna',
+  chips: ['📅 Start: 1985', '☄️ Kometa: 1986'],
+  facts: ['W 1986 roku europejska sonda Giotto podleciała do jądra komety Halleya.', 'Jądro okazało się ciemne jak węgiel i ma kształt ziemniaka o długości około 15 kilometrów.']}
+];
+
+const TOTAL_ITEMS = bodies.length + finds.length;
+const bodyIndex = id => bodies.findIndex(body => body.id === id);
+const knownIds = new Set([...bodies.map(body => body.id), ...finds.map(find => find.id)]);
+
+const view = {
+ width: 0, height: 0, dpr: 1,
+ free: {left: 0, top: 0, right: 0, bottom: 0},
+ angle: 0, tilt: .32, angleGoal: null, tiltGoal: null,
+ zoom: 1, zoomGoal: 1,
+ following: false, carryX: 0, carryY: 0,
+ selected: bodyIndex('earth'), find: null,
+ targets: [], sunTarget: null, findTargets: []
+};
+let speed = DEFAULT_SPEED;
+let playing = true;
+let simDays = 0;
+let lastFrameTime = performance.now();
+let frameTime = lastFrameTime;
+let factIndex = 0;
+
+const stars = Array.from({length: 520}, () => ({nx: Math.random(), ny: Math.random(), size: Math.random() * 1.25, alpha: .2 + Math.random() * .75}));
+const asteroids = Array.from({length: ASTEROID_COUNT}, () => {
+ const orbit = BELT_INNER + Math.random() * (BELT_OUTER - BELT_INNER);
+ return {phase: Math.random() * TAU, orbit, period: 1300 + (orbit - BELT_INNER) * 20, size: .5 + Math.random() * 1.7, alpha: .15 + Math.random() * .55};
+});
+const ripples = [];
+
+/* ---------- pamięć przeglądarki ---------- */
+
+function loadStored(key, fallback) {
+ try {
+  const value = window.localStorage.getItem(key);
+  return value === null ? fallback : value;
+ } catch (error) {
+  return fallback;
+ }
+}
+
+function saveStored(key, value) {
+ try {window.localStorage.setItem(key, value);} catch (error) {}
+}
+
+const discovered = new Set();
+try {
+ JSON.parse(loadStored('kosmos2.discovered', '[]')).forEach(id => {
+  if (knownIds.has(id)) discovered.add(id);
+ });
+} catch (error) {}
+let soundOn = loadStored('kosmos2.sound', '1') === '1';
+
+/* ---------- głos ---------- */
+
+function speak(text) {
+ if (!speechSupported) return;
+ try {
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'pl-PL';
+  utterance.rate = .88;
+  utterance.pitch = 1.1;
+  const voice = window.speechSynthesis.getVoices().find(item => /^pl/i.test(item.lang));
+  if (voice) utterance.voice = voice;
+  window.speechSynthesis.speak(utterance);
+ } catch (error) {}
+}
+
+function currentItem() {
+ return view.find || bodies[view.selected];
+}
+
+function speakItem(force) {
+ if (!force && !soundOn) return;
+ const item = currentItem();
+ speak(`${item.name}. ${item.facts[factIndex]}`);
+}
+
+/* ---------- układ okna i obszar sceny ---------- */
+
+function layout() {
+ const compact = compactQuery.matches;
+ const free = {left: 0, top: compact ? 76 : 84, right: view.width, bottom: view.height};
+ if (compact) {
+  const dockRect = dock.getBoundingClientRect();
+  if (dockRect.width < view.width * .7) free.right = dockRect.left - 12;
+  else free.bottom = dockRect.top - 8;
+ } else {
+  free.right = infoPanel.getBoundingClientRect().left - 16;
+  free.bottom = controlsPanel.getBoundingClientRect().top - 8;
+ }
+ if (free.right - free.left < 200) free.right = free.left + 200;
+ if (free.bottom - free.top < 140) free.bottom = free.top + 140;
+ view.free = free;
+}
+
+function defaultTilt() {
+ const width = view.free.right - view.free.left;
+ const height = view.free.bottom - view.free.top;
+ return width / height < 1 ? .5 : .32;
+}
+
+function resize() {
+ view.width = window.innerWidth;
+ view.height = window.innerHeight;
+ view.dpr = Math.min(window.devicePixelRatio || 1, 2);
+ canvas.width = Math.round(view.width * view.dpr);
+ canvas.height = Math.round(view.height * view.dpr);
+ ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+ layout();
+}
+
+/* ---------- rzutowanie i kamera ---------- */
+
+function fitScale() {
+ const halfWidth = (view.free.right - view.free.left) / 2 - 10;
+ const halfHeight = (view.free.bottom - view.free.top) / 2 - 10;
+ const extent = MAX_ORBIT + 16;
+ return Math.max(.15, Math.min(halfWidth / extent, halfHeight / (extent * view.tilt)));
+}
+
+function orbitPhase(body) {
+ return body.startPhase + simDays / body.period * TAU + view.angle;
+}
+
+function cometPoint(body, eccentricAnomaly) {
+ const semiMinor = body.semiMajor * Math.sqrt(1 - body.eccentricity * body.eccentricity);
+ const x = body.semiMajor * (Math.cos(eccentricAnomaly) - body.eccentricity);
+ const y = semiMinor * Math.sin(eccentricAnomaly);
+ const rotation = body.perihelionAngle + view.angle;
+ return {
+  x: x * Math.cos(rotation) - y * Math.sin(rotation),
+  y: x * Math.sin(rotation) + y * Math.cos(rotation),
+  distance: Math.hypot(x, y)
+ };
+}
+
+function cometState(body) {
+ let meanAnomaly = (body.startAnomaly + simDays / body.period * TAU) % TAU;
+ if (meanAnomaly > Math.PI) meanAnomaly -= TAU;
+ let eccentric = meanAnomaly + body.eccentricity * Math.sin(meanAnomaly);
+ for (let step = 0; step < 8; step++) {
+  eccentric -= (eccentric - body.eccentricity * Math.sin(eccentric) - meanAnomaly) / (1 - body.eccentricity * Math.cos(eccentric));
+ }
+ return cometPoint(body, eccentric);
+}
+
+function bodyOffset(body, scaleValue) {
+ if (body.kind === 'star') return {x: 0, y: 0, distance: 0};
+ if (body.kind === 'comet') {
+  const state = cometState(body);
+  return {x: state.x * scaleValue, y: state.y * scaleValue * view.tilt, distance: state.distance};
+ }
+ const phase = orbitPhase(body);
+ return {x: Math.cos(phase) * body.orbit * scaleValue, y: Math.sin(phase) * body.orbit * scaleValue * view.tilt, distance: body.orbit};
+}
+
+function bodyRadius(body, scaleValue) {
+ return Math.max(3 + body.radius * .3, body.radius * scaleValue * 1.25);
+}
+
+function sunRadius(scaleValue) {
+ return Math.max(13, bodies[0].radius * scaleValue);
+}
+
+function followTarget(scaleValue) {
+ const body = bodies[view.selected];
+ if (!view.following || body.kind === 'star') return {x: 0, y: 0};
+ const offset = bodyOffset(body, scaleValue);
+ return {x: -offset.x, y: -offset.y};
+}
+
+function computeFrame() {
+ const scaleValue = fitScale() * view.zoom;
+ const target = followTarget(scaleValue);
+ return {
+  scale: scaleValue,
+  sunX: (view.free.left + view.free.right) / 2 + target.x + view.carryX,
+  sunY: (view.free.top + view.free.bottom) / 2 + target.y + view.carryY
+ };
+}
+
+function followZoom(index) {
+ const body = bodies[index];
+ const wantedRadius = body.followRadius || (compactQuery.matches ? 36 : 48);
+ const unit = body.kind === 'star' ? body.radius * fitScale() : body.radius * fitScale() * 1.25;
+ return clamp(wantedRadius / unit, 1.8, 14);
+}
+
+function setSelection(following, index) {
+ const scaleValue = fitScale() * view.zoom;
+ const before = followTarget(scaleValue);
+ const panX = before.x + view.carryX;
+ const panY = before.y + view.carryY;
+ view.following = following;
+ view.selected = index;
+ const after = followTarget(scaleValue);
+ view.carryX = panX - after.x;
+ view.carryY = panY - after.y;
+}
+
+function updateCamera(dt) {
+ const easing = 1 - Math.exp(-dt * 7);
+ view.zoom = Math.exp(Math.log(view.zoom) + (Math.log(view.zoomGoal) - Math.log(view.zoom)) * easing);
+ if (Math.abs(view.zoom / view.zoomGoal - 1) < .0005) view.zoom = view.zoomGoal;
+ if (view.angleGoal !== null) {
+  view.angle += (view.angleGoal - view.angle) * easing;
+  if (Math.abs(view.angleGoal - view.angle) < .002) {view.angle = view.angleGoal; view.angleGoal = null;}
+ }
+ if (view.tiltGoal !== null) {
+  view.tilt += (view.tiltGoal - view.tilt) * easing;
+  if (Math.abs(view.tiltGoal - view.tilt) < .002) {view.tilt = view.tiltGoal; view.tiltGoal = null;}
+ }
+ const decay = Math.exp(-dt * 6);
+ view.carryX *= decay;
+ view.carryY *= decay;
+}
+
+/* ---------- rysowanie ---------- */
+
+function lighten(hex, factor) {
+ const value = parseInt(hex.slice(1), 16);
+ const red = Math.round(Math.min(255, ((value >> 16) & 255) * factor));
+ const green = Math.round(Math.min(255, ((value >> 8) & 255) * factor));
+ const blue = Math.round(Math.min(255, (value & 255) * factor));
+ return `rgb(${red},${green},${blue})`;
+}
+
+function glow(x, y, radius, color) {
+ const gradient = ctx.createRadialGradient(x, y, Math.max(1, radius * .2), x, y, radius * 3.8);
+ gradient.addColorStop(0, color);
+ gradient.addColorStop(1, 'rgba(0,0,0,0)');
+ ctx.fillStyle = gradient;
+ ctx.beginPath();
+ ctx.arc(x, y, radius * 3.8, 0, TAU);
+ ctx.fill();
+}
+
+function heartPath(centerX, centerY, size) {
+ const path = new Path2D();
+ path.moveTo(centerX, centerY + size * .9);
+ path.bezierCurveTo(centerX - size * 1.3, centerY + size * .2, centerX - size * .9, centerY - size * .9, centerX, centerY - size * .35);
+ path.bezierCurveTo(centerX + size * .9, centerY - size * .9, centerX + size * 1.3, centerY + size * .2, centerX, centerY + size * .9);
+ path.closePath();
+ return path;
+}
+
+function drawBackground() {
+ ctx.fillStyle = '#020611';
+ ctx.fillRect(0, 0, view.width, view.height);
+ ctx.fillStyle = '#c4e3ff';
+ for (const star of stars) {
+  ctx.globalAlpha = star.alpha;
+  ctx.beginPath();
+  ctx.arc(star.nx * view.width, star.ny * view.height, star.size, 0, TAU);
+  ctx.fill();
+ }
+ ctx.globalAlpha = 1;
+ const nebula = ctx.createRadialGradient(view.width * .42, view.height * .4, 0, view.width * .42, view.height * .4, Math.max(view.width, view.height) * .7);
+ nebula.addColorStop(0, 'rgba(16,45,95,.18)');
+ nebula.addColorStop(1, 'rgba(0,0,0,0)');
+ ctx.fillStyle = nebula;
+ ctx.fillRect(0, 0, view.width, view.height);
+}
+
+function drawAttention(x, y, radius, index) {
+ if (!discovered.has(bodies[index].id)) {
+  const pulse = Math.sin(frameTime * .003 + index) * .5 + .5;
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = `rgba(255,226,110,${.1 + .25 * pulse})`;
+  ctx.beginPath();
+  ctx.arc(x, y, radius + 7 + pulse * 4, 0, TAU);
+  ctx.stroke();
+ }
+ if (index === view.selected && !view.find) {
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#4cbaff';
+  ctx.beginPath();
+  ctx.arc(x, y, radius + 5, 0, TAU);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(39,144,255,.28)';
+  ctx.beginPath();
+  ctx.arc(x, y, radius + 10, 0, TAU);
+  ctx.stroke();
+ }
+}
+
+function drawSun(frame) {
+ const radius = sunRadius(frame.scale);
+ const x = frame.sunX;
+ const y = frame.sunY;
+ glow(x, y, radius, 'rgba(255,158,49,.32)');
+ const gradient = ctx.createRadialGradient(x - radius * .25, y - radius * .3, 1, x, y, radius);
+ gradient.addColorStop(0, '#fff8b0');
+ gradient.addColorStop(.35, '#ffc94d');
+ gradient.addColorStop(.78, '#ff851e');
+ gradient.addColorStop(1, '#c63e13');
+ ctx.fillStyle = gradient;
+ ctx.beginPath();
+ ctx.arc(x, y, radius, 0, TAU);
+ ctx.fill();
+ ctx.strokeStyle = 'rgba(255,193,89,.25)';
+ ctx.lineWidth = 1;
+ ctx.beginPath();
+ ctx.arc(x, y, radius + 4, 0, TAU);
+ ctx.stroke();
+ drawAttention(x, y, radius + 3, 0);
+ view.sunTarget = {body: bodies[0], index: 0, x, y, radius};
+}
+
+function drawOrbits(frame) {
+ ctx.lineWidth = 1;
+ bodies.forEach((body, index) => {
+  if (body.kind === 'star') return;
+  const selected = index === view.selected;
+  ctx.strokeStyle = selected ? 'rgba(88,185,255,.6)' : 'rgba(104,171,239,.29)';
+  ctx.setLineDash(body.kind === 'planet' ? [] : [4, 6]);
+  ctx.beginPath();
+  if (body.kind === 'comet') {
+   for (let step = 0; step <= 120; step++) {
+    const point = cometPoint(body, step / 120 * TAU);
+    const pointX = frame.sunX + point.x * frame.scale;
+    const pointY = frame.sunY + point.y * frame.scale * view.tilt;
+    if (step === 0) ctx.moveTo(pointX, pointY);
+    else ctx.lineTo(pointX, pointY);
+   }
+  } else {
+   ctx.ellipse(frame.sunX, frame.sunY, body.orbit * frame.scale, body.orbit * frame.scale * view.tilt, 0, 0, TAU);
+  }
+  ctx.stroke();
+ });
+ ctx.setLineDash([]);
+}
+
+function drawAsteroids(frame) {
+ ctx.fillStyle = '#a7a5a1';
+ for (const rock of asteroids) {
+  const phase = rock.phase + simDays / rock.period * TAU + view.angle;
+  const x = frame.sunX + Math.cos(phase) * rock.orbit * frame.scale;
+  const y = frame.sunY + Math.sin(phase) * rock.orbit * frame.scale * view.tilt;
+  if (x < -4 || x > view.width + 4 || y < -4 || y > view.height + 4) continue;
+  ctx.globalAlpha = rock.alpha;
+  ctx.beginPath();
+  ctx.arc(x, y, clamp(rock.size * frame.scale * .8, .6, 3), 0, TAU);
+  ctx.fill();
+ }
+ ctx.globalAlpha = 1;
+}
+
+function drawRing(x, y, radius, ring, half) {
+ const start = half === 'back' ? Math.PI : 0;
+ const ratio = .16 + view.tilt * .42;
+ ctx.save();
+ ctx.translate(x, y);
+ ctx.rotate(ring.angle);
+ for (const band of ring.bands) {
+  ctx.strokeStyle = band.color;
+  ctx.lineWidth = Math.max(1.5, radius * band.width);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, radius * band.scale, radius * band.scale * ratio, 0, start, start + Math.PI);
+  ctx.stroke();
+ }
+ ctx.restore();
+}
+
+function drawSurface(x, y, radius, body) {
+ switch (body.surface) {
+  case 'earth':
+   ctx.fillStyle = '#4eaa69';
+   ctx.beginPath();
+   ctx.ellipse(x - radius * .18, y - radius * .12, radius * .32, radius * .2, -.4, 0, TAU);
+   ctx.fill();
+   ctx.beginPath();
+   ctx.ellipse(x + radius * .3, y + radius * .22, radius * .23, radius * .33, .7, 0, TAU);
+   ctx.fill();
+   ctx.fillStyle = '#d9e6c4';
+   ctx.beginPath();
+   ctx.ellipse(x - radius * .05, y - radius * .7, radius * .22, radius * .12, 0, 0, TAU);
+   ctx.fill();
+   break;
+  case 'jupiter':
+  case 'saturn':
+   ctx.strokeStyle = body.surface === 'jupiter' ? 'rgba(114,71,39,.4)' : 'rgba(120,91,54,.48)';
+   ctx.lineWidth = Math.max(1, radius * .16);
+   for (let band = -2; band <= 2; band++) {
+    ctx.beginPath();
+    ctx.moveTo(x - radius, y + band * radius * .3);
+    ctx.lineTo(x + radius, y + band * radius * .3);
+    ctx.stroke();
+   }
+   if (body.surface === 'jupiter') {
+    ctx.fillStyle = 'rgba(160,70,40,.75)';
+    ctx.beginPath();
+    ctx.ellipse(x + radius * .3, y + radius * .5, radius * .2, radius * .1, 0, 0, TAU);
+    ctx.fill();
+   }
+   break;
+  case 'mars':
+   ctx.fillStyle = '#6e3425';
+   ctx.beginPath();
+   ctx.arc(x + radius * .3, y - radius * .1, radius * .19, 0, TAU);
+   ctx.fill();
+   break;
+  case 'ceres':
+   ctx.fillStyle = 'rgba(40,36,34,.35)';
+   ctx.beginPath();
+   ctx.arc(x - radius * .3, y + radius * .2, radius * .25, 0, TAU);
+   ctx.fill();
+   ctx.fillStyle = 'rgba(255,255,255,.9)';
+   ctx.beginPath();
+   ctx.arc(x + radius * .25, y - radius * .2, Math.max(.8, radius * .14), 0, TAU);
+   ctx.fill();
+   break;
+  case 'pluto':
+   ctx.fillStyle = 'rgba(70,40,34,.55)';
+   ctx.beginPath();
+   ctx.ellipse(x - radius * .55, y + radius * .1, radius * .4, radius * .55, 0, 0, TAU);
+   ctx.fill();
+   if (radius >= 6) {
+    ctx.fillStyle = '#f3e6d3';
+    ctx.fill(heartPath(x + radius * .22, y - radius * .02, radius * .42));
+   }
+   break;
+ }
+}
+
+function drawComet(item, frame) {
+ const {x, y, radius, distance} = item;
+ const directionX = x - frame.sunX;
+ const directionY = y - frame.sunY;
+ const length = Math.hypot(directionX, directionY) || 1;
+ const unitX = directionX / length;
+ const unitY = directionY / length;
+ const nucleusRadius = Math.min(radius, 5);
+ const tailLength = Math.pow(Math.max(0, 1 - distance / 340), .8) * 170 * clamp(frame.scale, .5, 1.5);
+ if (tailLength > 3) {
+  const normalX = -unitY;
+  const normalY = unitX;
+  const layers = [
+   {color: 'rgba(170,225,255,.65)', curve: 0, endSpread: .14},
+   {color: 'rgba(255,232,180,.4)', curve: .2, endSpread: .24}
+  ];
+  for (const layer of layers) {
+   const endX = x + unitX * tailLength + normalX * tailLength * layer.curve;
+   const endY = y + unitY * tailLength + normalY * tailLength * layer.curve;
+   const baseSpread = nucleusRadius * 1.1;
+   const endSpread = tailLength * layer.endSpread;
+   const gradient = ctx.createLinearGradient(x, y, endX, endY);
+   gradient.addColorStop(0, layer.color);
+   gradient.addColorStop(1, 'rgba(170,225,255,0)');
+   ctx.fillStyle = gradient;
+   ctx.beginPath();
+   ctx.moveTo(x + normalX * baseSpread, y + normalY * baseSpread);
+   ctx.quadraticCurveTo(x + unitX * tailLength * .6 + normalX * endSpread * .6, y + unitY * tailLength * .6 + normalY * endSpread * .6, endX + normalX * endSpread, endY + normalY * endSpread);
+   ctx.lineTo(endX - normalX * endSpread, endY - normalY * endSpread);
+   ctx.quadraticCurveTo(x + unitX * tailLength * .6 - normalX * endSpread * .6, y + unitY * tailLength * .6 - normalY * endSpread * .6, x - normalX * baseSpread, y - normalY * baseSpread);
+   ctx.closePath();
+   ctx.fill();
+  }
+ }
+ glow(x, y, Math.min(radius, 8), 'rgba(190,235,255,.45)');
+ ctx.fillStyle = '#eaf7ff';
+ ctx.beginPath();
+ ctx.arc(x, y, nucleusRadius, 0, TAU);
+ ctx.fill();
+ drawAttention(x, y, radius, item.index);
+}
+
+function drawPlanet(item) {
+ const {body, index, x, y, radius} = item;
+ glow(x, y, radius, body.color + '35');
+ if (body.ring) drawRing(x, y, radius, body.ring, 'back');
+ const gradient = ctx.createRadialGradient(x - radius * .4, y - radius * .45, radius * .04, x + radius * .12, y + radius * .12, radius * 1.25);
+ gradient.addColorStop(0, lighten(body.color, 1.55));
+ gradient.addColorStop(.5, body.color);
+ gradient.addColorStop(1, '#070b16');
+ ctx.fillStyle = gradient;
+ ctx.beginPath();
+ ctx.arc(x, y, radius, 0, TAU);
+ ctx.fill();
+ ctx.save();
+ ctx.beginPath();
+ ctx.arc(x, y, radius, 0, TAU);
+ ctx.clip();
+ drawSurface(x, y, radius, body);
+ ctx.restore();
+ if (body.ring) drawRing(x, y, radius, body.ring, 'front');
+ drawAttention(x, y, radius, index);
+}
+
+function drawProbe(x, y, size, angle) {
+ ctx.save();
+ ctx.translate(x, y);
+ ctx.rotate(angle);
+ ctx.fillStyle = '#3b6fd8';
+ ctx.fillRect(-size * 1.7, -size * .35, size * 1.1, size * .7);
+ ctx.fillRect(size * .6, -size * .35, size * 1.1, size * .7);
+ ctx.strokeStyle = '#9fc0ff';
+ ctx.lineWidth = 1;
+ ctx.strokeRect(-size * 1.7, -size * .35, size * 1.1, size * .7);
+ ctx.strokeRect(size * .6, -size * .35, size * 1.1, size * .7);
+ ctx.fillStyle = '#e4c77a';
+ ctx.fillRect(-size * .6, -size * .6, size * 1.2, size * 1.2);
+ ctx.strokeStyle = '#8e7430';
+ ctx.strokeRect(-size * .6, -size * .6, size * 1.2, size * 1.2);
+ ctx.restore();
+}
+
+function drawFinds(items) {
+ view.findTargets = [];
+ const parent = items[view.selected];
+ if (!parent) return;
+ const threshold = parent.body.kind === 'star' ? 30 : 16;
+ if (parent.radius < threshold) return;
+ finds.filter(find => find.parentId === parent.body.id).forEach((find, order) => {
+  const orbitX = parent.radius * 1.9 + 10;
+  const orbitY = orbitX * .55;
+  const angle = frameTime * .0005 + order * 2.1;
+  const x = parent.x + Math.cos(angle) * orbitX;
+  const y = parent.y + Math.sin(angle) * orbitY;
+  ctx.strokeStyle = 'rgba(255,217,90,.25)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 5]);
+  ctx.beginPath();
+  ctx.ellipse(parent.x, parent.y, orbitX, orbitY, 0, 0, TAU);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  const size = clamp(parent.radius * .16, 5, 9);
+  if (!discovered.has(find.id)) {
+   const pulse = Math.sin(frameTime * .004) * .5 + .5;
+   ctx.strokeStyle = `rgba(255,226,110,${.3 + .5 * pulse})`;
+   ctx.lineWidth = 2;
+   ctx.beginPath();
+   ctx.arc(x, y, size * 2.4 + pulse * 3, 0, TAU);
+   ctx.stroke();
+  }
+  drawProbe(x, y, size, angle + Math.PI / 2);
+  view.findTargets.push({find, x, y, radius: size * 2.4});
+ });
+}
+
+function drawLabels(items) {
+ const fontSize = compactQuery.matches ? 12 : 14;
+ const placed = [];
+ const ordered = [...items].sort((a, b) => (b.index === view.selected) - (a.index === view.selected));
+ ctx.textAlign = 'center';
+ ctx.textBaseline = 'alphabetic';
+ for (const item of ordered) {
+  const isSelected = item.index === view.selected;
+  ctx.font = `${isSelected ? 800 : 700} ${fontSize}px ui-rounded, system-ui, sans-serif`;
+  const width = ctx.measureText(item.body.name).width;
+  const labelY = item.y - item.radius - (isSelected ? 18 : 12);
+  const box = {left: item.x - width / 2 - 3, right: item.x + width / 2 + 3, top: labelY - fontSize, bottom: labelY + 3};
+  const collides = placed.some(other => box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top);
+  if (collides && !isSelected) continue;
+  placed.push(box);
+  ctx.fillStyle = isSelected ? '#ffe58a' : '#e6f1ff';
+  ctx.fillText(item.body.name, item.x, labelY);
+ }
+}
+
+function drawRipples() {
+ for (const ripple of ripples) {
+  const progress = ripple.life / ripple.max;
+  ctx.globalAlpha = clamp(1 - progress, 0, 1) * .8;
+  ctx.strokeStyle = '#ffe58a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(ripple.x, ripple.y, ripple.radius + progress * 46, 0, TAU);
+  ctx.stroke();
+ }
+ ctx.globalAlpha = 1;
+}
+
+function draw() {
+ const frame = computeFrame();
+ drawBackground();
+ drawOrbits(frame);
+ drawAsteroids(frame);
+ const items = [];
+ bodies.forEach((body, index) => {
+  if (body.kind === 'star') {items.push(null); return;}
+  const offset = bodyOffset(body, frame.scale);
+  items.push({body, index, x: frame.sunX + offset.x, y: frame.sunY + offset.y, radius: bodyRadius(body, frame.scale), distance: offset.distance});
+ });
+ const planetItems = items.filter(Boolean);
+ view.targets = planetItems;
+ const behind = planetItems.filter(item => item.y < frame.sunY).sort((a, b) => a.y - b.y);
+ const inFront = planetItems.filter(item => item.y >= frame.sunY).sort((a, b) => a.y - b.y);
+ const paint = item => item.body.kind === 'comet' ? drawComet(item, frame) : drawPlanet(item);
+ behind.forEach(paint);
+ drawSun(frame);
+ inFront.forEach(paint);
+ items[0] = view.sunTarget;
+ drawFinds(items);
+ drawLabels(items);
+ drawRipples();
+}
+
+/* ---------- interfejs ---------- */
+
+function renderFact() {
+ const item = currentItem();
+ const factElement = byId('fact');
+ factElement.textContent = item.facts[factIndex];
+ factElement.classList.remove('pop');
+ void factElement.offsetWidth;
+ factElement.classList.add('pop');
+ byId('dots').innerHTML = item.facts.map((fact, index) => `<i class="${index === factIndex ? 'on' : ''}"></i>`).join('');
+}
+
+function renderInfo() {
+ const item = currentItem();
+ const body = bodies[view.selected];
+ byId('planetName').textContent = item.name;
+ byId('planetType').textContent = item.type;
+ const icon = byId('planetIcon');
+ if (view.find) {
+  icon.textContent = view.find.icon;
+  icon.style.background = 'radial-gradient(circle at 30% 28%,#6f9bff,#2c4fa3 55%,#0a1736)';
+ } else {
+  icon.textContent = '';
+  icon.style.background = `radial-gradient(circle at 30% 28%,${lighten(body.color, 1.5)},${body.color} 48%,#060b18)`;
+ }
+ const chips = item.chips.map(chip => `<span class="chip">${chip}</span>`);
+ if (!view.find && finds.some(find => find.parentId === body.id && !discovered.has(find.id))) chips.push('<span class="chip hint">🛰 Znajdź sondę! Przybliż</span>');
+ byId('chips').innerHTML = chips.join('');
+ byId('activityBtn').hidden = !!view.find || !body.activity;
+ byId('focusBtn').classList.toggle('active', view.following);
+ renderFact();
+}
+
+function renderNotebook() {
+ byId('notebook').textContent = `📓 Odkryto ${discovered.size} z ${TOTAL_ITEMS}`;
+}
+
+function renderControls() {
+ document.querySelectorAll('[data-speed]').forEach(button => button.classList.toggle('active', playing && +button.dataset.speed === speed));
+ const playButton = byId('play');
+ playButton.classList.toggle('active', !playing);
+ playButton.querySelector('.ico').textContent = playing ? '⏸' : '▶️';
+ playButton.querySelector('.lbl').textContent = playing ? 'Stop' : 'Start';
+ const soundButton = byId('sound');
+ soundButton.querySelector('.ico').textContent = soundOn ? '🔊' : '🔇';
+ soundButton.querySelector('.lbl').textContent = soundOn ? 'Głos' : 'Cisza';
+ soundButton.classList.toggle('active', !soundOn);
+}
+
+function applySpeed(value) {
+ speed = value;
+ playing = true;
+ renderControls();
+}
+
+function togglePlay() {
+ playing = !playing;
+ renderControls();
+}
+
+function toggleSound() {
+ soundOn = !soundOn;
+ saveStored('kosmos2.sound', soundOn ? '1' : '0');
+ if (!soundOn && speechSupported) window.speechSynthesis.cancel();
+ renderControls();
+ if (soundOn) speakItem(true);
+}
+
+function markDiscovered(id) {
+ if (discovered.has(id)) return;
+ discovered.add(id);
+ saveStored('kosmos2.discovered', JSON.stringify([...discovered]));
+ renderNotebook();
+}
+
+function addRipple(position) {
+ if (position) ripples.push({x: position.x, y: position.y, radius: position.radius, life: 0, max: .8});
+}
+
+function choose(index) {
+ const wrapped = ((index % bodies.length) + bodies.length) % bodies.length;
+ view.find = null;
+ setSelection(view.following, wrapped);
+ if (view.following) view.zoomGoal = followZoom(wrapped);
+ factIndex = 0;
+ markDiscovered(bodies[wrapped].id);
+ renderInfo();
+ addRipple(wrapped === 0 ? view.sunTarget : view.targets.find(target => target.index === wrapped));
+ speakItem(false);
+}
+
+function chooseFind(target) {
+ view.find = target.find;
+ factIndex = 0;
+ markDiscovered(target.find.id);
+ renderInfo();
+ addRipple(target);
+ speakItem(false);
+}
+
+function nextFact() {
+ factIndex = (factIndex + 1) % currentItem().facts.length;
+ renderFact();
+ speakItem(false);
+}
+
+function focusSelected() {
+ view.find = null;
+ setSelection(true, view.selected);
+ view.zoomGoal = followZoom(view.selected);
+ renderInfo();
+}
+
+function resetView() {
+ setSelection(false, view.selected);
+ view.zoomGoal = 1;
+ view.angle = Math.atan2(Math.sin(view.angle), Math.cos(view.angle));
+ view.angleGoal = 0;
+ view.tiltGoal = defaultTilt();
+ renderInfo();
+}
+
+function pickAt(clientX, clientY, pointerType) {
+ const padding = pointerType === 'mouse' ? 10 : 22;
+ for (const target of view.findTargets) {
+  if (Math.hypot(target.x - clientX, target.y - clientY) <= target.radius + padding * .5) {
+   chooseFind(target);
+   return;
+  }
+ }
+ let bestIndex = null;
+ let bestRank = Infinity;
+ for (const target of view.targets) {
+  const distance = Math.hypot(target.x - clientX, target.y - clientY);
+  if (distance > Math.max(16, target.radius + padding)) continue;
+  const rank = distance - target.radius;
+  if (rank < bestRank) {bestRank = rank; bestIndex = target.index;}
+ }
+ if (bestIndex === null && view.sunTarget && Math.hypot(view.sunTarget.x - clientX, view.sunTarget.y - clientY) <= view.sunTarget.radius + 8) bestIndex = 0;
+ if (bestIndex !== null) choose(bestIndex);
+}
+
+/* ---------- gesty na scenie ---------- */
+
+const pointers = new Map();
+let gesture = null;
+
+function pointerDistance() {
+ const [first, second] = [...pointers.values()];
+ return Math.hypot(first.x - second.x, first.y - second.y) || 1;
+}
+
+canvas.addEventListener('pointerdown', event => {
+ try {canvas.setPointerCapture(event.pointerId);} catch (error) {}
+ pointers.set(event.pointerId, {x: event.clientX, y: event.clientY});
+ if (pointers.size === 1) {
+  gesture = {kind: 'drag', startX: event.clientX, startY: event.clientY, angle: view.angle, tilt: view.tilt, moved: false};
+ } else if (pointers.size === 2) {
+  gesture = {kind: 'pinch', startDistance: pointerDistance(), startZoom: view.zoomGoal};
+ }
+});
+
+canvas.addEventListener('pointermove', event => {
+ if (!pointers.has(event.pointerId)) return;
+ pointers.set(event.pointerId, {x: event.clientX, y: event.clientY});
+ if (!gesture) return;
+ if (gesture.kind === 'pinch') {
+  if (pointers.size >= 2) {
+   view.zoomGoal = clamp(gesture.startZoom * pointerDistance() / gesture.startDistance, MIN_ZOOM, MAX_ZOOM);
+   view.zoom = view.zoomGoal;
+  }
+  return;
+ }
+ const deltaX = event.clientX - gesture.startX;
+ const deltaY = event.clientY - gesture.startY;
+ if (!gesture.moved && Math.abs(deltaX) + Math.abs(deltaY) > 8) gesture.moved = true;
+ if (!gesture.moved) return;
+ view.angleGoal = null;
+ view.tiltGoal = null;
+ view.angle = gesture.angle - deltaX * .006;
+ view.tilt = clamp(gesture.tilt + deltaY * .003, MIN_TILT, MAX_TILT);
+});
+
+function endPointer(event) {
+ if (!pointers.has(event.pointerId)) return;
+ const finished = gesture;
+ pointers.delete(event.pointerId);
+ if (finished && finished.kind === 'drag' && !finished.moved && event.type === 'pointerup') pickAt(event.clientX, event.clientY, event.pointerType);
+ gesture = null;
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+
+canvas.addEventListener('wheel', event => {
+ event.preventDefault();
+ const delta = event.deltaMode === 1 ? event.deltaY * 33 : event.deltaY;
+ view.zoomGoal = clamp(view.zoomGoal * Math.exp(-delta * .0015), MIN_ZOOM, MAX_ZOOM);
+}, {passive: false});
+
+/* ---------- zadania ---------- */
+
+const activityOverlay = byId('activity');
+const actCanvas = byId('actCanvas');
+const actCtx = actCanvas.getContext('2d');
+let activeActivity = null;
+
+function makeLayer(width, height) {
+ const layer = document.createElement('canvas');
+ layer.width = width * ACT_SCALE;
+ layer.height = height * ACT_SCALE;
+ const layerCtx = layer.getContext('2d');
+ layerCtx.setTransform(ACT_SCALE, 0, 0, ACT_SCALE, 0, 0);
+ return {canvas: layer, ctx: layerCtx};
+}
+
+function logActivity(text) {
+ const line = document.createElement('p');
+ line.textContent = text;
+ byId('actLog').insertBefore(line, byId('actLog').firstChild);
+ if (soundOn) speak(text);
+}
+
+function drawRover(c, flat) {
+ const fill = color => {c.fillStyle = flat ? '#000' : color;};
+ c.lineCap = 'round';
+ c.strokeStyle = flat ? '#000' : '#8a8a93';
+ c.lineWidth = 9;
+ [[150, 268, 215, 218], [280, 268, 280, 218], [410, 268, 345, 218]].forEach(([fromX, fromY, toX, toY]) => {
+  c.beginPath();
+  c.moveTo(fromX, fromY);
+  c.lineTo(toX, toY);
+  c.stroke();
+ });
+ for (const wheelX of [150, 280, 410]) {
+  fill('#26262c');
+  c.beginPath();
+  c.arc(wheelX, 268, 32, 0, TAU);
+  c.fill();
+  if (!flat) {
+   c.fillStyle = '#6d6d78';
+   c.beginPath();
+   c.arc(wheelX, 268, 14, 0, TAU);
+   c.fill();
+   c.strokeStyle = '#3b3b43';
+   c.lineWidth = 3;
+   for (let spoke = 0; spoke < 6; spoke++) {
+    const spokeAngle = spoke * TAU / 6;
+    c.beginPath();
+    c.moveTo(wheelX + Math.cos(spokeAngle) * 14, 268 + Math.sin(spokeAngle) * 14);
+    c.lineTo(wheelX + Math.cos(spokeAngle) * 30, 268 + Math.sin(spokeAngle) * 30);
+    c.stroke();
+   }
+  }
+ }
+ fill('#cba84e');
+ c.fillRect(185, 158, 190, 64);
+ if (!flat) {
+  c.strokeStyle = '#8e7430';
+  c.lineWidth = 2;
+  c.strokeRect(185, 158, 190, 64);
+ }
+ fill('#243a78');
+ c.beginPath();
+ c.moveTo(120, 162);
+ c.lineTo(440, 162);
+ c.lineTo(500, 124);
+ c.lineTo(180, 124);
+ c.closePath();
+ c.fill();
+ if (!flat) {
+  c.strokeStyle = 'rgba(190,210,255,.55)';
+  c.lineWidth = 1.5;
+  for (let cell = 1; cell < 8; cell++) {
+   c.beginPath();
+   c.moveTo(120 + cell * 40, 162);
+   c.lineTo(180 + cell * 40, 124);
+   c.stroke();
+  }
+  c.beginPath();
+  c.moveTo(150, 143);
+  c.lineTo(470, 143);
+  c.stroke();
+ }
+ fill('#9a9aa4');
+ c.fillRect(300, 44, 10, 82);
+ fill('#6e6e78');
+ c.fillRect(283, 28, 44, 20);
+ if (!flat) {
+  c.fillStyle = '#111';
+  c.beginPath();
+  c.arc(293, 38, 6, 0, TAU);
+  c.arc(317, 38, 6, 0, TAU);
+  c.fill();
+  c.fillStyle = '#7fd0ff';
+  c.beginPath();
+  c.arc(291, 36, 2, 0, TAU);
+  c.arc(315, 36, 2, 0, TAU);
+  c.fill();
+ }
+ fill('#d9d9df');
+ c.beginPath();
+ c.ellipse(222, 112, 24, 9, -.3, 0, TAU);
+ c.fill();
+ fill('#8a8a93');
+ c.fillRect(220, 112, 4, 14);
+ c.strokeStyle = flat ? '#000' : '#7d7d86';
+ c.lineWidth = 7;
+ c.beginPath();
+ c.moveTo(375, 185);
+ c.lineTo(420, 205);
+ c.lineTo(445, 190);
+ c.stroke();
+}
+
+function createRoverActivity() {
+ const width = 560;
+ const height = 340;
+ const scene = makeLayer(width, height);
+ const dust = makeLayer(width, height);
+ const probe = document.createElement('canvas');
+ probe.width = 140;
+ probe.height = 85;
+ const probeCtx = probe.getContext('2d', {willReadFrequently: true});
+ const sky = scene.ctx.createLinearGradient(0, 0, 0, 215);
+ sky.addColorStop(0, '#c98f6b');
+ sky.addColorStop(1, '#efc19a');
+ scene.ctx.fillStyle = sky;
+ scene.ctx.fillRect(0, 0, width, 215);
+ const ground = scene.ctx.createLinearGradient(0, 215, 0, height);
+ ground.addColorStop(0, '#b4603a');
+ ground.addColorStop(1, '#7b3b22');
+ scene.ctx.fillStyle = ground;
+ scene.ctx.fillRect(0, 215, width, height - 215);
+ scene.ctx.fillStyle = 'rgba(70,30,15,.45)';
+ [[60, 310, 26, 8], [500, 300, 34, 10], [90, 240, 14, 5], [470, 250, 18, 6]].forEach(([x, y, w, h]) => {
+  scene.ctx.beginPath();
+  scene.ctx.ellipse(x, y, w, h, 0, 0, TAU);
+  scene.ctx.fill();
+ });
+ drawRover(scene.ctx, false);
+ drawRover(dust.ctx, true);
+ dust.ctx.globalCompositeOperation = 'source-in';
+ dust.ctx.fillStyle = 'rgba(176,100,60,.94)';
+ dust.ctx.fillRect(0, 0, width, height);
+ dust.ctx.globalCompositeOperation = 'source-atop';
+ for (let speck = 0; speck < 900; speck++) {
+  dust.ctx.fillStyle = speck % 2 ? 'rgba(225,160,110,.35)' : 'rgba(110,55,30,.3)';
+  dust.ctx.beginPath();
+  dust.ctx.arc(Math.random() * width, Math.random() * height, 1 + Math.random() * 2.4, 0, TAU);
+  dust.ctx.fill();
+ }
+ dust.ctx.globalCompositeOperation = 'destination-out';
+
+ const dustAmount = () => {
+  probeCtx.clearRect(0, 0, 140, 85);
+  probeCtx.drawImage(dust.canvas, 0, 0, 140, 85);
+  const data = probeCtx.getImageData(0, 0, 140, 85).data;
+  let count = 0;
+  for (let index = 3; index < data.length; index += 4) if (data[index] > 70) count++;
+  return count;
+ };
+ const initialDust = dustAmount();
+ let wiping = false;
+ let lastPoint = null;
+ let lastCheck = 0;
+ let finished = false;
+
+ const render = () => {
+  actCtx.drawImage(scene.canvas, 0, 0, width, height);
+  actCtx.drawImage(dust.canvas, 0, 0, width, height);
+ };
+ const wipe = point => {
+  dust.ctx.lineWidth = 40;
+  dust.ctx.lineCap = 'round';
+  dust.ctx.beginPath();
+  dust.ctx.moveTo(lastPoint.x, lastPoint.y);
+  dust.ctx.lineTo(point.x, point.y);
+  dust.ctx.stroke();
+  lastPoint = point;
+  render();
+  const now = performance.now();
+  if (finished || now - lastCheck < 120) return;
+  lastCheck = now;
+  if (dustAmount() < initialDust * .07) {
+   finished = true;
+   dust.ctx.clearRect(0, 0, width, height);
+   render();
+   logActivity('Czysto! Łaziki Spirit i Opportunity miały panele słoneczne. Pył zmniejszał ilość prądu, ale czasem pomagał wiatr: małe wiry zwane diabłami pyłowymi zdmuchiwały kurz z paneli. Dzięki temu łazik Opportunity, zaplanowany na 90 dni, pracował na Marsie ponad 14 lat!');
+  }
+ };
+ return {
+  title: '🧽 Wyczyść łazika',
+  lead: 'Łazik jest pokryty marsjańskim pyłem. Przesuwaj palcem po łaziku, żeby odkurzyć panele i kamery.',
+  width, height,
+  start: render,
+  onDown: point => {wiping = true; lastPoint = point; wipe(point);},
+  onMove: point => {if (wiping) wipe(point);},
+  onUp: () => {wiping = false;}
+ };
+}
+
+function createHeartActivity() {
+ const width = 560;
+ const height = 340;
+ const centerX = 280;
+ const centerY = 170;
+ const planetRadiusValue = 150;
+ const heart = heartPath(325, 168, 62);
+ const scene = makeLayer(width, height);
+ const sc = scene.ctx;
+ sc.fillStyle = '#02030a';
+ sc.fillRect(0, 0, width, height);
+ for (let star = 0; star < 90; star++) {
+  sc.fillStyle = `rgba(255,255,255,${.2 + Math.random() * .6})`;
+  sc.fillRect(Math.random() * width, Math.random() * height, 1.5, 1.5);
+ }
+ const body = sc.createRadialGradient(centerX - 50, centerY - 50, 10, centerX, centerY, planetRadiusValue);
+ body.addColorStop(0, '#d9bfa4');
+ body.addColorStop(.7, '#a88468');
+ body.addColorStop(1, '#5e4636');
+ sc.fillStyle = body;
+ sc.beginPath();
+ sc.arc(centerX, centerY, planetRadiusValue, 0, TAU);
+ sc.fill();
+ sc.save();
+ sc.beginPath();
+ sc.arc(centerX, centerY, planetRadiusValue, 0, TAU);
+ sc.clip();
+ sc.fillStyle = 'rgba(70,38,32,.7)';
+ sc.beginPath();
+ sc.ellipse(200, 190, 62, 86, .1, 0, TAU);
+ sc.fill();
+ sc.fillStyle = 'rgba(90,55,45,.5)';
+ [[250, 90, 26, 14], [380, 250, 34, 18], [150, 110, 22, 12], [430, 120, 20, 14]].forEach(([x, y, w, h]) => {
+  sc.beginPath();
+  sc.ellipse(x, y, w, h, 0, 0, TAU);
+  sc.fill();
+ });
+ const heartFill = sc.createLinearGradient(260, 110, 390, 230);
+ heartFill.addColorStop(0, '#fff6e6');
+ heartFill.addColorStop(1, '#ead9c2');
+ sc.fillStyle = heartFill;
+ sc.fill(heart);
+ sc.restore();
+
+ let found = false;
+ let light = {x: 110, y: 80};
+ const render = () => {
+  actCtx.drawImage(scene.canvas, 0, 0, width, height);
+  if (found) {
+   actCtx.strokeStyle = '#ffd95a';
+   actCtx.lineWidth = 4;
+   actCtx.stroke(heart);
+   return;
+  }
+  const beam = actCtx.createRadialGradient(light.x, light.y, 0, light.x, light.y, 75);
+  beam.addColorStop(0, 'rgba(2,3,10,0)');
+  beam.addColorStop(.6, 'rgba(2,3,10,.12)');
+  beam.addColorStop(1, 'rgba(2,3,10,.985)');
+  actCtx.fillStyle = beam;
+  actCtx.fillRect(0, 0, width, height);
+ };
+ const move = point => {
+  if (found) return;
+  light = point;
+  render();
+  if (actCtx.isPointInPath(heart, point.x * ACT_SCALE, point.y * ACT_SCALE)) {
+   found = true;
+   render();
+   logActivity('Znalazłaś serce Plutona! To jasna równina Tombaugh Regio. Zdjęcia zrobiła sonda New Horizons w lipcu 2015 roku. Lewa część serca to wielka równina z zamarzniętego azotu. Azot to gaz, który jest też w naszym powietrzu, tylko na Plutonie jest tak zimno, że zamarzł.');
+  }
+ };
+ return {
+  title: '💗 Znajdź serce Plutona',
+  lead: 'Na Plutonie jest bardzo ciemno. Poruszaj palcem, żeby oświetlać powierzchnię, i znajdź wielkie serce.',
+  width, height,
+  start: render,
+  onDown: move,
+  onMove: move,
+  onUp: () => {}
+ };
+}
+
+const MOON_DIFFS = [
+ {id: 'flag', shape: 'circle', x: 343, y: 100, r: 36, text: 'Flaga. Na Księżycu nie ma powietrza, więc nie ma wiatru. Flaga nie powiewa, więc astronauci dali w niej poziomy drążek, żeby się rozpościerała.'},
+ {id: 'earth', shape: 'circle', x: 470, y: 42, r: 30, text: 'Ziemia na niebie. Z Księżyca widać Ziemię jako dużą niebieską kulę. Z jednej strony Księżyca wisi ona prawie w jednym miejscu nieba.'},
+ {id: 'steps', shape: 'circle', x: 168, y: 172, r: 50, text: 'Ślady butów. Na Księżycu nie ma wiatru ani deszczu, więc ślady astronautów mogą zostać tam bardzo, bardzo długo.'},
+ {id: 'crater', shape: 'circle', x: 445, y: 178, r: 38, text: 'Krater. To ślad po uderzeniu meteorytu. Na Księżycu jest ich mnóstwo, bo nie ma atmosfery, która spaliłaby meteory.'},
+ {id: 'sky', shape: 'sky', text: 'Niebo. Na Księżycu niebo jest czarne nawet w dzień, bo nie ma atmosfery, która rozprasza światło. Na Ziemi dlatego niebo jest niebieskie.'}
+];
+
+function drawMoonScene(c, top, original) {
+ c.save();
+ c.translate(0, top);
+ c.beginPath();
+ c.rect(0, 0, 560, 200);
+ c.clip();
+ if (original) {
+  c.fillStyle = '#02030a';
+  c.fillRect(0, 0, 560, 200);
+  c.fillStyle = '#fff';
+  [[40, 30], [120, 70], [200, 25], [270, 60], [390, 20], [520, 80], [90, 100], [430, 90], [300, 15], [560, 40]].forEach(([x, y]) => c.fillRect(x, y, 2, 2));
+ } else {
+  const sky = c.createLinearGradient(0, 0, 0, 130);
+  sky.addColorStop(0, '#3f86dc');
+  sky.addColorStop(1, '#a9d4f7');
+  c.fillStyle = sky;
+  c.fillRect(0, 0, 560, 200);
+ }
+ const ground = c.createLinearGradient(0, 128, 0, 200);
+ ground.addColorStop(0, '#9a9aa2');
+ ground.addColorStop(1, '#5a5a62');
+ c.fillStyle = ground;
+ c.beginPath();
+ c.moveTo(0, 140);
+ c.quadraticCurveTo(140, 122, 280, 134);
+ c.quadraticCurveTo(420, 146, 560, 128);
+ c.lineTo(560, 200);
+ c.lineTo(0, 200);
+ c.closePath();
+ c.fill();
+ const crater = (x, y, w, h) => {
+  c.fillStyle = 'rgba(40,40,48,.5)';
+  c.beginPath();
+  c.ellipse(x, y, w, h, 0, 0, TAU);
+  c.fill();
+  c.strokeStyle = 'rgba(210,210,220,.45)';
+  c.lineWidth = 2;
+  c.beginPath();
+  c.ellipse(x, y - 1, w, h, 0, Math.PI, TAU);
+  c.stroke();
+ };
+ crater(90, 172, 34, 9);
+ crater(360, 184, 44, 11);
+ crater(520, 160, 24, 7);
+ if (original) crater(445, 178, 36, 10);
+ c.fillStyle = '#c9a24b';
+ c.fillRect(55, 105, 50, 32);
+ c.fillStyle = '#e8e8ee';
+ c.fillRect(62, 96, 36, 10);
+ c.strokeStyle = '#d0d0d8';
+ c.lineWidth = 3;
+ [[60, 137, 40, 160], [100, 137, 122, 160], [80, 137, 80, 160]].forEach(([fromX, fromY, toX, toY]) => {
+  c.beginPath();
+  c.moveTo(fromX, fromY);
+  c.lineTo(toX, toY);
+  c.stroke();
+ });
+ c.fillStyle = '#9a9aa4';
+ c.fillRect(212, 110, 10, 28);
+ c.fillStyle = '#f4f4f8';
+ c.fillRect(221, 108, 28, 34);
+ c.fillRect(223, 140, 10, 26);
+ c.fillRect(237, 140, 10, 26);
+ c.fillStyle = '#6a6a74';
+ c.fillRect(222, 164, 12, 6);
+ c.fillRect(236, 164, 12, 6);
+ c.fillStyle = '#f4f4f8';
+ c.beginPath();
+ c.arc(235, 94, 15, 0, TAU);
+ c.fill();
+ const visor = c.createLinearGradient(225, 86, 245, 102);
+ visor.addColorStop(0, '#f6d77a');
+ visor.addColorStop(1, '#a8742a');
+ c.fillStyle = visor;
+ c.beginPath();
+ c.ellipse(238, 94, 9, 8, 0, 0, TAU);
+ c.fill();
+ c.strokeStyle = '#f4f4f8';
+ c.lineWidth = 8;
+ c.lineCap = 'round';
+ c.beginPath();
+ c.moveTo(249, 116);
+ c.lineTo(268, 126);
+ c.stroke();
+ if (original) {
+  c.strokeStyle = '#d8d8e0';
+  c.lineWidth = 3;
+  c.beginPath();
+  c.moveTo(320, 150);
+  c.lineTo(320, 82);
+  c.moveTo(320, 84);
+  c.lineTo(366, 84);
+  c.stroke();
+  c.fillStyle = '#ffffff';
+  c.fillRect(320, 85, 46, 28);
+  c.fillStyle = '#d23a3a';
+  [86, 93, 100, 107].forEach(stripeY => c.fillRect(320, stripeY, 46, 3.5));
+  c.fillStyle = '#243a8a';
+  c.fillRect(320, 85, 20, 14);
+  const planet = c.createRadialGradient(464, 36, 2, 470, 42, 22);
+  planet.addColorStop(0, '#9ad0ff');
+  planet.addColorStop(1, '#2a62c0');
+  c.fillStyle = planet;
+  c.beginPath();
+  c.arc(470, 42, 20, 0, TAU);
+  c.fill();
+  c.fillStyle = '#4eaa69';
+  c.beginPath();
+  c.ellipse(464, 40, 8, 6, -.4, 0, TAU);
+  c.ellipse(476, 50, 6, 8, .5, 0, TAU);
+  c.fill();
+  c.fillStyle = 'rgba(255,255,255,.75)';
+  c.beginPath();
+  c.ellipse(472, 33, 9, 3, .2, 0, TAU);
+  c.fill();
+  c.fillStyle = 'rgba(30,30,38,.6)';
+  for (let step = 0; step < 6; step++) {
+   c.beginPath();
+   c.ellipse(120 + step * 17, step % 2 ? 176 : 168, 6, 2.6, 0, 0, TAU);
+   c.fill();
+  }
+ }
+ c.restore();
+}
+
+function createMoonActivity() {
+ const width = 560;
+ const height = 412;
+ const found = new Set();
+ const scene = makeLayer(width, height);
+ drawMoonScene(scene.ctx, 0, true);
+ drawMoonScene(scene.ctx, 212, false);
+ scene.ctx.fillStyle = '#020611';
+ scene.ctx.fillRect(0, 200, width, 12);
+ const marks = diff => {
+  actCtx.strokeStyle = '#ffd95a';
+  actCtx.lineWidth = 4;
+  [0, 212].forEach(offsetY => {
+   actCtx.beginPath();
+   if (diff.shape === 'circle') actCtx.arc(diff.x, diff.y + offsetY, diff.r, 0, TAU);
+   else actCtx.rect(6, offsetY + 6, 548, 90);
+   actCtx.stroke();
+  });
+ };
+ const render = () => {
+  actCtx.drawImage(scene.canvas, 0, 0, width, height);
+  actCtx.font = '700 14px system-ui, sans-serif';
+  actCtx.fillStyle = 'rgba(0,0,0,.55)';
+  actCtx.fillRect(8, 172, 78, 22);
+  actCtx.fillRect(8, 384, 78, 22);
+  actCtx.fillStyle = '#fff';
+  actCtx.fillText('Obrazek 1', 14, 188);
+  actCtx.fillText('Obrazek 2', 14, 400);
+  MOON_DIFFS.filter(diff => found.has(diff.id)).forEach(marks);
+ };
+ const tap = point => {
+  if (point.y > 200 && point.y < 212) return;
+  const localY = point.y >= 212 ? point.y - 212 : point.y;
+  const hit = MOON_DIFFS.find(diff => {
+   if (diff.shape === 'circle') return Math.hypot(point.x - diff.x, localY - diff.y) <= diff.r;
+   return localY < 105;
+  });
+  if (!hit || found.has(hit.id)) return;
+  found.add(hit.id);
+  render();
+  const summary = found.size === MOON_DIFFS.length ? ' Znalazłaś wszystkie różnice! Prawdziwy Księżyc wygląda jak Obrazek 1.' : '';
+  logActivity(`Znaleziono ${found.size} z ${MOON_DIFFS.length}. ${hit.text}${summary}`);
+ };
+ return {
+  title: '🌙 Księżyc: znajdź 5 różnic',
+  lead: 'Te dwa obrazki różnią się pięcioma szczegółami. Dotknij miejsca, w którym coś się nie zgadza. Obrazek 1 pokazuje prawdziwy Księżyc.',
+  width, height,
+  start: render,
+  onDown: tap,
+  onMove: () => {},
+  onUp: () => {}
+ };
+}
+
+const activityFactories = {moon: createMoonActivity, rover: createRoverActivity, heart: createHeartActivity};
+
+function activityPoint(event) {
+ const rect = actCanvas.getBoundingClientRect();
+ return {
+  x: (event.clientX - rect.left) * activeActivity.width / rect.width,
+  y: (event.clientY - rect.top) * activeActivity.height / rect.height
+ };
+}
+
+function openActivity(kind) {
+ const factory = activityFactories[kind];
+ if (!factory) return;
+ if (speechSupported) window.speechSynthesis.cancel();
+ activeActivity = factory();
+ byId('actTitle').textContent = activeActivity.title;
+ byId('actLead').textContent = activeActivity.lead;
+ byId('actLog').innerHTML = '';
+ actCanvas.width = activeActivity.width * ACT_SCALE;
+ actCanvas.height = activeActivity.height * ACT_SCALE;
+ actCtx.setTransform(ACT_SCALE, 0, 0, ACT_SCALE, 0, 0);
+ activityOverlay.hidden = false;
+ activityOverlay.scrollTop = 0;
+ activeActivity.start();
+}
+
+function closeActivity() {
+ activeActivity = null;
+ activityOverlay.hidden = true;
+ if (speechSupported) window.speechSynthesis.cancel();
+}
+
+actCanvas.addEventListener('pointerdown', event => {
+ if (!activeActivity) return;
+ try {actCanvas.setPointerCapture(event.pointerId);} catch (error) {}
+ activeActivity.onDown(activityPoint(event));
+});
+actCanvas.addEventListener('pointermove', event => {
+ if (activeActivity) activeActivity.onMove(activityPoint(event));
+});
+actCanvas.addEventListener('pointerup', () => {
+ if (activeActivity) activeActivity.onUp();
+});
+actCanvas.addEventListener('pointercancel', () => {
+ if (activeActivity) activeActivity.onUp();
+});
+byId('actClose').addEventListener('click', closeActivity);
+
+/* ---------- sterowanie ---------- */
+
+document.querySelectorAll('[data-speed]').forEach(button => button.addEventListener('click', () => applySpeed(+button.dataset.speed)));
+byId('play').addEventListener('click', togglePlay);
+byId('sound').addEventListener('click', toggleSound);
+byId('prev').addEventListener('click', () => choose(view.selected - 1));
+byId('next').addEventListener('click', () => choose(view.selected + 1));
+byId('nextFact').addEventListener('click', nextFact);
+byId('readAgain').addEventListener('click', () => speakItem(true));
+byId('focusBtn').addEventListener('click', focusSelected);
+byId('resetBtn').addEventListener('click', resetView);
+byId('activityBtn').addEventListener('click', () => openActivity(bodies[view.selected].activity));
+
+window.addEventListener('keydown', event => {
+ const target = event.target;
+ if (!activityOverlay.hidden) {
+  if (event.key === 'Escape') closeActivity();
+  return;
+ }
+ if (event.key === 'ArrowRight') choose(view.selected + 1);
+ else if (event.key === 'ArrowLeft') choose(view.selected - 1);
+ else if (event.key === 'Escape') resetView();
+ else if (event.key === ' ' && !(target && target.closest && target.closest('button'))) {
+  event.preventDefault();
+  togglePlay();
+ }
+});
+
+window.addEventListener('resize', resize);
+if ('ResizeObserver' in window) {
+ const observer = new ResizeObserver(layout);
+ observer.observe(infoPanel);
+ observer.observe(dock);
+}
+if (speechSupported) window.speechSynthesis.getVoices();
+else {
+ byId('readAgain').hidden = true;
+ byId('sound').hidden = true;
+}
+
+/* ---------- pętla ---------- */
+
+function frameLoop(now) {
+ const dt = clamp((now - lastFrameTime) / 1000, 0, .1);
+ lastFrameTime = now;
+ frameTime = now;
+ if (playing && speed > 0) simDays += dt * speed * DAYS_PER_SPEED_UNIT;
+ updateCamera(dt);
+ for (let index = ripples.length - 1; index >= 0; index--) {
+  ripples[index].life += dt;
+  if (ripples[index].life >= ripples[index].max) ripples.splice(index, 1);
+ }
+ draw();
+ requestAnimationFrame(frameLoop);
+}
+
+resize();
+view.tilt = defaultTilt();
+renderInfo();
+renderNotebook();
+renderControls();
+requestAnimationFrame(frameLoop);
+})();
+</script>
+</body>
+</html>
