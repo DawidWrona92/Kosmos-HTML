@@ -93,8 +93,8 @@ function renderInfo() {
    icon.style.background = `#0b1c3a url(${ASSET_DATA[item.sprite]}) center/78% no-repeat`;
   } else icon.textContent = '🛰';
  } else {
-  icon.textContent = body.kind === 'star' ? '☀️' : body.kind === 'moon' ? '🌙' : '';
-  const photo = body.photo && ASSET_DATA[body.texture];
+  icon.textContent = '';
+  const photo = body.photo && ASSET_DATA[body.texture] || (body.kind === 'star' && ASSET_DATA.sun_photo) || (body.kind === 'moon' && body.texture && ASSET_DATA[body.texture]);
   icon.style.background = photo ? `url(${photo}) center/cover` : `radial-gradient(circle at 30% 28%,${lighten(body.color, 1.5)},${body.color} 48%,#060b18)`;
  }
  byId('activityBtn').hidden = !(item.activity || item.activity2);

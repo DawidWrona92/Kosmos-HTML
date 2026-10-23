@@ -562,14 +562,17 @@ function drawRing(x, y, radius, ring, half) {
   * rysowany połówkami (tył przed planetą, przód po) z maską kątową */
  const photo = ring.photoKey && imageOf(ring.photoKey);
  if (photo) {
+  /* obraz pierścieni to koło (widok z góry): spłaszczamy do elipsy o stosunku
+   * pion/poziom = ratio, górna połowa elipsy = tył (rysowany przed planetą),
+   * dolna = przód (po planecie) */
   const outer = 2.27;
-  const size = radius * outer * 2;
+  const w = radius * outer * 2;
+  const h = w * ratio;
   ctx.save();
   ctx.beginPath();
-  ctx.rect(-size, half === 'back' ? -size : 0, size * 2, size);
+  ctx.ellipse(0, 0, w / 2, h / 2, 0, start, start + Math.PI);
   ctx.clip();
-  ctx.rotate(0);
-  ctx.drawImage(photo, -size / 2, -size / 2, size, size);
+  ctx.drawImage(photo, -w / 2, -h / 2, w, h);
   ctx.restore();
   ctx.restore();
   return;
@@ -732,7 +735,16 @@ function drawComet(item, frame) {
   }
  }
  glow(x, y, Math.min(radius, 8) * (zoomed ? 2 : 1), 'rgba(190,235,255,.45)');
- if (zoomed) drawNucleus(x, y, nucleusRadius, -unitX, -unitY);
+ /* zdjęcie jądra Halleya (model 3D ze Stellarium) przy przybliżeniu — fallback: rysunek */
+ const nucleusPhoto = zoomed && imageOf('halley_nucleus');
+ if (nucleusPhoto) {
+  const size = nucleusRadius * 2.6;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(.5);
+  ctx.drawImage(nucleusPhoto, -size / 2, -size / 2, size, size);
+  ctx.restore();
+ } else if (zoomed) drawNucleus(x, y, nucleusRadius, -unitX, -unitY);
  else {
   ctx.fillStyle = '#eaf7ff';
   ctx.beginPath();
