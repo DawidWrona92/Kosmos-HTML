@@ -831,8 +831,12 @@ function drawMoon(item, moon, parentX, parentY, parentRadius) {
  ctx.stroke();
  ctx.setLineDash([]);
  ctx.restore();
- const x = parentX + Math.cos(phase) * orbit;
- const y = parentY + Math.sin(phase) * orbit * .55;
+ const localX = Math.cos(phase) * orbit;
+ const localY = Math.sin(phase) * orbit * .55;
+ const cosTilt = Math.cos(moon.tilt);
+ const sinTilt = Math.sin(moon.tilt);
+ const x = parentX + localX * cosTilt - localY * sinTilt;
+ const y = parentY + localX * sinTilt + localY * cosTilt;
  const gradient = ctx.createRadialGradient(x - moonRadius * .35, y - moonRadius * .4, moonRadius * .2, x, y, moonRadius * 1.25);
  gradient.addColorStop(0, lighten(moon.color, 1.4));
  gradient.addColorStop(.55, moon.color);
@@ -1178,7 +1182,12 @@ function endPointer(event) {
  const finished = gesture;
  pointers.delete(event.pointerId);
  if (finished && finished.kind === 'drag' && !finished.moved && event.type === 'pointerup') pickAt(event.clientX, event.clientY, event.pointerType);
- gesture = null;
+ if (pointers.size === 1 && finished && finished.kind === 'pinch') {
+  const [remaining] = [...pointers.values()];
+  gesture = {kind: 'drag', startX: remaining.x, startY: remaining.y, angle: view.angle, tilt: view.tilt, rotation: rotationOf(bodies[view.selected]), moved: true};
+  return;
+ }
+ if (pointers.size === 0) gesture = null;
 }
 canvas.addEventListener('pointerup', endPointer);
 canvas.addEventListener('pointercancel', endPointer);
