@@ -58,6 +58,7 @@ function layout() {
   if (dockRect.width < view.width * .7) free.right = dockRect.left - 12;
   else free.bottom = dockRect.top - 8;
  } else {
+  free.left = 175;
   free.right = infoPanel.getBoundingClientRect().left - 16;
   free.bottom = controlsPanel.getBoundingClientRect().top - 8;
  }
@@ -572,7 +573,7 @@ function drawComet(item, frame) {
  const unitY = directionY / length;
  const zoomed = radius > 22;
  const nucleusRadius = zoomed ? Math.min(radius, 70) : Math.min(radius, 5);
- const tailLength = Math.pow(Math.max(0, 1 - distance / 340), .8) * 170 * (zoomed ? 2.4 : clamp(frame.scale, .5, 1.5));
+ const tailLength = Math.pow(Math.max(0, 1 - distance / 950), .8) * 170 * (zoomed ? 2.4 : clamp(frame.scale, .5, 1.5));
  if (tailLength > 3) {
   const normalX = -unitY;
   const normalY = unitX;

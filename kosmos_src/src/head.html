@@ -53,6 +53,10 @@ button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px r
 .speedbox input[type=range]{width:200px;accent-color:var(--gold)}
 .speedico{font-size:20px;line-height:1}
 .controls .btn{width:88px;flex:none}
+.homebtn{position:absolute;left:18px;bottom:18px;z-index:5;font-size:15px}
+.homebtn .ico{font-size:21px}
+@media (min-width:1201px){.info #resetBtn{display:none}}
+@media (max-width:1200px){.homebtn{display:none}}
 .activity{position:fixed;inset:0;background:rgba(2,6,17,.82);z-index:20;overflow:auto;padding:16px;display:grid;align-items:start;justify-items:center}
 .activity .card{width:min(620px,100%);margin:auto;padding:16px;border-radius:24px;background:linear-gradient(160deg,#102a52,#0a1c38);border:2px solid #2f6aa8;box-shadow:0 0 60px #000}
 .acthead{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -154,7 +158,7 @@ button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px r
    <button class="btn wide" id="activityBtn" hidden><span class="ico">🔬</span><span class="lbl">Zadanie</span></button>
   </div>
   <div class="row">
-   <button class="btn wide" id="resetBtn"><span class="ico">🏠</span><span class="lbl">Cały układ</span></button>
+   <button class="btn wide" id="resetBtn" data-home><span class="ico">🏠</span><span class="lbl">Cały układ</span></button>
   </div>
  </section>
  <section class="panel controls" id="controls">
@@ -166,6 +170,7 @@ button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px r
   <button class="btn" id="play"><span class="ico">⏸</span><span class="lbl">Stop</span></button>
  </section>
 </div>
+<button class="btn wide homebtn" data-home aria-label="Pokaż cały układ"><span class="ico">🏠</span><span class="lbl">Cały układ</span></button>
 <div class="activity" id="activity" hidden>
  <div class="card">
   <div class="acthead">

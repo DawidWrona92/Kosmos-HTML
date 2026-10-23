@@ -9,7 +9,7 @@ byId('readAgain').addEventListener('click', () => {
   highlightSentence(-1);
  } else if (hasChosen) readFrom(0, true);
 });
-byId('resetBtn').addEventListener('click', resetView);
+document.querySelectorAll('[data-home]').forEach(button => button.addEventListener('click', resetView));
 byId('activityBtn').addEventListener('click', () => openActivity(currentItem()));
 byId('fact').addEventListener('click', () => {
  if (!hasChosen) return;

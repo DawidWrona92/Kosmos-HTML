@@ -88,7 +88,7 @@ const bodies = [
    'W lipcu 2015 roku sonda New Horizons przeleciała tuż obok Plutona. Zrobiła zdjęcia serca, gór z lodu i niebieskiej mgiełki w atmosferze. To był pierwszy raz, kiedy zobaczyliśmy Plutona z bliska.',
    'Największy księżyc Plutona nazywa się Charon. Jest tak duży, że Pluton i Charon krążą wokół wspólnego punktu, jak w tańcu. Pluton ma w sumie pięć księżyców. Jeden rok na Plutonie trwa 248 naszych lat.'
   ]},
- {id: 'halley', kind: 'comet', name: 'Kometa Halleya', type: 'Kometa', intro: 'Kometa Halleya.', color: '#dff1ff', radius: 2.5, period: 27759, startAnomaly: 5.68, semiMajor: 303.5, eccentricity: .797, perihelionAngle: 2.2, activity: 'tail',
+ {id: 'halley', kind: 'comet', name: 'Kometa Halleya', type: 'Kometa', intro: 'Kometa Halleya.', color: '#dff1ff', radius: 2.5, period: 27759, startAnomaly: 5.68, semiMajor: 850, eccentricity: .85, perihelionAngle: 2.2, activity: 'tail',
   facts: [
    'Kometa to wielka, brudna kula z lodu i pyłu. Czasem nazywa się ją brudną śnieżką. Gdy zbliża się do Słońca, lód paruje i robi się z niego jasny ogon.',
    'Ogon komety zawsze wskazuje od Słońca, bo odpycha go wiatr słoneczny. Kiedy kometa odlatuje od Słońca, ogon jest przed nią! Ogon może mieć miliony kilometrów długości.',
