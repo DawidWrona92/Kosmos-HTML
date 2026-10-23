@@ -1040,3 +1040,186 @@ function createMoonActivity() {
  };
  return {title: '🌙 Księżyc: znajdź 5 różnic', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
 }
+
+/* ---------- zadanie dla sond: znajdź części ---------- */
+
+function createPartsActivity(item) {
+ const spec = PARTS[item.sprite || item.draw];
+ const width = 560, height = 340;
+ const scene = makeLayer(width, height);
+ paintActStars(scene.ctx, width, height, 80);
+ let imgRect = null;
+ const drawSource = () => {
+  const image = spec.image ? imageOf(spec.image) : null;
+  if (image) {
+   const scale = Math.min((width - 60) / image.naturalWidth, (height - 60) / image.naturalHeight);
+   const dw = image.naturalWidth * scale, dh = image.naturalHeight * scale;
+   imgRect = {x: (width - dw) / 2, y: (height - dh) / 2, w: dw, h: dh};
+   scene.ctx.drawImage(image, imgRect.x, imgRect.y, dw, dh);
+   return;
+  }
+  if (spec.draw && PROBE_BOX[spec.draw]) {
+   const box = makeLayer(300, 240);
+   PROBE_BOX[spec.draw](box.ctx, 300, 240);
+   const scale = Math.min((width - 60) / 300, (height - 60) / 240);
+   const dw = 300 * scale, dh = 240 * scale;
+   imgRect = {x: (width - dw) / 2, y: (height - dh) / 2, w: dw, h: dh};
+   scene.ctx.drawImage(box.canvas, imgRect.x, imgRect.y, dw, dh);
+  }
+ };
+ drawSource();
+ let partIndex = 0;
+ let foundHits = new Set();
+ let finished = false;
+ const lead = `To sonda ${item.name}. Dotykaj jej części, o które pytam.`;
+ const render = () => {
+  if (!imgRect) drawSource();
+  actCtx.drawImage(scene.canvas, 0, 0, width, height);
+  if (finished || !imgRect || partIndex >= spec.parts.length) return;
+  const part = spec.parts[partIndex];
+  const pulse = Math.sin(performance.now() * .005) * .5 + .5;
+  part.hits.forEach(([hx, hy, hr], index) => {
+   const px = imgRect.x + hx * imgRect.w;
+   const py = imgRect.y + hy * imgRect.h;
+   const pr = hr * imgRect.w;
+   if (foundHits.has(index)) {
+    actCtx.strokeStyle = '#7ee787';
+    actCtx.lineWidth = 4;
+    actCtx.beginPath();
+    actCtx.arc(px, py, pr + 7, 0, TAU);
+    actCtx.stroke();
+   } else {
+    actCtx.strokeStyle = `rgba(255,217,90,${.4 + .45 * pulse})`;
+    actCtx.lineWidth = 3;
+    actCtx.setLineDash([7, 7]);
+    actCtx.beginPath();
+    actCtx.arc(px, py, pr + 10 + pulse * 4, 0, TAU);
+    actCtx.stroke();
+    actCtx.setLineDash([]);
+   }
+  });
+ };
+ const tap = point => {
+  if (finished || !imgRect || partIndex >= spec.parts.length) return;
+  const part = spec.parts[partIndex];
+  const px = point.x - imgRect.x;
+  const py = point.y - imgRect.y;
+  if (px < 0 || py < 0 || px > imgRect.w || py > imgRect.h) return;
+  const hitIndex = part.hits.findIndex(([hx, hy, hr]) => Math.hypot(px - hx * imgRect.w, py - hy * imgRect.h) <= hr * imgRect.w);
+  if (hitIndex < 0 || foundHits.has(hitIndex)) return;
+  foundHits.add(hitIndex);
+  render();
+  const need = Math.min(part.count || 1, part.hits.length);
+  if (foundHits.size >= need) {
+   partIndex++;
+   foundHits = new Set();
+   if (partIndex >= spec.parts.length) {
+    finished = true;
+    spec.parts.forEach(donePart => donePart.hits.forEach(([hx, hy, hr]) => {
+     actCtx.strokeStyle = '#7ee787';
+     actCtx.lineWidth = 4;
+     actCtx.beginPath();
+     actCtx.arc(imgRect.x + hx * imgRect.w, imgRect.y + hy * imgRect.h, hr * imgRect.w + 7, 0, TAU);
+     actCtx.stroke();
+    }));
+    finishActivity(`Brawo! Znasz już wszystkie części sondy. ${part.ok}`);
+   } else {
+    const next = spec.parts[partIndex];
+    activity.repeatText = `${lead} ${next.ask}`;
+    speakSegments([{text: part.ok, pause: 500}, {text: next.ask}]);
+    render();
+   }
+  } else {
+   sayNow('Dobrze! Znajdź jeszcze jedno takie miejsce.');
+  }
+ };
+ const activity = {
+  title: `🛰️ Poznaj sondę: ${item.name}`,
+  lead,
+  width, height,
+  repeatText: lead,
+  start: render,
+  onDown: tap,
+  onMove: () => {},
+  onUp: () => {},
+  frame: (dt, now) => {if (!finished) render();}
+ };
+ const first = spec.parts[0];
+ if (first) {
+  activity.openingAsk = first.ask;
+  activity.repeatText = `${lead} ${first.ask}`;
+ }
+ return activity;
+}
+
+/* ---------- rejestr i sterowanie ---------- */
+
+const activityFactories = {
+ sunspots: createSunspotsActivity,
+ mercury: createMercuryActivity,
+ venus: createVenusActivity,
+ moon: createMoonActivity,
+ rover: createRoverActivity,
+ ceres: createCeresActivity,
+ jupiter: createJupiterActivity,
+ saturn: createSaturnActivity,
+ uranus: createUranusActivity,
+ neptune: createNeptuneActivity,
+ heart: createHeartActivity,
+ tail: createTailActivity
+};
+
+function openActivity(item) {
+ if (!item || !item.activity || activeActivity) return;
+ stopSpeech();
+ setReading(false);
+ highlightSentence(-1);
+ const factory = item.activity === 'parts' ? () => createPartsActivity(item) : activityFactories[item.activity];
+ if (!factory) return;
+ activeItem = item;
+ activeActivity = factory();
+ byId('actTitle').textContent = activeActivity.title;
+ byId('actLead').textContent = activeActivity.lead;
+ byId('actLog').innerHTML = '';
+ byId('actDone').hidden = !doneTasks.has(item.id);
+ byId('actSay').classList.toggle('done', doneTasks.has(item.id));
+ actCanvas.width = activeActivity.width * ACT_SCALE;
+ actCanvas.height = activeActivity.height * ACT_SCALE;
+ actCtx.setTransform(ACT_SCALE, 0, 0, ACT_SCALE, 0, 0);
+ activityOverlay.hidden = false;
+ activityOverlay.scrollTop = 0;
+ activeActivity.start();
+ const opening = activeActivity.openingAsk ? `${activeActivity.lead} ${activeActivity.openingAsk}` : activeActivity.lead;
+ sayNow(opening);
+}
+
+function closeActivity() {
+ activeActivity = null;
+ activeItem = null;
+ activityOverlay.hidden = true;
+ stopSpeech();
+}
+
+actCanvas.addEventListener('pointerdown', event => {
+ if (!activeActivity) return;
+ try {actCanvas.setPointerCapture(event.pointerId);} catch (error) {}
+ activeActivity.onDown(activityPoint(event));
+});
+actCanvas.addEventListener('pointermove', event => {
+ if (activeActivity) activeActivity.onMove(activityPoint(event));
+});
+actCanvas.addEventListener('pointerup', () => {
+ if (activeActivity) activeActivity.onUp();
+});
+actCanvas.addEventListener('pointercancel', () => {
+ if (activeActivity) activeActivity.onUp();
+});
+byId('actClose').addEventListener('click', closeActivity);
+byId('actSay').addEventListener('click', () => {
+ if (!activeActivity) return;
+ sayNow(activeActivity.repeatText || activeActivity.lead);
+});
+
+renderTaskbook();
+
+if (window.__KOSMOS_TEST__) window.__KOSMOS_TEST__ = {openActivity, closeActivity, getActive: () => activeActivity, bodies, finds, doneTasks};
