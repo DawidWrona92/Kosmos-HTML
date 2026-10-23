@@ -381,7 +381,7 @@ const GALAXY_OBJECTS = {
     'Voyager 1 jest teraz najdalej od Ziemi ze wszystkich rzeczy, które zbudowali ludzie — leci już między gwiazdami!',
     'Na pokładzie niesie Złotą Płytę z pozdrowieniami dla kosmitów — z dźwiękami Ziemi, muzyką i obrazkami.'
    ]},
-  {id: 'voyager2', name: 'Sonda Voyager 2', type: 'Sonda kosmiczna', intro: 'Sonda Voyager 2.', emoji: '🛰️',
+  {id: 'voyager2_gal', name: 'Sonda Voyager 2', type: 'Sonda kosmiczna', intro: 'Sonda Voyager 2.', emoji: '🛰️',
    facts: [
     'Voyager 2 to bliźniak Voyagera 1 — też poleciał w 1977 roku poznawać planety.',
     'To jedyna sonda na świecie, która przeleciała obok wszystkich czterech wielkich planet: Jowisza, Saturna, Urana i Neptuna!',
