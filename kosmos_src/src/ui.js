@@ -138,7 +138,14 @@ function markDiscovered(id) {
 }
 
 function addRipple(position) {
- if (position) ripples.push({x: position.x, y: position.y, radius: position.radius, life: 0, max: .8});
+ if (!position) return;
+ const moon = position.moon;
+ const find = position.find;
+ const object = position.object;
+ ripples.push({
+  x: position.x, y: position.y, radius: position.radius, life: 0, max: .8,
+  track: moon ? {kind: 'moon', id: moon.id} : find ? {kind: 'find', id: find.id} : object ? {kind: 'galaxy', id: object.id} : null
+ });
 }
 
 function choose(index) {
@@ -271,27 +278,34 @@ function pickAt(clientX, clientY, pointerType) {
   if (best) chooseGalaxy(best);
   return;
  }
- if (view.following && !view.find && !view.moon && !view.ring) {
+ if (view.following && !view.find && !view.ring) {
   for (const target of view.moonTargets) {
    if (Math.hypot(target.x - clientX, target.y - clientY) <= target.radius + padding * .5) {
-    chooseMoon(target);
+    if (view.moon === target.moon) {
+     view.moon = null;
+     factIndex = 0;
+     renderInfo();
+     readFrom(0, false);
+    } else chooseMoon(target);
     return;
    }
   }
-  const ring = view.ringTarget;
-  if (ring && !ring.pressed) {
-   ctx.save();
-   ctx.translate(ring.x, ring.y);
-   ctx.rotate(ring.angle);
-   const dx = (clientX - ring.x) * Math.cos(-ring.angle) - (clientY - ring.y) * Math.sin(-ring.angle);
-   const dy = (clientX - ring.x) * Math.sin(-ring.angle) + (clientY - ring.y) * Math.cos(-ring.angle);
-   const radial = Math.hypot(dx, dy / ring.ratio);
-   ctx.restore();
-   const near = radial <= ring.outer + padding * .7 && radial >= ring.inner - padding * .7;
-   const around = Math.abs(dy) <= ring.outer * ring.ratio + padding * .7;
-   if (near && around) {
-    chooseRing(ring);
-    return;
+  if (!view.moon) {
+   const ring = view.ringTarget;
+   if (ring && !ring.pressed) {
+    ctx.save();
+    ctx.translate(ring.x, ring.y);
+    ctx.rotate(ring.angle);
+    const dx = (clientX - ring.x) * Math.cos(-ring.angle) - (clientY - ring.y) * Math.sin(-ring.angle);
+    const dy = (clientX - ring.x) * Math.sin(-ring.angle) + (clientY - ring.y) * Math.cos(-ring.angle);
+    const radial = Math.hypot(dx, dy / ring.ratio);
+    ctx.restore();
+    const near = radial <= ring.outer + padding * .7 && radial >= ring.inner - padding * .7;
+    const around = Math.abs(dy) <= ring.outer * ring.ratio + padding * .7;
+    if (near && around) {
+     chooseRing(ring);
+     return;
+    }
    }
   }
  }
@@ -313,7 +327,17 @@ function pickAt(clientX, clientY, pointerType) {
   if (bestIndex === null || view.sunTarget.radius > 30) bestIndex = 0;
  }
  if (bestIndex === null) return;
- if (view.following && bestIndex === view.selected && !view.find && hasChosen) return;
+ if (view.following && bestIndex === view.selected && hasChosen) {
+  if (view.find || view.moon || view.ring) {
+   view.find = null;
+   view.moon = null;
+   view.ring = null;
+   factIndex = 0;
+   renderInfo();
+   readFrom(0, false);
+  }
+  return;
+ }
  choose(bestIndex);
 }
 

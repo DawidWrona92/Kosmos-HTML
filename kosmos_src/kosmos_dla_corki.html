@@ -2191,6 +2191,11 @@ function drawLabels(items) {
 
 function drawRipples() {
  for (const ripple of ripples) {
+  if (ripple.track) {
+   const list = ripple.track.kind === 'moon' ? view.moonTargets : ripple.track.kind === 'find' ? view.findTargets : view.galaxyTargets;
+   const current = list.find(target => (target.moon || target.find || target.object || {}).id === ripple.track.id);
+   if (current) {ripple.x = current.x; ripple.y = current.y;}
+  }
   const progress = ripple.life / ripple.max;
   ctx.globalAlpha = clamp(1 - progress, 0, 1) * .8;
   ctx.strokeStyle = '#ffe58a';
@@ -2516,7 +2521,14 @@ function markDiscovered(id) {
 }
 
 function addRipple(position) {
- if (position) ripples.push({x: position.x, y: position.y, radius: position.radius, life: 0, max: .8});
+ if (!position) return;
+ const moon = position.moon;
+ const find = position.find;
+ const object = position.object;
+ ripples.push({
+  x: position.x, y: position.y, radius: position.radius, life: 0, max: .8,
+  track: moon ? {kind: 'moon', id: moon.id} : find ? {kind: 'find', id: find.id} : object ? {kind: 'galaxy', id: object.id} : null
+ });
 }
 
 function choose(index) {
@@ -2649,27 +2661,34 @@ function pickAt(clientX, clientY, pointerType) {
   if (best) chooseGalaxy(best);
   return;
  }
- if (view.following && !view.find && !view.moon && !view.ring) {
+ if (view.following && !view.find && !view.ring) {
   for (const target of view.moonTargets) {
    if (Math.hypot(target.x - clientX, target.y - clientY) <= target.radius + padding * .5) {
-    chooseMoon(target);
+    if (view.moon === target.moon) {
+     view.moon = null;
+     factIndex = 0;
+     renderInfo();
+     readFrom(0, false);
+    } else chooseMoon(target);
     return;
    }
   }
-  const ring = view.ringTarget;
-  if (ring && !ring.pressed) {
-   ctx.save();
-   ctx.translate(ring.x, ring.y);
-   ctx.rotate(ring.angle);
-   const dx = (clientX - ring.x) * Math.cos(-ring.angle) - (clientY - ring.y) * Math.sin(-ring.angle);
-   const dy = (clientX - ring.x) * Math.sin(-ring.angle) + (clientY - ring.y) * Math.cos(-ring.angle);
-   const radial = Math.hypot(dx, dy / ring.ratio);
-   ctx.restore();
-   const near = radial <= ring.outer + padding * .7 && radial >= ring.inner - padding * .7;
-   const around = Math.abs(dy) <= ring.outer * ring.ratio + padding * .7;
-   if (near && around) {
-    chooseRing(ring);
-    return;
+  if (!view.moon) {
+   const ring = view.ringTarget;
+   if (ring && !ring.pressed) {
+    ctx.save();
+    ctx.translate(ring.x, ring.y);
+    ctx.rotate(ring.angle);
+    const dx = (clientX - ring.x) * Math.cos(-ring.angle) - (clientY - ring.y) * Math.sin(-ring.angle);
+    const dy = (clientX - ring.x) * Math.sin(-ring.angle) + (clientY - ring.y) * Math.cos(-ring.angle);
+    const radial = Math.hypot(dx, dy / ring.ratio);
+    ctx.restore();
+    const near = radial <= ring.outer + padding * .7 && radial >= ring.inner - padding * .7;
+    const around = Math.abs(dy) <= ring.outer * ring.ratio + padding * .7;
+    if (near && around) {
+     chooseRing(ring);
+     return;
+    }
    }
   }
  }
@@ -2691,7 +2710,17 @@ function pickAt(clientX, clientY, pointerType) {
   if (bestIndex === null || view.sunTarget.radius > 30) bestIndex = 0;
  }
  if (bestIndex === null) return;
- if (view.following && bestIndex === view.selected && !view.find && hasChosen) return;
+ if (view.following && bestIndex === view.selected && hasChosen) {
+  if (view.find || view.moon || view.ring) {
+   view.find = null;
+   view.moon = null;
+   view.ring = null;
+   factIndex = 0;
+   renderInfo();
+   readFrom(0, false);
+  }
+  return;
+ }
  choose(bestIndex);
 }
 
@@ -3787,7 +3816,9 @@ function createUranusActivity() {
   onDown: point => {startX = point.x;},
   onMove: point => {
    if (done) return;
-   tilt = clamp(-Math.abs(point.x - startX) / 130, -1.25, 0);
+   const delta = Math.max(0, startX - point.x);
+   startX = Math.min(startX, point.x);
+   tilt = clamp(tilt - delta / 260, -1.25, 0);
    render();
    if (tilt <= -1.05) {
     done = true;
@@ -3812,7 +3843,7 @@ function createNeptuneActivity() {
  let angle = .8;
  const orbitX = radius * 1.9;
  const orbitY = radius * 1.9 * .55;
- const lead = 'Wokół Neptuna krąży jego księżyc Tryton. Złap go — szybko!';
+ const lead = 'Wokół Neptuna krąży jego księżyc Tryton. Dotknij go palcem, kiedy do Ciebie podejdzie!';
  const render = () => {
   actCtx.drawImage(bg.canvas, 0, 0, width, height);
   actCtx.strokeStyle = 'rgba(255,217,90,.25)';
@@ -3834,24 +3865,26 @@ function createNeptuneActivity() {
   actCtx.fill();
   if (caught) strokeHit(tx, ty, 20, 20, 0);
  };
- const tap = point => {
-  if (caught) return;
+ const tryCatch = point => {
+  if (caught) return false;
   const tx = cx + Math.cos(angle) * orbitX;
   const ty = cy + Math.sin(angle) * orbitY;
-  if (Math.hypot(point.x - tx, point.y - ty) <= 30) {
+  if (Math.hypot(point.x - tx, point.y - ty) <= 38) {
    caught = true;
    fxPlay('ok');
    render();
    finishActivity('Złapałaś Trytona! To największy księżyc Neptuna. Jest tam strasznie zimno, a mimo to Tryton ma gejzery, które wyrzucają w górę lodowy pył.');
+   return true;
   }
+  return false;
  };
  return {
   title: '🎯 Złap Trytona',
   lead, width, height,
   start: render,
-  onDown: tap, onMove: () => {}, onUp: () => {},
+  onDown: tryCatch, onMove: tryCatch, onUp: () => {},
   frame: (dt, now) => {
-   angle = now * .0016;
+   angle = now * .0005;
    render();
   },
   repeatText: lead
@@ -4510,7 +4543,7 @@ function createGalileanActivity() {
  const lead = 'To Jowisz i cztery jego wielkie księżyce, które odkrył Galileusz. Dotykaj każdy księżyc, żeby go złapać i poznać!';
  const place = now => {
   moons.forEach(moon => {
-   const angle = moon.phase + now * .0011 * (36 / moon.period);
+   const angle = moon.phase + now * .00028 * (36 / moon.period);
    moon.x = center.x + Math.cos(angle) * moon.orbit;
    moon.y = center.y + Math.sin(angle) * moon.orbit * .55;
   });

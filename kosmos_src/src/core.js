@@ -1014,6 +1014,11 @@ function drawLabels(items) {
 
 function drawRipples() {
  for (const ripple of ripples) {
+  if (ripple.track) {
+   const list = ripple.track.kind === 'moon' ? view.moonTargets : ripple.track.kind === 'find' ? view.findTargets : view.galaxyTargets;
+   const current = list.find(target => (target.moon || target.find || target.object || {}).id === ripple.track.id);
+   if (current) {ripple.x = current.x; ripple.y = current.y;}
+  }
   const progress = ripple.life / ripple.max;
   ctx.globalAlpha = clamp(1 - progress, 0, 1) * .8;
   ctx.strokeStyle = '#ffe58a';

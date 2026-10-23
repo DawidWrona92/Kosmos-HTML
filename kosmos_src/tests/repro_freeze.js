@@ -156,8 +156,16 @@ function runFrames(count) {
     if (t.view.moonTargets.length) {
       const moon = t.view.moonTargets[0];
       t.pickAt(moon.x, moon.y, 'mouse');
+      runFrames(10);
+      t.draw();
+      const selectedMoon = t.view.moon && t.view.moon.id;
+      if (!selectedMoon) throw new Error('klik w księżyc nie zaznaczył go');
+      /* odkliknięcie: ponowny klik w ten sam księżyc musi go odznaczyć */
+      const again = t.view.moonTargets.find(m => m.moon.id === selectedMoon) || t.view.moonTargets[0];
+      t.pickAt(again.x, again.y, 'mouse');
+      if (t.view.moon) throw new Error('ponowny klik w księżyc go nie odznaczył');
       runFrames(60);
-      console.log('OK   klik w księżyc Jowisza');
+      console.log('OK   klik w księżyc Jowisza + odkliknięcie');
     }
   } catch (error) {
     failures++;

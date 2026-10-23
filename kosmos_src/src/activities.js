@@ -663,7 +663,9 @@ function createUranusActivity() {
   onDown: point => {startX = point.x;},
   onMove: point => {
    if (done) return;
-   tilt = clamp(-Math.abs(point.x - startX) / 130, -1.25, 0);
+   const delta = Math.max(0, startX - point.x);
+   startX = Math.min(startX, point.x);
+   tilt = clamp(tilt - delta / 260, -1.25, 0);
    render();
    if (tilt <= -1.05) {
     done = true;
@@ -688,7 +690,7 @@ function createNeptuneActivity() {
  let angle = .8;
  const orbitX = radius * 1.9;
  const orbitY = radius * 1.9 * .55;
- const lead = 'Wokół Neptuna krąży jego księżyc Tryton. Złap go — szybko!';
+ const lead = 'Wokół Neptuna krąży jego księżyc Tryton. Dotknij go palcem, kiedy do Ciebie podejdzie!';
  const render = () => {
   actCtx.drawImage(bg.canvas, 0, 0, width, height);
   actCtx.strokeStyle = 'rgba(255,217,90,.25)';
@@ -710,24 +712,26 @@ function createNeptuneActivity() {
   actCtx.fill();
   if (caught) strokeHit(tx, ty, 20, 20, 0);
  };
- const tap = point => {
-  if (caught) return;
+ const tryCatch = point => {
+  if (caught) return false;
   const tx = cx + Math.cos(angle) * orbitX;
   const ty = cy + Math.sin(angle) * orbitY;
-  if (Math.hypot(point.x - tx, point.y - ty) <= 30) {
+  if (Math.hypot(point.x - tx, point.y - ty) <= 38) {
    caught = true;
    fxPlay('ok');
    render();
    finishActivity('Złapałaś Trytona! To największy księżyc Neptuna. Jest tam strasznie zimno, a mimo to Tryton ma gejzery, które wyrzucają w górę lodowy pył.');
+   return true;
   }
+  return false;
  };
  return {
   title: '🎯 Złap Trytona',
   lead, width, height,
   start: render,
-  onDown: tap, onMove: () => {}, onUp: () => {},
+  onDown: tryCatch, onMove: tryCatch, onUp: () => {},
   frame: (dt, now) => {
-   angle = now * .0016;
+   angle = now * .0005;
    render();
   },
   repeatText: lead
@@ -1386,7 +1390,7 @@ function createGalileanActivity() {
  const lead = 'To Jowisz i cztery jego wielkie księżyce, które odkrył Galileusz. Dotykaj każdy księżyc, żeby go złapać i poznać!';
  const place = now => {
   moons.forEach(moon => {
-   const angle = moon.phase + now * .0011 * (36 / moon.period);
+   const angle = moon.phase + now * .00028 * (36 / moon.period);
    moon.x = center.x + Math.cos(angle) * moon.orbit;
    moon.y = center.y + Math.sin(angle) * moon.orbit * .55;
   });

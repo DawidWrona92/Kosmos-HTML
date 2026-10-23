@@ -217,9 +217,15 @@ async function complete(item, slot = 0) {
     }
     act.onUp();
   } else if (kind === 'uranus') {
-    act.onDown({x: act.width / 2, y: act.height / 2});
-    for (let x = act.width / 2; x <= act.width; x += 8) act.onMove({x, y: act.height / 2});
+    // postęp narasta i nie zeruje się między przeciągnięciami — kilka krótszych ruchów
+    act.onDown({x: 300, y: act.height / 2});
+    for (let x = 300; x >= 60; x -= 12) act.onMove({x, y: act.height / 2});
     act.onUp();
+    if (!itemDone()) {
+      act.onDown({x: 320, y: act.height / 2});
+      for (let x = 320; x >= 30; x -= 12) act.onMove({x, y: act.height / 2});
+      act.onUp();
+    }
   } else if (kind === 'tail') {
     act.onDown({x: 96 + 178, y: 252});
     for (let a = 0; a < 2.6; a += .04) act.onMove({x: 96 + Math.cos(a) * 178, y: 252 + Math.sin(a) * 178});
@@ -235,11 +241,13 @@ async function complete(item, slot = 0) {
       act.onUp();
     }
   } else if (kind === 'neptune') {
-    // Tryton siedzi w miejscu wynikającym z czasu ostatniej klatki
-    if (act.frame) act.frame(.016, 5000);
-    const angle = 5000 * .0016;
-    act.onDown({x: 280 + Math.cos(angle) * 209, y: 170 + Math.sin(angle) * 114.95});
-    act.onUp();
+    // Tryton krąży wolniej (.0005 rad/s); łapiemy go w kilku klatkach ruchu
+    for (let t = 5000; t < 15000 && !itemDone(); t += 100) {
+      if (act.frame) act.frame(.016, t);
+      const angle = t * .0005;
+      act.onDown({x: 280 + Math.cos(angle) * 209, y: 170 + Math.sin(angle) * 114.95});
+      act.onUp();
+    }
   } else if (kind === 'parts') {
     // klikamy dokładnie w hit areas kolejnych części (różne miejsca przy count > 1)
     // imgRect liczymy tak samo jak aplikacja: obraz „contain” w 560x340 z marginesem 60
