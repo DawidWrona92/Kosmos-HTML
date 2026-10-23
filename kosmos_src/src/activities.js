@@ -311,3 +311,299 @@ function drawPerseveranceFallback(c, flat) {
  c.lineTo(445, 190);
  c.stroke();
 }
+
+/* ---------- zadania dla ciał niebieskich ---------- */
+
+function createSunspotsActivity() {
+ const width = 560, height = 340, cx = 280, cy = 170, radius = 148;
+ const scene = makeLayer(width, height);
+ const sun = makeLayer(512, 512);
+ paintSunSurface(sun.ctx, 512, true);
+ scene.ctx.save();
+ scene.ctx.beginPath();
+ scene.ctx.arc(cx, cy, radius, 0, TAU);
+ scene.ctx.clip();
+ scene.ctx.drawImage(sun.canvas, cx - radius, cy - radius, radius * 2, radius * 2);
+ scene.ctx.restore();
+ const spots = SUNSPOTS.map(spot => ({
+  x: cx + (spot.x * 512 - 256) * (radius * 2 / 512),
+  y: cy + (spot.y * 512 - 256) * (radius * 2 / 512),
+  r: spot.r * radius * 2,
+  found: false
+ }));
+ let done = false;
+ const lead = 'Na Słońcu widać ciemne plamy. Znajdź wszystkie cztery!';
+ const render = () => {
+  actCtx.drawImage(scene.canvas, 0, 0, width, height);
+  spots.forEach(spot => {
+   if (spot.found) strokeHit(spot.x, spot.y, spot.r * 1.35, spot.r * 1.1, .3);
+  });
+ };
+ const tap = point => {
+  if (done) return;
+  const spot = spots.find(item => !item.found && Math.hypot(point.x - item.x, point.y - item.y) <= item.r * 1.4);
+  if (!spot) return;
+  spot.found = true;
+  render();
+  const foundCount = spots.filter(item => item.found).length;
+  if (foundCount === spots.length) {
+   done = true;
+   finishActivity('Brawo! To plamy słoneczne. Są trochę chłodniejsze niż reszta Słońca, dlatego wyglądają na ciemno. Plamy pojawiają się i znikają, jak pogoda na Słońcu.');
+  } else if (foundCount === 1) {
+   sayNow('Tak! To plama słoneczna. Znajdź jeszcze kolejne.');
+  }
+ };
+ return {title: '☀️ Znajdź plamy na Słońcu', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
+}
+
+function createMercuryActivity() {
+ const width = 560, height = 340, cx = 280, cy = 176, radius = 138;
+ const ice = {x: cx, y: cy - radius * .66, rx: radius * .3, ry: radius * .17};
+ return createTorchActivity({
+  title: '🔦 Znajdź lód na Merkurym',
+  lead: 'Merkury jest bardzo ciemny. Zaświeć latarką i znajdź lód na biegunie!',
+  width, height,
+  paintScene(c) {
+   paintActStars(c, width, height, 90);
+   drawActBall(c, 'mercury', cx, cy, radius, '#9b8d7a');
+   c.fillStyle = 'rgba(230,245,255,.92)';
+   c.beginPath();
+   c.ellipse(ice.x, ice.y, ice.rx, ice.ry, 0, 0, TAU);
+   c.fill();
+   c.fillStyle = 'rgba(160,200,230,.5)';
+   c.beginPath();
+   c.ellipse(ice.x, ice.y + ice.ry * .3, ice.rx * .7, ice.ry * .5, 0, 0, TAU);
+   c.fill();
+  },
+  isReveal: point => ((point.x - ice.x) / (ice.rx * 1.2)) ** 2 + ((point.y - ice.y) / (ice.ry * 1.2)) ** 2 <= 1,
+  doneText: 'Znalazłaś lód! W głębokich kraterach na biegunach Merkurego leży prawdziwy lód. Słońce tam nigdy nie zagląda, więc lód się nie topi. Znalazła go sonda MESSENGER.'
+ });
+}
+
+function createVenusActivity() {
+ const width = 560, height = 340;
+ return createWipeActivity({
+  title: '☁️ Zajrzyj pod chmury Wenus',
+  lead: 'Wenus jest cała owinięta gęstymi chmurami. Przecieraj palcem, żeby zajrzeć pod spód!',
+  width, height,
+  paintScene(c) {
+   const img = imageOf('venus_surface');
+   if (img) {
+    const scale = Math.max(width / img.naturalWidth, height / img.naturalHeight);
+    const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
+    c.drawImage(img, (width - dw) / 2, (height - dh) / 2, dw, dh);
+   } else {
+    const g = c.createLinearGradient(0, 0, 0, height);
+    g.addColorStop(0, '#d9a44e');
+    g.addColorStop(1, '#8a4a1e');
+    c.fillStyle = g;
+    c.fillRect(0, 0, width, height);
+   }
+   c.fillStyle = 'rgba(90,40,8,.28)';
+   c.fillRect(0, 0, width, height);
+   c.fillStyle = 'rgba(70,25,8,.55)';
+   [[80, 90, 34, 22], [420, 70, 44, 26], [300, 220, 52, 30], [150, 260, 30, 18], [490, 250, 36, 20]].forEach(([x, y, rx, ry]) => {
+    c.beginPath();
+    c.ellipse(x, y, rx, ry, 0, 0, TAU);
+    c.fill();
+    c.fillStyle = 'rgba(255,120,40,.35)';
+    c.beginPath();
+    c.arc(x, y - ry * .4, rx * .3, 0, TAU);
+    c.fill();
+    c.fillStyle = 'rgba(70,25,8,.55)';
+   });
+  },
+  paintDust(c) {
+   c.fillStyle = 'rgba(240,218,150,.97)';
+   c.fillRect(0, 0, width, height);
+   for (let i = 0; i < 30; i++) {
+    c.fillStyle = i % 2 ? 'rgba(255,242,205,.5)' : 'rgba(205,165,95,.5)';
+    c.beginPath();
+    c.ellipse(Math.random() * width, Math.random() * height, 30 + Math.random() * 80, 12 + Math.random() * 34, Math.random() * .4, 0, TAU);
+    c.fill();
+   }
+  },
+  probe: {x: 0, y: 0, w: 140, h: 85},
+  doneText: 'Świetnie! Pod chmurami Wenus jest gorąca, skalista powierzchnia z wulkanami. Chmury składają się z kwasu, więc sonda Magellan użyła radaru, żeby zajrzeć przez nie — dokładnie tak, jak Ty teraz!'
+ });
+}
+
+function createRoverActivity() {
+ const width = 560, height = 340;
+ const roverRect = () => {
+  const img = imageOf('perseverance');
+  if (!img) return null;
+  const scale = Math.min((width - 60) / img.naturalWidth, (height - 70) / img.naturalHeight);
+  const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
+  return {x: (width - dw) / 2, y: height - dh - 14, w: dw, h: dh};
+ };
+ const paintScene = c => {
+  const sky = c.createLinearGradient(0, 0, 0, 215);
+  sky.addColorStop(0, '#c98f6b');
+  sky.addColorStop(1, '#efc19a');
+  c.fillStyle = sky;
+  c.fillRect(0, 0, width, 215);
+  const ground = c.createLinearGradient(0, 215, 0, height);
+  ground.addColorStop(0, '#b4603a');
+  ground.addColorStop(1, '#7b3b22');
+  c.fillStyle = ground;
+  c.fillRect(0, 215, width, height - 215);
+  c.fillStyle = 'rgba(70,30,15,.45)';
+  [[60, 310, 26, 8], [500, 300, 34, 10], [90, 240, 14, 5], [470, 250, 18, 6]].forEach(([x, y, w, h]) => {
+   c.beginPath();
+   c.ellipse(x, y, w, h, 0, 0, TAU);
+   c.fill();
+  });
+  const rect = roverRect();
+  if (rect) c.drawImage(imageOf('perseverance'), rect.x, rect.y, rect.w, rect.h);
+  else drawPerseveranceFallback(c, false);
+ };
+ const paintDust = c => {
+  const rect = roverRect();
+  if (rect) c.drawImage(imageOf('perseverance'), rect.x, rect.y, rect.w, rect.h);
+  else drawPerseveranceFallback(c, true);
+  c.globalCompositeOperation = 'source-in';
+  c.fillStyle = 'rgba(176,100,60,.95)';
+  c.fillRect(0, 0, width, height);
+  c.globalCompositeOperation = 'source-atop';
+  for (let i = 0; i < 700; i++) {
+   c.fillStyle = i % 2 ? 'rgba(225,160,110,.35)' : 'rgba(110,55,30,.3)';
+   c.beginPath();
+   c.arc(Math.random() * width, Math.random() * height, 1 + Math.random() * 2.4, 0, TAU);
+   c.fill();
+  }
+  c.globalCompositeOperation = 'destination-out';
+ };
+ return createWipeActivity({
+  title: '🧹 Wyczyść łazika',
+  lead: 'Łazik Perseverance jest pokryty marsjańskim pyłem. Przesuwaj palcem po łaziku, żeby go odkurzyć.',
+  width, height,
+  paintScene, paintDust,
+  probe: {x: 180, y: 90, w: 200, h: 180},
+  doneText: 'Czyściutko! Łaziki mają panele słoneczne na grzbiecie. Pył zmniejsza ilość prądu, ale czasem pomaga wiatr — małe wiry, zwane diabłami pyłowymi, same zdmuchują kurz z paneli.'
+ });
+}
+
+function createCeresActivity() {
+ const width = 560, height = 340, cx = 280, cy = 170, radius = 140;
+ const spots = [
+  {x: cx + radius * .12, y: cy + radius * .08, rx: 30, ry: 20, found: false},
+  {x: cx - radius * .32, y: cy - radius * .28, rx: 16, ry: 11, found: false}
+ ];
+ const scene = makeLayer(width, height);
+ paintActStars(scene.ctx, width, height, 90);
+ drawActBall(scene.ctx, 'ceres', cx, cy, radius, '#9a948c');
+ scene.ctx.fillStyle = 'rgba(40,36,34,.4)';
+ [[cx - 60, cy + 40, 26], [cx + 70, cy - 50, 20], [cx - 10, cy - 70, 16]].forEach(([x, y, r]) => {
+  scene.ctx.beginPath();
+  scene.ctx.arc(x, y, r, 0, TAU);
+  scene.ctx.fill();
+ });
+ spots.forEach(spot => {
+  scene.ctx.fillStyle = 'rgba(255,255,255,.95)';
+  scene.ctx.beginPath();
+  scene.ctx.ellipse(spot.x, spot.y, spot.rx, spot.ry, -.2, 0, TAU);
+  scene.ctx.fill();
+  scene.ctx.fillStyle = 'rgba(255,255,240,.3)';
+  scene.ctx.beginPath();
+  scene.ctx.ellipse(spot.x, spot.y, spot.rx * 1.8, spot.ry * 1.8, -.2, 0, TAU);
+  scene.ctx.fill();
+ });
+ let done = false;
+ const lead = 'Na Ceres świecą tajemnicze jasne plamy. Znajdź obie!';
+ const render = () => {
+  actCtx.drawImage(scene.canvas, 0, 0, width, height);
+  spots.forEach(spot => {
+   if (spot.found) strokeHit(spot.x, spot.y, spot.rx + 8, spot.ry + 8, -.2);
+  });
+ };
+ const tap = point => {
+  if (done) return;
+  const spot = spots.find(item => !item.found && ((point.x - item.x) / (item.rx * 1.3)) ** 2 + ((point.y - item.y) / (item.ry * 1.3)) ** 2 <= 1);
+  if (!spot) return;
+  spot.found = true;
+  render();
+  if (spots.every(item => item.found)) {
+   done = true;
+   finishActivity('To słynne jasne plamy w kraterze Occator! To sól, która została po wyschnięciu słonej wody. Odkryła je sonda Dawn. Pod powierzchnią Ceres może być nawet słony ocean!');
+  } else {
+   sayNow('Tak! To jedna z jasnych plam. Znajdź jeszcze drugą.');
+  }
+ };
+ return {title: '✨ Znajdź jasne plamy na Ceres', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
+}
+
+function createJupiterActivity() {
+ const width = 560, height = 340, cx = 280, cy = 170, radius = 142;
+ const grs = {x: cx + radius * .3, y: cy + radius * .18, rx: radius * .22, ry: radius * .12};
+ const scene = makeLayer(width, height);
+ paintActStars(scene.ctx, width, height, 60);
+ drawActBall(scene.ctx, 'jupiter', cx, cy, radius, '#d5b18a');
+ scene.ctx.save();
+ scene.ctx.beginPath();
+ scene.ctx.arc(cx, cy, radius, 0, TAU);
+ scene.ctx.clip();
+ scene.ctx.fillStyle = 'rgba(150,60,35,.28)';
+ scene.ctx.beginPath();
+ scene.ctx.ellipse(grs.x, grs.y, grs.rx * 1.4, grs.ry * 1.4, -.15, 0, TAU);
+ scene.ctx.fill();
+ scene.ctx.fillStyle = 'rgba(195,80,50,.85)';
+ scene.ctx.beginPath();
+ scene.ctx.ellipse(grs.x, grs.y, grs.rx, grs.ry, -.15, 0, TAU);
+ scene.ctx.fill();
+ scene.ctx.fillStyle = 'rgba(240,190,150,.5)';
+ scene.ctx.beginPath();
+ scene.ctx.ellipse(grs.x - grs.rx * .2, grs.y - grs.ry * .15, grs.rx * .4, grs.ry * .35, -.15, 0, TAU);
+ scene.ctx.fill();
+ scene.ctx.restore();
+ let done = false;
+ const lead = 'Na Jowiszu szaleje wielka czerwona burza. Znajdź ją!';
+ const render = () => {
+  actCtx.drawImage(scene.canvas, 0, 0, width, height);
+  if (done) strokeHit(grs.x, grs.y, grs.rx + 8, grs.ry + 8, -.15);
+ };
+ const tap = point => {
+  if (done) return;
+  if (((point.x - grs.x) / (grs.rx * 1.3)) ** 2 + ((point.y - grs.y) / (grs.ry * 1.3)) ** 2 <= 1) {
+   done = true;
+   render();
+   finishActivity('To Wielka Czerwona Plama! To burza wielka jak cała Ziemia. Ludzie obserwują ją od ponad 150 lat, a wiatr w środku wieje szybciej niż najsilniejszy huragan.');
+  }
+ };
+ return {title: '🔴 Znajdź Wielką Czerwoną Plamę', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
+}
+
+function createSaturnActivity() {
+ const width = 560, height = 340, cx = 280, cy = 170, radius = 100;
+ const angle = -.35;
+ const scene = makeLayer(width, height);
+ paintActStars(scene.ctx, width, height, 80);
+ drawActRing(scene.ctx, cx, cy, radius, angle, SATURN_BANDS, 'back');
+ drawActBall(scene.ctx, 'saturn', cx, cy, radius, '#d9bd83');
+ drawActRing(scene.ctx, cx, cy, radius, angle, SATURN_BANDS, 'front');
+ let done = false;
+ const lead = 'Saturn ma wspaniałe pierścienie. Dotknij któregoś!';
+ const render = () => {
+  actCtx.drawImage(scene.canvas, 0, 0, width, height);
+  if (done) {
+   actCtx.strokeStyle = '#7ee787';
+   actCtx.lineWidth = 4;
+   actCtx.beginPath();
+   actCtx.ellipse(cx, cy, radius * 1.74, radius * 1.74 * .3, angle, 0, TAU);
+   actCtx.stroke();
+  }
+ };
+ const tap = point => {
+  if (done) return;
+  const dx = point.x - cx, dy = point.y - cy;
+  const rx = dx * Math.cos(-angle) - dy * Math.sin(-angle);
+  const ry = (dx * Math.sin(-angle) + dy * Math.cos(-angle)) / .3;
+  const distance = Math.hypot(rx, ry);
+  if (distance >= radius * 1.22 && distance <= radius * 2.45) {
+   done = true;
+   render();
+   finishActivity('To pierścienie Saturna! Składają się z miliardów kawałków lodu i skał — od ziarenek piasku po bryły wielkie jak dom. Są ogromne, a mają tylko około 10 metrów grubości!');
+  }
+ };
+ return {title: '💍 Dotknij pierścieni Saturna', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
+}
