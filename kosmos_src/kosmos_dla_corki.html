@@ -48,7 +48,10 @@ button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px r
 .btn .ico{font-size:24px;line-height:1}
 .btn.wide{flex-direction:row;gap:8px;font-size:15px}
 .btn.wide .ico{font-size:21px}
-.controls{left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;padding:10px;border-radius:24px}
+.controls{left:50%;bottom:18px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:24px}
+.speedbox{display:flex;align-items:center;gap:10px}
+.speedbox input[type=range]{width:200px;accent-color:var(--gold)}
+.speedico{font-size:20px;line-height:1}
 .controls .btn{width:88px;flex:none}
 .activity{position:fixed;inset:0;background:rgba(2,6,17,.82);z-index:20;overflow:auto;padding:16px;display:grid;align-items:start;justify-items:center}
 .activity .card{width:min(620px,100%);margin:auto;padding:16px;border-radius:24px;background:linear-gradient(160deg,#102a52,#0a1c38);border:2px solid #2f6aa8;box-shadow:0 0 60px #000}
@@ -100,8 +103,11 @@ button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px r
  .btn{min-height:50px;font-size:12px}
  .btn.wide{flex-direction:column;font-size:12px;gap:2px;padding:4px}
  .btn.wide .ico{font-size:20px}
- .controls{grid-area:controls;display:grid;grid-template-columns:repeat(5,1fr);padding:8px;gap:6px;border-radius:20px}
- .controls .btn{width:auto;min-height:54px;padding:4px 2px;font-size:11px}
+ .controls{grid-area:controls;display:flex;align-items:center;gap:8px;padding:8px;border-radius:20px}
+ .speedbox{flex:1;display:flex;align-items:center;gap:6px;min-width:0}
+ .speedbox input[type=range]{flex:1;min-width:0;width:auto}
+ .speedbox .speedico{font-size:16px}
+ .controls .btn{width:auto;min-height:54px;padding:4px 14px;font-size:12px;flex:none}
  .controls .btn .ico{font-size:22px}
 }
 @media (max-width:1200px) and (max-height:520px) and (orientation:landscape){
@@ -152,10 +158,11 @@ button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px r
   </div>
  </section>
  <section class="panel controls" id="controls">
-  <button class="btn" data-speed="10"><span class="ico">🐢</span><span class="lbl">Wolno</span></button>
-  <button class="btn active" data-speed="35"><span class="ico">🪶</span><span class="lbl">Normalnie</span></button>
-  <button class="btn" data-speed="100"><span class="ico">🐇</span><span class="lbl">Szybko</span></button>
-  <button class="btn" data-speed="200"><span class="ico">🚀</span><span class="lbl">Super</span></button>
+  <div class="speedbox">
+   <span class="speedico">🐢</span>
+   <input type="range" id="speedRange" min="1" max="30" step="1" value="5" aria-label="Prędkość czasu">
+   <span class="speedico">🚀</span>
+  </div>
   <button class="btn" id="play"><span class="ico">⏸</span><span class="lbl">Stop</span></button>
  </section>
 </div>
@@ -206,7 +213,9 @@ const MIN_TILT = .12;
 const MAX_TILT = .95;
 const MIN_ZOOM = .5;
 const MAX_ZOOM = 260;
-const DEFAULT_SPEED = 35;
+const MIN_SPEED = 1;
+const MAX_SPEED = 30;
+const DEFAULT_SPEED = 5;
 const DAYS_PER_SPEED_UNIT = 1.2;
 const BELT_INNER = 208;
 const BELT_OUTER = 238;
@@ -550,7 +559,7 @@ const view = {
  selected: bodyIndex('earth'), find: null,
  targets: [], sunTarget: null, findTargets: []
 };
-let speed = DEFAULT_SPEED;
+let speed = clamp(parseFloat(loadStored('kosmos3.speed', String(DEFAULT_SPEED))) || DEFAULT_SPEED, MIN_SPEED, MAX_SPEED);
 let playing = true;
 let simDays = 0;
 let lastFrameTime = performance.now();
@@ -1584,7 +1593,8 @@ function renderNotebook() {
 }
 
 function renderControls() {
- document.querySelectorAll('[data-speed]').forEach(button => button.classList.toggle('active', playing && +button.dataset.speed === speed));
+ const range = byId('speedRange');
+ if (+range.value !== speed) range.value = speed;
  const playButton = byId('play');
  playButton.classList.toggle('active', !playing);
  playButton.querySelector('.ico').textContent = playing ? '⏸' : '▶️';
@@ -1592,7 +1602,8 @@ function renderControls() {
 }
 
 function applySpeed(value) {
- speed = value;
+ speed = clamp(Math.round(value), MIN_SPEED, MAX_SPEED);
+ saveStored('kosmos3.speed', String(speed));
  playing = true;
  renderControls();
 }
@@ -3170,7 +3181,7 @@ if (window.__KOSMOS_TEST__) window.__KOSMOS_TEST__ = {openActivity, closeActivit
 
 /* ---------- sterowanie ---------- */
 
-document.querySelectorAll('[data-speed]').forEach(button => button.addEventListener('click', () => applySpeed(+button.dataset.speed)));
+byId('speedRange').addEventListener('input', event => applySpeed(+event.target.value));
 byId('play').addEventListener('click', togglePlay);
 byId('readAgain').addEventListener('click', () => {
  if (reading) {

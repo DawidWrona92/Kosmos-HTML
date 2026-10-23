@@ -1,6 +1,6 @@
 /* ---------- sterowanie ---------- */
 
-document.querySelectorAll('[data-speed]').forEach(button => button.addEventListener('click', () => applySpeed(+button.dataset.speed)));
+byId('speedRange').addEventListener('input', event => applySpeed(+event.target.value));
 byId('play').addEventListener('click', togglePlay);
 byId('readAgain').addEventListener('click', () => {
  if (reading) {

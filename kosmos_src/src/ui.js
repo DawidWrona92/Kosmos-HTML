@@ -97,7 +97,8 @@ function renderNotebook() {
 }
 
 function renderControls() {
- document.querySelectorAll('[data-speed]').forEach(button => button.classList.toggle('active', playing && +button.dataset.speed === speed));
+ const range = byId('speedRange');
+ if (+range.value !== speed) range.value = speed;
  const playButton = byId('play');
  playButton.classList.toggle('active', !playing);
  playButton.querySelector('.ico').textContent = playing ? '⏸' : '▶️';
@@ -105,7 +106,8 @@ function renderControls() {
 }
 
 function applySpeed(value) {
- speed = value;
+ speed = clamp(Math.round(value), MIN_SPEED, MAX_SPEED);
+ saveStored('kosmos3.speed', String(speed));
  playing = true;
  renderControls();
 }

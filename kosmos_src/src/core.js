@@ -8,7 +8,7 @@ const view = {
  selected: bodyIndex('earth'), find: null,
  targets: [], sunTarget: null, findTargets: []
 };
-let speed = DEFAULT_SPEED;
+let speed = clamp(parseFloat(loadStored('kosmos3.speed', String(DEFAULT_SPEED))) || DEFAULT_SPEED, MIN_SPEED, MAX_SPEED);
 let playing = true;
 let simDays = 0;
 let lastFrameTime = performance.now();
