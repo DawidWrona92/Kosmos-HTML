@@ -852,10 +852,13 @@ function drawMoon(frame, parent, moon, parentX, parentY, parentRadius) {
  const sunAngle = Math.atan2(frame.sunY - y, frame.sunX - x);
  drawMoonBody(x, y, moonRadius, moon, sunAngle);
  if (!discovered.has(moon.id)) drawUnknownHint(x, y, moonRadius + 1, moon.startPhase);
- ctx.fillStyle = '#dfeaf8';
- ctx.font = '700 11px ui-rounded, system-ui, sans-serif';
- ctx.textAlign = 'center';
- ctx.fillText(moon.name, x, y - moonRadius - 7);
+ /* nazwa tylko po odkryciu — drukowane litery dla czytelności */
+ if (discovered.has(moon.id)) {
+  ctx.fillStyle = '#dfeaf8';
+  ctx.font = '800 12px ui-rounded, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(moon.name.toUpperCase(), x, y - moonRadius - 7);
+ }
  view.moonTargets.push({moon, x, y, radius: moonRadius + 7});
 }
 
@@ -992,7 +995,9 @@ function drawFinds(items, frame) {
   view.ringTarget = {ring: parent.body.ringInfo, x: parent.x, y: parent.y, inner: ringInner, outer: ringOuter, ratio, angle: parent.body.ring.angle};
  }
  if (!list.length) return;
- const spriteWidth = clamp(Math.min(freeWidth, freeHeight) * .17, 52, 110);
+ /* rozmiar sondy skaluje się z planetą (25% jej promienia, min 30 px) —
+  * przy oddalaniu kamery sondy maleją razem z układem, zamiast rosnąć względem planety */
+ const spriteWidth = clamp(parent.radius * .25, 30, 110);
  const horizontal = Math.max(parent.radius * 1.15, Math.min(parent.radius * 1.7 + spriteWidth * .4, freeWidth / 2 - spriteWidth * .55));
  const vertical = Math.min(horizontal * .66, freeHeight / 2 - spriteWidth * .45);
  ctx.strokeStyle = 'rgba(255,217,90,.22)';
@@ -1354,7 +1359,7 @@ canvas.addEventListener('pointermove', event => {
     gesture.startZoom = view.zoom;
     return;
    }
-   if (view.level === 0 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && !view.following && zoomOutLevel()) {
+   if (view.level === 0 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && zoomOutLevel()) {
     fxPlay('whoosh');
     gesture.startZoom = view.zoom;
     return;
@@ -1417,7 +1422,7 @@ canvas.addEventListener('wheel', event => {
   return;
  }
  /* oddalanie: planeta -> Układ Słoneczny -> Ramię Oriona -> Droga Mleczna */
- if (delta > 0 && view.zoomGoal <= MIN_ZOOM * 1.001 && !view.following) {
+ if (delta > 0 && view.zoomGoal <= MIN_ZOOM * 1.001) {
   if (zoomOutLevel()) {fxPlay('whoosh'); return;}
  }
  /* przybliżanie z poziomów galaktycznych — progi ciągłości obrazu:

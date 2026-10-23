@@ -2053,10 +2053,13 @@ function drawMoon(frame, parent, moon, parentX, parentY, parentRadius) {
  const sunAngle = Math.atan2(frame.sunY - y, frame.sunX - x);
  drawMoonBody(x, y, moonRadius, moon, sunAngle);
  if (!discovered.has(moon.id)) drawUnknownHint(x, y, moonRadius + 1, moon.startPhase);
- ctx.fillStyle = '#dfeaf8';
- ctx.font = '700 11px ui-rounded, system-ui, sans-serif';
- ctx.textAlign = 'center';
- ctx.fillText(moon.name, x, y - moonRadius - 7);
+ /* nazwa tylko po odkryciu — drukowane litery dla czytelności */
+ if (discovered.has(moon.id)) {
+  ctx.fillStyle = '#dfeaf8';
+  ctx.font = '800 12px ui-rounded, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(moon.name.toUpperCase(), x, y - moonRadius - 7);
+ }
  view.moonTargets.push({moon, x, y, radius: moonRadius + 7});
 }
 
@@ -2193,7 +2196,9 @@ function drawFinds(items, frame) {
   view.ringTarget = {ring: parent.body.ringInfo, x: parent.x, y: parent.y, inner: ringInner, outer: ringOuter, ratio, angle: parent.body.ring.angle};
  }
  if (!list.length) return;
- const spriteWidth = clamp(Math.min(freeWidth, freeHeight) * .17, 52, 110);
+ /* rozmiar sondy skaluje się z planetą (25% jej promienia, min 30 px) —
+  * przy oddalaniu kamery sondy maleją razem z układem, zamiast rosnąć względem planety */
+ const spriteWidth = clamp(parent.radius * .25, 30, 110);
  const horizontal = Math.max(parent.radius * 1.15, Math.min(parent.radius * 1.7 + spriteWidth * .4, freeWidth / 2 - spriteWidth * .55));
  const vertical = Math.min(horizontal * .66, freeHeight / 2 - spriteWidth * .45);
  ctx.strokeStyle = 'rgba(255,217,90,.22)';
@@ -2632,7 +2637,7 @@ function renderControls() {
  playButton.querySelector('.lbl').textContent = playing ? 'Stop' : 'Start';
  const outBtn = byId('zoomOutBtn');
  const inBtn = byId('zoomInBtn');
- outBtn.hidden = view.following || view.level <= -2;
+ outBtn.hidden = view.level <= -2;
  inBtn.hidden = view.level >= 0;
 }
 
@@ -2717,20 +2722,10 @@ function chooseFind(target) {
 }
 
 function moonZoom(moon) {
- const parent = bodies[view.selected];
- const fit = fitScale();
- /* równy kadr dla wszystkich księżyców planety: zoom wynika z promienia orbity
-  * najdalszego księżyca, nie z rozmiaru księżyca — przełączanie Io <-> Ganimedes
-  * nie zmienia odległości kamery */
- const moonList = MOONS[parent.id] || [moon];
- const widestOrbit = Math.max(...moonList.map(item => item.moonOrbit));
- const outermost = Math.max(widestOrbit, finds.some(item => item.parentId === parent.id) ? 2.2 : 0);
- const orbitUnit = Math.max(parent.radius * fit * 1.25 * outermost, 1);
- const half = Math.min(view.free.right - view.free.left, view.free.bottom - view.free.top) / 2;
- const targetZoom = (half - 60) / orbitUnit;
- /* planeta musi po przybliżeniu wciąż mieć radius >= 52 px, żeby księżyce i sondy były widoczne */
- const maxZoom = 52 / Math.max(parent.radius * fit * 1.25, .01);
- return clamp(Math.min(targetZoom, maxZoom), MIN_ZOOM, MAX_ZOOM);
+ /* stały względny kadr: klik w księżyc przybliża zawsze tak samo względem
+  * planety (mnożnik zoomu planety), niezależnie od rozmiaru księżyca i orbity —
+  * zmiana obiektu nie zmienia odległości kamery */
+ return clamp(followZoom(view.selected) * 1.5, MIN_ZOOM, MAX_ZOOM);
 }
 
 function chooseMoon(target) {
@@ -3070,7 +3065,7 @@ canvas.addEventListener('pointermove', event => {
     gesture.startZoom = view.zoom;
     return;
    }
-   if (view.level === 0 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && !view.following && zoomOutLevel()) {
+   if (view.level === 0 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && zoomOutLevel()) {
     fxPlay('whoosh');
     gesture.startZoom = view.zoom;
     return;
@@ -3133,7 +3128,7 @@ canvas.addEventListener('wheel', event => {
   return;
  }
  /* oddalanie: planeta -> Układ Słoneczny -> Ramię Oriona -> Droga Mleczna */
- if (delta > 0 && view.zoomGoal <= MIN_ZOOM * 1.001 && !view.following) {
+ if (delta > 0 && view.zoomGoal <= MIN_ZOOM * 1.001) {
   if (zoomOutLevel()) {fxPlay('whoosh'); return;}
  }
  /* przybliżanie z poziomów galaktycznych — progi ciągłości obrazu:

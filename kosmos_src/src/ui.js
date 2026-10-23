@@ -114,7 +114,7 @@ function renderControls() {
  playButton.querySelector('.lbl').textContent = playing ? 'Stop' : 'Start';
  const outBtn = byId('zoomOutBtn');
  const inBtn = byId('zoomInBtn');
- outBtn.hidden = view.following || view.level <= -2;
+ outBtn.hidden = view.level <= -2;
  inBtn.hidden = view.level >= 0;
 }
 
@@ -199,20 +199,10 @@ function chooseFind(target) {
 }
 
 function moonZoom(moon) {
- const parent = bodies[view.selected];
- const fit = fitScale();
- /* równy kadr dla wszystkich księżyców planety: zoom wynika z promienia orbity
-  * najdalszego księżyca, nie z rozmiaru księżyca — przełączanie Io <-> Ganimedes
-  * nie zmienia odległości kamery */
- const moonList = MOONS[parent.id] || [moon];
- const widestOrbit = Math.max(...moonList.map(item => item.moonOrbit));
- const outermost = Math.max(widestOrbit, finds.some(item => item.parentId === parent.id) ? 2.2 : 0);
- const orbitUnit = Math.max(parent.radius * fit * 1.25 * outermost, 1);
- const half = Math.min(view.free.right - view.free.left, view.free.bottom - view.free.top) / 2;
- const targetZoom = (half - 60) / orbitUnit;
- /* planeta musi po przybliżeniu wciąż mieć radius >= 52 px, żeby księżyce i sondy były widoczne */
- const maxZoom = 52 / Math.max(parent.radius * fit * 1.25, .01);
- return clamp(Math.min(targetZoom, maxZoom), MIN_ZOOM, MAX_ZOOM);
+ /* stały względny kadr: klik w księżyc przybliża zawsze tak samo względem
+  * planety (mnożnik zoomu planety), niezależnie od rozmiaru księżyca i orbity —
+  * zmiana obiektu nie zmienia odległości kamery */
+ return clamp(followZoom(view.selected) * 1.5, MIN_ZOOM, MAX_ZOOM);
 }
 
 function chooseMoon(target) {
