@@ -1222,4 +1222,4 @@ byId('actSay').addEventListener('click', () => {
 
 renderTaskbook();
 
-if (window.__KOSMOS_TEST__) window.__KOSMOS_TEST__ = {openActivity, closeActivity, getActive: () => activeActivity, bodies, finds, doneTasks};
+if (window.__KOSMOS_TEST__) window.__KOSMOS_TEST__ = {openActivity, closeActivity, getActive: () => activeActivity, bodies, finds, doneTasks, PARTS};
