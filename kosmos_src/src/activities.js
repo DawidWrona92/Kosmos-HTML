@@ -1166,6 +1166,282 @@ function createPartsActivity(item) {
  return activity;
 }
 
+/* ---------- Słońce (zadanie 2): ułóż planety po kolei ---------- */
+
+const ORDER_PLANETS = [
+ {key: 'mercury', color: '#9b8d7a', name: 'Merkury'},
+ {key: 'venus_clouds', color: '#d7a75d', name: 'Wenus'},
+ {key: null, color: '#268de0', name: 'Ziemia'},
+ {key: 'mars', color: '#d75a36', name: 'Mars'},
+ {key: 'jupiter', color: '#d5b18a', name: 'Jowisz'},
+ {key: 'saturn', color: '#d9bd83', name: 'Saturn', ring: true},
+ {key: 'uranus', color: '#7ed9e5', name: 'Uran'},
+ {key: 'neptune', color: '#356ce0', name: 'Neptun'}
+];
+
+function drawActPlanet(c, planet, x, y, radius) {
+ if (planet.ring) drawActRing(c, x, y, radius, 0, SATURN_BANDS, 'back');
+ drawActBall(c, planet.key, x, y, radius, planet.color, 0);
+ if (planet.ring) drawActRing(c, x, y, radius, 0, SATURN_BANDS, 'front');
+}
+
+function createOrderActivity() {
+ const width = 560, height = 340;
+ const bg = makeLayer(width, height);
+ paintActStars(bg.ctx, width, height, 90);
+ const slots = ORDER_PLANETS.map((planet, index) => ({x: 52 + index * 64, y: 92, r: 17, planet: null}));
+ const chips = ORDER_PLANETS.map((planet, planetIndex) => ({...planet, planetIndex, x: 0, y: 0, r: 17}));
+ [3, 0, 6, 1, 7, 2, 5, 4].forEach((planetIndex, column) => {
+  chips[planetIndex].x = 52 + column * 64;
+  chips[planetIndex].y = 248;
+ });
+ let selected = null;
+ const lead = 'Dotknij planetę, a potem dotknij jej miejsca. Ułóż wszystkie planety po kolei — od tej najbliżej Słońca do tej najdalej.';
+ const render = () => {
+  actCtx.drawImage(bg.canvas, 0, 0, width, height);
+  actCtx.textAlign = 'center';
+  actCtx.font = '800 26px system-ui, sans-serif';
+  actCtx.fillStyle = '#ffd95a';
+  actCtx.fillText('☀️', 280, 44);
+  slots.forEach((slot, index) => {
+   actCtx.font = '700 13px system-ui, sans-serif';
+   actCtx.fillStyle = '#8fb8e8';
+   actCtx.fillText(String(index + 1), slot.x, slot.y - slot.r - 8);
+   if (!slot.planet) {
+    actCtx.strokeStyle = 'rgba(143,184,232,.4)';
+    actCtx.lineWidth = 2;
+    actCtx.setLineDash([5, 5]);
+    actCtx.beginPath();
+    actCtx.arc(slot.x, slot.y, slot.r, 0, TAU);
+    actCtx.stroke();
+    actCtx.setLineDash([]);
+   } else drawActPlanet(actCtx, slot.planet, slot.x, slot.y, slot.r);
+  });
+  chips.forEach(chip => {
+   drawActPlanet(actCtx, chip, chip.x, chip.y, chip.r);
+   if (chip === selected) {
+    actCtx.strokeStyle = '#ffd95a';
+    actCtx.lineWidth = 3;
+    actCtx.beginPath();
+    actCtx.arc(chip.x, chip.y, chip.r + 6, 0, TAU);
+    actCtx.stroke();
+   }
+  });
+ };
+ const tap = point => {
+  const chip = chips.find(c => Math.hypot(point.x - c.x, point.y - c.y) <= c.r + 8);
+  if (chip) {
+   selected = selected === chip ? null : chip;
+   render();
+   return;
+  }
+  const slot = slots.find(s => Math.hypot(point.x - s.x, point.y - s.y) <= s.r + 10);
+  if (!slot || !selected) return;
+  const slotIndex = slots.indexOf(slot);
+  if (slot.planet) {
+   const other = slot.planet;
+   other.x = selected.x;
+   other.y = selected.y;
+   slot.planet = null;
+  }
+  selected.x = slot.x;
+  selected.y = slot.y;
+  slot.planet = selected;
+  fxPlay(slotIndex === selected.planetIndex ? 'ok' : 'pop');
+  selected = null;
+  render();
+  if (slots.every((s, index) => s.planet && s.planet.planetIndex === index)) {
+   finishActivity('Świetnie! Planety są we właściwej kolejności: Merkury, Wenus, Ziemia, Mars, Jowisz, Saturn, Uran i Neptun. A Ceres i Pluton to planety karłowate — też krążą wokół Słońca, ale są malutkie.');
+  }
+ };
+ return {
+  title: '☀️ Ułóż planety po kolei',
+  lead, width, height,
+  start: render,
+  onDown: tap,
+  onMove: () => {},
+  onUp: () => {},
+  repeatText: lead,
+  slots, chips
+ };
+}
+
+/* ---------- Ziemia (zadanie 2): pory roku ---------- */
+
+function createSeasonsActivity() {
+ const width = 560, height = 340;
+ const bg = makeLayer(width, height);
+ paintActStars(bg.ctx, width, height, 90);
+ const sun = {x: 185, y: 170, r: 28};
+ const orbit = 115;
+ const zones = [
+  {angle: -Math.PI / 2, emoji: '🌸', name: 'Wiosna', text: 'Wiosna — przyroda budzi się do życia, drzewa kwitną, a ptaki śpiewają.'},
+  {angle: 0, emoji: '☀️', name: 'Lato', text: 'Lato — jest najcieplej. To czas wakacji i kąpieli w jeziorze!'},
+  {angle: Math.PI / 2, emoji: '🍂', name: 'Jesień', text: 'Jesień — liście na drzewach robią się kolorowe i opadają.'},
+  {angle: Math.PI, emoji: '❄️', name: 'Zima', text: 'Zima — jest zimno, czasem pada śnieg i można lepić bałwana!'}
+ ];
+ const angleStart = -Math.PI / 2;
+ let angle = angleStart;
+ let dragging = false;
+ const done = new Set();
+ const lead = 'Przeciągnij Ziemię wokół Słońca. Zatrzymaj ją w każdej porze roku — wiosną, latem, jesienią i zimą!';
+ const angleDiff = (a, b) => {
+  let delta = Math.abs(a - b) % TAU;
+  return Math.min(delta, TAU - delta);
+ };
+ const render = () => {
+  actCtx.drawImage(bg.canvas, 0, 0, width, height);
+  actCtx.strokeStyle = 'rgba(104,171,239,.35)';
+  actCtx.lineWidth = 1.5;
+  actCtx.setLineDash([4, 7]);
+  actCtx.beginPath();
+  actCtx.arc(sun.x, sun.y, orbit, 0, TAU);
+  actCtx.stroke();
+  actCtx.setLineDash([]);
+  const glow = actCtx.createRadialGradient(sun.x, sun.y, 4, sun.x, sun.y, sun.r * 2.4);
+  glow.addColorStop(0, 'rgba(255,170,60,.5)');
+  glow.addColorStop(1, 'rgba(255,170,60,0)');
+  actCtx.fillStyle = glow;
+  actCtx.beginPath();
+  actCtx.arc(sun.x, sun.y, sun.r * 2.4, 0, TAU);
+  actCtx.fill();
+  const sg = actCtx.createRadialGradient(sun.x - 8, sun.y - 9, 2, sun.x, sun.y, sun.r);
+  sg.addColorStop(0, '#fff3a0');
+  sg.addColorStop(.6, '#ffb43a');
+  sg.addColorStop(1, '#e06a1a');
+  actCtx.fillStyle = sg;
+  actCtx.beginPath();
+  actCtx.arc(sun.x, sun.y, sun.r, 0, TAU);
+  actCtx.fill();
+  zones.forEach((zone, index) => {
+   const lx = sun.x + Math.cos(zone.angle) * (orbit + 38);
+   const ly = sun.y + Math.sin(zone.angle) * (orbit + 30);
+   actCtx.textAlign = 'center';
+   actCtx.font = '700 15px system-ui, sans-serif';
+   actCtx.fillStyle = done.has(index) ? '#7ee787' : '#e6f1ff';
+   actCtx.fillText(`${zone.emoji} ${zone.name}${done.has(index) ? ' ✓' : ''}`, lx, ly);
+  });
+  const ex = sun.x + Math.cos(angle) * orbit;
+  const ey = sun.y + Math.sin(angle) * orbit;
+  drawActBall(actCtx, null, ex, ey, 13, '#268de0', 0);
+  actCtx.strokeStyle = 'rgba(255,255,255,.85)';
+  actCtx.lineWidth = 2;
+  actCtx.beginPath();
+  actCtx.moveTo(ex - Math.sin(.35) * 22, ey - Math.cos(.35) * 22);
+  actCtx.lineTo(ex + Math.sin(.35) * 22, ey + Math.cos(.35) * 22);
+  actCtx.stroke();
+ };
+ const checkZones = () => {
+  zones.forEach((zone, index) => {
+   if (!done.has(index) && angleDiff(angle, zone.angle) < .42) {
+    done.add(index);
+    fxPlay('ok');
+    logActivity(`${zone.emoji} ${zone.name}! ${zone.text}`);
+    render();
+    if (done.size === zones.length) {
+     finishActivity('Brawo! Znalazłaś wszystkie pory roku. Są one dlatego, że Ziemia krąży wokół Słońca i jej oś jest trochę przechylona. Raz jedna półkula Ziemi jest bardziej skierowana do Słońca, a raz druga.');
+    }
+   }
+  });
+ };
+ return {
+  title: '🌍 Pory roku',
+  lead, width, height,
+  start: render,
+  onDown: point => {
+   const ex = sun.x + Math.cos(angle) * orbit;
+   const ey = sun.y + Math.sin(angle) * orbit;
+   if (Math.hypot(point.x - ex, point.y - ey) > 30) return;
+   dragging = true;
+  },
+  onMove: point => {
+   if (!dragging) return;
+   angle = Math.atan2(point.y - sun.y, point.x - sun.x);
+   render();
+   checkZones();
+  },
+  onUp: () => {dragging = false;},
+  repeatText: lead,
+  sun, orbit, zones, angleStart
+ };
+}
+
+/* ---------- Jowisz (zadanie 2): księżyce Galileusza ---------- */
+
+const GALILEAN_MOONS = [
+ {name: 'Io', color: '#e8c07a', radius: 7, orbit: 108, period: 12, phase: .5, text: 'ma ponad 400 wulkanów! Wyrzucają one siarkę, która maluje Io na żółto i pomarańczowo.'},
+ {name: 'Europa', color: '#d8e4f0', radius: 6, orbit: 138, period: 18, phase: 2.1, text: 'pod grubą skorupą lodu może być ocean wody. A gdzie jest woda, tam może być życie!'},
+ {name: 'Ganimedes', color: '#b09a7a', radius: 9, orbit: 168, period: 26, phase: 4, text: 'to największy księżyc w całym Układzie Słonecznym — większy nawet od planety Merkury!'},
+ {name: 'Kallisto', color: '#8a7a66', radius: 7, orbit: 198, period: 36, phase: 1.2, text: 'jest cały pokryty kraterami. To jeden z najstarszych księżyców Jowisza.'}
+];
+
+function createGalileanActivity() {
+ const width = 560, height = 340;
+ const bg = makeLayer(width, height);
+ paintActStars(bg.ctx, width, height, 100);
+ const center = {x: 280, y: 170};
+ const jupiterRadius = 62;
+ const moons = GALILEAN_MOONS.map(moon => ({...moon, x: 0, y: 0}));
+ const found = new Set();
+ const lead = 'To Jowisz i cztery jego wielkie księżyce, które odkrył Galileusz. Dotykaj każdy księżyc, żeby go złapać i poznać!';
+ const place = now => {
+  moons.forEach(moon => {
+   const angle = moon.phase + now * .0011 * (36 / moon.period);
+   moon.x = center.x + Math.cos(angle) * moon.orbit;
+   moon.y = center.y + Math.sin(angle) * moon.orbit * .55;
+  });
+ };
+ const render = () => {
+  actCtx.drawImage(bg.canvas, 0, 0, width, height);
+  actCtx.strokeStyle = 'rgba(104,171,239,.25)';
+  actCtx.lineWidth = 1;
+  actCtx.setLineDash([3, 6]);
+  moons.forEach(moon => {
+   actCtx.beginPath();
+   actCtx.ellipse(center.x, center.y, moon.orbit, moon.orbit * .55, 0, 0, TAU);
+   actCtx.stroke();
+  });
+  actCtx.setLineDash([]);
+  drawActBall(actCtx, 'jupiter', center.x, center.y, jupiterRadius, '#d5b18a', 0);
+  moons.forEach((moon, index) => {
+   const gradient = actCtx.createRadialGradient(moon.x - moon.radius * .35, moon.y - moon.radius * .4, moon.radius * .2, moon.x, moon.y, moon.radius * 1.2);
+   gradient.addColorStop(0, moon.color);
+   gradient.addColorStop(1, '#070b16');
+   actCtx.fillStyle = gradient;
+   actCtx.beginPath();
+   actCtx.arc(moon.x, moon.y, moon.radius, 0, TAU);
+   actCtx.fill();
+   actCtx.textAlign = 'center';
+   actCtx.font = '700 12px system-ui, sans-serif';
+   actCtx.fillStyle = found.has(index) ? '#7ee787' : '#e6f1ff';
+   actCtx.fillText(moon.name, moon.x, moon.y - moon.radius - 6);
+   if (found.has(index)) strokeHit(moon.x, moon.y, moon.radius + 5, moon.radius + 5, 0);
+  });
+ };
+ const tap = point => {
+  const index = moons.findIndex(moon => Math.hypot(point.x - moon.x, point.y - moon.y) <= moon.radius + 12);
+  if (index < 0 || found.has(index)) return;
+  found.add(index);
+  fxPlay('ok');
+  render();
+  logActivity(`${moons[index].name} ${moons[index].text}`);
+  if (found.size === moons.length) {
+   finishActivity('Złapałaś wszystkie cztery księżyce! Io, Europa, Ganimedes i Kallisto. Galileusz zobaczył je w 1610 roku przez pierwszy teleskop — to były pierwsze księżyce odkryte przez człowieka, oprócz naszego Księżyca!');
+  }
+ };
+ return {
+  title: '🪐 Księżyce Galileusza',
+  lead, width, height,
+  start: () => {place(performance.now()); render();},
+  onDown: tap,
+  onMove: () => {},
+  onUp: () => {},
+  frame: (dt, now) => {place(now); render();},
+  repeatText: lead,
+  moons
+ };
+}
+
 /* ---------- rejestr i sterowanie ---------- */
 
 const activityFactories = {
@@ -1180,7 +1456,10 @@ const activityFactories = {
  uranus: createUranusActivity,
  neptune: createNeptuneActivity,
  heart: createHeartActivity,
- tail: createTailActivity
+ tail: createTailActivity,
+ order: createOrderActivity,
+ seasons: createSeasonsActivity,
+ galilean: createGalileanActivity
 };
 
 function openActivity(item, slot = 0) {

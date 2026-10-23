@@ -1,7 +1,7 @@
 /* ---------- dane ---------- */
 
 const bodies = [
- {id: 'sun', kind: 'star', name: 'Słońce', type: 'Nasza gwiazda', color: '#ffb43a', radius: 25, activity: 'sunspots',
+ {id: 'sun', kind: 'star', name: 'Słońce', type: 'Nasza gwiazda', color: '#ffb43a', radius: 25, activity: 'sunspots', activity2: 'order',
   facts: [
    'Słońce to gwiazda, czyli wielka kula gorącego gazu. Świeci własnym światłem i daje nam ciepło. Dzięki niemu na Ziemi jest dzień, rosną rośliny i żyją zwierzęta. Wszystkie planety krążą wokół Słońca.',
    'Słońce jest ogromne. Zmieściłoby się w nim ponad milion Ziem! Gdyby Ziemia była wielkości piłeczki do ping-ponga, Słońce miałoby ponad cztery metry szerokości. To tyle, co duży pokój.',
@@ -23,7 +23,7 @@ const bodies = [
    'Wenus kręci się w drugą stronę niż prawie wszystkie planety. Dlatego Słońce wschodzi tam na zachodzie! Jeden obrót trwa 243 ziemskie dni, a rok tylko 225 dni. Obrót trwa więc dłużej niż rok.',
    'Wenus jest prawie tak duża jak Ziemia, więc nazywa się ją siostrą Ziemi. Na niebie widać ją wieczorem albo rano jako bardzo jasny punkt. Ludzie nazywają ją Gwiazdą Wieczorną, ale to wcale nie gwiazda, tylko planeta.'
   ]},
- {id: 'earth', surface: 'earth', kind: 'planet', name: 'Ziemia', type: 'Trzecia planeta od Słońca', color: '#268de0', radius: 8, orbit: 145, period: 365.25, startPhase: 4.1, texture: 'earth_photo', photo: true,
+ {id: 'earth', surface: 'earth', kind: 'planet', name: 'Ziemia', type: 'Trzecia planeta od Słońca', color: '#268de0', radius: 8, orbit: 145, period: 365.25, startPhase: 4.1, texture: 'earth_photo', photo: true, activity2: 'seasons',
   facts: [
    'Ziemia to nasz dom! To jedyne miejsce, na którym znamy życie: ludzi, zwierzęta i rośliny. Mamy tu powietrze do oddychania i wodę do picia. Ziemia jest w sam raz daleko od Słońca, więc nie jest ani za gorąca, ani za zimna.',
    'Z kosmosu Ziemia wygląda jak niebieska kula. Aż 71 procent jej powierzchni pokrywa woda. Widać też białe chmury i brązowe lądy. Dlatego mówimy na nią Błękitna Planeta.',
@@ -54,7 +54,7 @@ const bodies = [
    'Ceres odkrył 1 stycznia 1801 roku włoski astronom Giuseppe Piazzi. Najpierw ogłoszono, że to nowa planeta. Potem znaleziono podobne skały i Ceres nazwano planetoidą. Dziś mówimy o niej planeta karłowata.',
    'Na Ceres są jasne plamy w kraterze o nazwie Occator. To sól, która została po wyparowaniu słonej wody. Naukowcy znaleźli pod powierzchnią Ceres zbiornik słonej wody. Woda dostała się kiedyś na wierzch i wyschła.'
   ]},
- {id: 'jupiter', surface: 'jupiter', kind: 'planet', name: 'Jowisz', type: 'Piąta planeta od Słońca', color: '#d5b18a', radius: 22, orbit: 260, period: 4333, startPhase: 1.3, texture: 'jupiter', activity: 'jupiter',
+ {id: 'jupiter', surface: 'jupiter', kind: 'planet', name: 'Jowisz', type: 'Piąta planeta od Słońca', color: '#d5b18a', radius: 22, orbit: 260, period: 4333, startPhase: 1.3, texture: 'jupiter', activity: 'jupiter', activity2: 'galilean',
   facts: [
    'Jowisz jest największą planetą. Zmieściłoby się w nim ponad tysiąc Ziem! Jest cięższy niż wszystkie inne planety razem wzięte. Mimo to jest bardzo daleko, więc na niebie wygląda jak jasny punkt.',
    'Jowisz nie ma twardej powierzchni. To wielka kula z gazu, czyli gazowy olbrzym. Nie da się na nim wylądować, bo nie ma gdzie stanąć. Jego chmury układają się w kolorowe pasy.',

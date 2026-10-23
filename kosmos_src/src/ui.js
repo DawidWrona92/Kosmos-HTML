@@ -275,7 +275,7 @@ function renderLists() {
   const label = done ? `${emoji} ${escapeHtml(item.name)}` : '❓ ???';
   return `<div class="listitem${done ? ' done' : ' locked'}"><span class="listico">${emoji}</span><span class="listlabel">${label}</span><span class="listcheck">✓</span></div>`;
  };
- const tasksDone = item => doneTasks.has(item.id) && (!item.activity2 || doneTasks.has(`${item.id}#2`));
+ const tasksDone = item => (!item.activity || doneTasks.has(item.id)) && (!item.activity2 || doneTasks.has(`${item.id}#2`));
  byId('discoverList').innerHTML = all.map(item => itemHtml(item, discovered.has(item.id))).join('');
  byId('taskList').innerHTML = all.map(item => itemHtml(item, tasksDone(item))).join('');
 }

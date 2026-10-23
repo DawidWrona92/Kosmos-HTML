@@ -256,6 +256,32 @@ async function complete(item, slot = 0) {
         await sleep(0);
       }
     }
+  } else if (kind === 'order') {
+    // klikamy chip planety (dół), potem jej slot (góra) — po kolei 1..8
+    for (let i = 0; i < act.slots.length; i++) {
+      const chip = act.chips.find(c => c.planetIndex === i);
+      const slot = act.slots[i];
+      act.onDown({x: chip.x, y: chip.y});
+      act.onUp();
+      act.onDown({x: slot.x, y: slot.y});
+      act.onUp();
+    }
+  } else if (kind === 'seasons') {
+    // przeciągamy Ziemię kolejno przez cztery strefy pór roku
+    const startX = act.sun.x + Math.cos(act.angleStart) * act.orbit;
+    const startY = act.sun.y + Math.sin(act.angleStart) * act.orbit;
+    act.onDown({x: startX, y: startY});
+    for (const zone of act.zones) {
+      act.onMove({x: act.sun.x + Math.cos(zone.angle) * act.orbit, y: act.sun.y + Math.sin(zone.angle) * act.orbit});
+    }
+    act.onUp();
+  } else if (kind === 'galilean') {
+    // pozycje księżyców ustawia frame(), klikamy w każdy środek
+    if (act.frame) act.frame(.016, 5000);
+    for (const moon of act.moons) {
+      act.onDown({x: moon.x, y: moon.y});
+      act.onUp();
+    }
   } else {
     // znajdź-klik (sunspots, mercury, ceres, jupiter, saturn, heart):
     // klikamy gęstą siatką, aż zadanie się skończy
