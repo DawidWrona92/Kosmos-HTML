@@ -23,19 +23,6 @@ const ripples = [];
 
 /* ---------- pamięć przeglądarki ---------- */
 
-function loadStored(key, fallback) {
- try {
-  const value = window.localStorage.getItem(key);
-  return value === null ? fallback : value;
- } catch (error) {
-  return fallback;
- }
-}
-
-function saveStored(key, value) {
- try {window.localStorage.setItem(key, value);} catch (error) {}
-}
-
 const discovered = new Set();
 try {
  JSON.parse(loadStored('kosmos2.discovered', '[]')).forEach(id => {

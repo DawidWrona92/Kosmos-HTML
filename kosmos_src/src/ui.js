@@ -131,6 +131,7 @@ function addRipple(position) {
 function choose(index) {
  hasChosen = true;
  view.find = null;
+ fxPlay('whoosh');
  setSelection(true, index);
  view.zoomGoal = followZoom(index);
  factIndex = 0;
@@ -143,6 +144,7 @@ function choose(index) {
 function chooseFind(target) {
  hasChosen = true;
  view.find = target.find;
+ fxPlay('whoosh');
  factIndex = 0;
  markDiscovered(target.find.id);
  addRipple(target);
@@ -200,6 +202,7 @@ function renderSettings() {
  select.innerHTML = candidates.map(voice => `<option value="${escapeHtml(voice.name)}"${active && voice.name === active.name ? ' selected' : ''}>${escapeHtml(voice.name)}</option>`).join('');
  select.disabled = !candidates.length;
  byId('soundToggle').checked = speech.on;
+ byId('fxToggle').checked = fx.on;
  byId('rateRange').value = speech.rate;
  byId('pitchRange').value = speech.pitch;
 }
@@ -230,6 +233,7 @@ byId('pitchRange').addEventListener('input', event => {
  saveStored('kosmos3.pitch', String(speech.pitch));
 });
 byId('soundToggle').addEventListener('change', event => setVoiceOn(event.target.checked));
+byId('fxToggle').addEventListener('change', event => fxSetOn(event.target.checked));
 byId('voiceTest').addEventListener('click', () => {
  const wasOn = speech.on;
  speech.on = true;

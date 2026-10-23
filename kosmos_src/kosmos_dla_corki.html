@@ -218,6 +218,7 @@ button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px r
   <div class="setrow"><label for="rateRange">Tempo mowy</label><input type="range" id="rateRange" min="0.6" max="1.3" step="0.05"></div>
   <div class="setrow"><label for="pitchRange">Wysokość głosu</label><input type="range" id="pitchRange" min="0.7" max="1.5" step="0.05"></div>
   <div class="setrow inline"><input type="checkbox" id="soundToggle" checked><label for="soundToggle">Czytanie na głos włączone</label></div>
+  <div class="setrow inline"><input type="checkbox" id="fxToggle" checked><label for="fxToggle">Dźwięki (pikanie, fanfary) włączone</label></div>
   <div class="row">
    <button class="btn wide" id="voiceTest"><span class="ico">🔊</span><span class="lbl">Przetestuj głos</span></button>
    <button class="btn wide" id="resetNotebook"><span class="ico">🗑️</span><span class="lbl">Wyczyść odkrycia</span></button>
@@ -263,6 +264,117 @@ const controlsPanel = byId('controls');
 const compactQuery = window.matchMedia('(max-width:1200px)');
 const speechSupported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
 
+function loadStored(key, fallback) {
+ try {
+  const value = window.localStorage.getItem(key);
+  return value === null ? fallback : value;
+ } catch (error) {
+  return fallback;
+ }
+}
+
+function saveStored(key, value) {
+ try {window.localStorage.setItem(key, value);} catch (error) {}
+}
+
+
+/* ---------- efekty dźwiękowe (Web Audio, syntezowane — bez plików) ---------- */
+
+const fx = {
+ on: loadStored('kosmos3.fx', '1') === '1',
+ ctx: null
+};
+
+function fxContext() {
+ if (fx.ctx) return fx.ctx;
+ try {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  fx.ctx = new AudioContextClass();
+ } catch (error) {
+  fx.ctx = null;
+ }
+ return fx.ctx;
+}
+
+function fxPlay(kind) {
+ if (!fx.on) return;
+ const context = fxContext();
+ if (!context) return;
+ if (context.state === 'suspended') context.resume().catch(() => {});
+ const now = context.currentTime;
+ const master = context.createGain();
+ master.gain.value = .16;
+ master.connect(context.destination);
+ const tone = (type, freq, start, duration, peak, slideTo) => {
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(freq, now + start);
+  if (slideTo) oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, slideTo), now + start + duration);
+  gain.gain.setValueAtTime(.0001, now + start);
+  gain.gain.exponentialRampToValueAtTime(peak, now + start + .015);
+  gain.gain.exponentialRampToValueAtTime(.0001, now + start + duration);
+  oscillator.connect(gain);
+  gain.connect(master);
+  oscillator.start(now + start);
+  oscillator.stop(now + start + duration + .05);
+ };
+ const noise = (start, duration, peak, filterFreq) => {
+  const length = Math.max(1, Math.floor(context.sampleRate * duration));
+  const buffer = context.createBuffer(1, length, context.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+  const source = context.createBufferSource();
+  source.buffer = buffer;
+  const gain = context.createGain();
+  gain.gain.setValueAtTime(peak, now + start);
+  gain.gain.exponentialRampToValueAtTime(.0001, now + start + duration);
+  const filter = context.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = filterFreq;
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(master);
+  source.start(now + start);
+  source.stop(now + start + duration + .05);
+ };
+ switch (kind) {
+  case 'tap':
+   tone('triangle', 520, 0, .09, .5);
+   break;
+  case 'ok':
+   tone('sine', 660, 0, .14, .5);
+   tone('sine', 990, .07, .18, .35);
+   break;
+  case 'miss':
+   tone('sawtooth', 220, 0, .12, .25, 160);
+   break;
+  case 'win':
+   tone('sine', 523, 0, .16, .4);
+   tone('sine', 659, .12, .16, .4);
+   tone('sine', 784, .24, .22, .4);
+   tone('sine', 1047, .36, .4, .3);
+   break;
+  case 'whoosh':
+   noise(0, .22, .3, 900);
+   tone('sine', 300, 0, .2, .12, 120);
+   break;
+  case 'pop':
+   tone('sine', 880, 0, .1, .4, 1320);
+   break;
+  case 'twinkle':
+   tone('sine', 1568, 0, .12, .3);
+   tone('sine', 2093, .05, .14, .2);
+   break;
+ }
+}
+
+function fxSetOn(value) {
+ fx.on = value;
+ saveStored('kosmos3.fx', value ? '1' : '0');
+ if (value) fxPlay('tap');
+}
 
 /* ---------- obrazy i globusy ---------- */
 
@@ -602,19 +714,6 @@ const asteroids = Array.from({length: ASTEROID_COUNT}, () => {
 const ripples = [];
 
 /* ---------- pamięć przeglądarki ---------- */
-
-function loadStored(key, fallback) {
- try {
-  const value = window.localStorage.getItem(key);
-  return value === null ? fallback : value;
- } catch (error) {
-  return fallback;
- }
-}
-
-function saveStored(key, value) {
- try {window.localStorage.setItem(key, value);} catch (error) {}
-}
 
 const discovered = new Set();
 try {
@@ -1657,6 +1756,7 @@ function addRipple(position) {
 function choose(index) {
  hasChosen = true;
  view.find = null;
+ fxPlay('whoosh');
  setSelection(true, index);
  view.zoomGoal = followZoom(index);
  factIndex = 0;
@@ -1669,6 +1769,7 @@ function choose(index) {
 function chooseFind(target) {
  hasChosen = true;
  view.find = target.find;
+ fxPlay('whoosh');
  factIndex = 0;
  markDiscovered(target.find.id);
  addRipple(target);
@@ -1726,6 +1827,7 @@ function renderSettings() {
  select.innerHTML = candidates.map(voice => `<option value="${escapeHtml(voice.name)}"${active && voice.name === active.name ? ' selected' : ''}>${escapeHtml(voice.name)}</option>`).join('');
  select.disabled = !candidates.length;
  byId('soundToggle').checked = speech.on;
+ byId('fxToggle').checked = fx.on;
  byId('rateRange').value = speech.rate;
  byId('pitchRange').value = speech.pitch;
 }
@@ -1756,6 +1858,7 @@ byId('pitchRange').addEventListener('input', event => {
  saveStored('kosmos3.pitch', String(speech.pitch));
 });
 byId('soundToggle').addEventListener('change', event => setVoiceOn(event.target.checked));
+byId('fxToggle').addEventListener('change', event => fxSetOn(event.target.checked));
 byId('voiceTest').addEventListener('click', () => {
  const wasOn = speech.on;
  speech.on = true;
@@ -2073,6 +2176,7 @@ function logActivity(text) {
 }
 
 function finishActivity(text) {
+ fxPlay('win');
  logActivity(text);
  if (activeItem) markTaskDone(activeItem.id);
  byId('actDone').hidden = false;
@@ -2182,6 +2286,7 @@ function createTorchActivity(config) {
   render();
   if (isReveal(point)) {
    found = true;
+   fxPlay('ok');
    render();
    finishActivity(doneText);
   }
@@ -2373,6 +2478,7 @@ function createSunspotsActivity() {
   const spot = spots.find(item => !item.found && Math.hypot(point.x - item.x, point.y - item.y) <= item.r * 1.4);
   if (!spot) return;
   spot.found = true;
+  fxPlay('ok');
   render();
   const foundCount = spots.filter(item => item.found).length;
   if (foundCount === spots.length) {
@@ -2551,6 +2657,7 @@ function createCeresActivity() {
   const spot = spots.find(item => !item.found && ((point.x - item.x) / (item.rx * 1.3)) ** 2 + ((point.y - item.y) / (item.ry * 1.3)) ** 2 <= 1);
   if (!spot) return;
   spot.found = true;
+  fxPlay('ok');
   render();
   if (spots.every(item => item.found)) {
    done = true;
@@ -2595,6 +2702,7 @@ function createJupiterActivity() {
   if (done) return;
   if (((point.x - grs.x) / (grs.rx * 1.3)) ** 2 + ((point.y - grs.y) / (grs.ry * 1.3)) ** 2 <= 1) {
    done = true;
+   fxPlay('ok');
    render();
    finishActivity('To Wielka Czerwona Plama! To burza wielka jak cała Ziemia. Ludzie obserwują ją od ponad 150 lat, a wiatr w środku wieje szybciej niż najsilniejszy huragan.');
   }
@@ -2630,6 +2738,7 @@ function createSaturnActivity() {
   const distance = Math.hypot(rx, ry);
   if (distance >= radius * 1.22 && distance <= radius * 2.45) {
    done = true;
+   fxPlay('ok');
    render();
    finishActivity('To pierścienie Saturna! Składają się z miliardów kawałków lodu i skał — od ziarenek piasku po bryły wielkie jak dom. Są ogromne, a mają tylko około 10 metrów grubości!');
   }
@@ -2736,6 +2845,7 @@ function createNeptuneActivity() {
   const ty = cy + Math.sin(angle) * orbitY;
   if (Math.hypot(point.x - tx, point.y - ty) <= 30) {
    caught = true;
+   fxPlay('ok');
    render();
    finishActivity('Złapałaś Trytona! To największy księżyc Neptuna. Jest tam strasznie zimno, a mimo to Tryton ma gejzery, które wyrzucają w górę lodowy pył.');
   }
@@ -3062,6 +3172,7 @@ function createMoonActivity() {
   });
   if (!hit || found.has(hit.id)) return;
   found.add(hit.id);
+  fxPlay('ok');
   render();
   const summary = found.size === MOON_DIFFS.length ? ' Znalazłaś wszystkie różnice! Prawdziwy Księżyc wygląda jak Obrazek 1.' : '';
   logActivity(`Znaleziono ${found.size} z ${MOON_DIFFS.length}. ${hit.text}${summary}`);
@@ -3137,6 +3248,7 @@ function createPartsActivity(item) {
   const hitIndex = part.hits.findIndex(([hx, hy, hr]) => Math.hypot(px - hx * imgRect.w, py - hy * imgRect.h) <= hr * imgRect.w);
   if (hitIndex < 0 || foundHits.has(hitIndex)) return;
   foundHits.add(hitIndex);
+  fxPlay('ok');
   render();
   const need = Math.min(part.count || 1, part.hits.length);
   if (foundHits.size >= need) {
@@ -3232,6 +3344,7 @@ function closeActivity() {
 actCanvas.addEventListener('pointerdown', event => {
  if (!activeActivity) return;
  try {actCanvas.setPointerCapture(event.pointerId);} catch (error) {}
+ fxPlay('tap');
  activeActivity.onDown(activityPoint(event));
 });
 actCanvas.addEventListener('pointermove', event => {

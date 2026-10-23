@@ -25,3 +25,16 @@ const controlsPanel = byId('controls');
 const compactQuery = window.matchMedia('(max-width:1200px)');
 const speechSupported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
 
+function loadStored(key, fallback) {
+ try {
+  const value = window.localStorage.getItem(key);
+  return value === null ? fallback : value;
+ } catch (error) {
+  return fallback;
+ }
+}
+
+function saveStored(key, value) {
+ try {window.localStorage.setItem(key, value);} catch (error) {}
+}
+

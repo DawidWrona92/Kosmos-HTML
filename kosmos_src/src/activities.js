@@ -44,6 +44,7 @@ function logActivity(text) {
 }
 
 function finishActivity(text) {
+ fxPlay('win');
  logActivity(text);
  if (activeItem) markTaskDone(activeItem.id);
  byId('actDone').hidden = false;
@@ -153,6 +154,7 @@ function createTorchActivity(config) {
   render();
   if (isReveal(point)) {
    found = true;
+   fxPlay('ok');
    render();
    finishActivity(doneText);
   }
@@ -344,6 +346,7 @@ function createSunspotsActivity() {
   const spot = spots.find(item => !item.found && Math.hypot(point.x - item.x, point.y - item.y) <= item.r * 1.4);
   if (!spot) return;
   spot.found = true;
+  fxPlay('ok');
   render();
   const foundCount = spots.filter(item => item.found).length;
   if (foundCount === spots.length) {
@@ -522,6 +525,7 @@ function createCeresActivity() {
   const spot = spots.find(item => !item.found && ((point.x - item.x) / (item.rx * 1.3)) ** 2 + ((point.y - item.y) / (item.ry * 1.3)) ** 2 <= 1);
   if (!spot) return;
   spot.found = true;
+  fxPlay('ok');
   render();
   if (spots.every(item => item.found)) {
    done = true;
@@ -566,6 +570,7 @@ function createJupiterActivity() {
   if (done) return;
   if (((point.x - grs.x) / (grs.rx * 1.3)) ** 2 + ((point.y - grs.y) / (grs.ry * 1.3)) ** 2 <= 1) {
    done = true;
+   fxPlay('ok');
    render();
    finishActivity('To Wielka Czerwona Plama! To burza wielka jak cała Ziemia. Ludzie obserwują ją od ponad 150 lat, a wiatr w środku wieje szybciej niż najsilniejszy huragan.');
   }
@@ -601,6 +606,7 @@ function createSaturnActivity() {
   const distance = Math.hypot(rx, ry);
   if (distance >= radius * 1.22 && distance <= radius * 2.45) {
    done = true;
+   fxPlay('ok');
    render();
    finishActivity('To pierścienie Saturna! Składają się z miliardów kawałków lodu i skał — od ziarenek piasku po bryły wielkie jak dom. Są ogromne, a mają tylko około 10 metrów grubości!');
   }
@@ -707,6 +713,7 @@ function createNeptuneActivity() {
   const ty = cy + Math.sin(angle) * orbitY;
   if (Math.hypot(point.x - tx, point.y - ty) <= 30) {
    caught = true;
+   fxPlay('ok');
    render();
    finishActivity('Złapałaś Trytona! To największy księżyc Neptuna. Jest tam strasznie zimno, a mimo to Tryton ma gejzery, które wyrzucają w górę lodowy pył.');
   }
@@ -1033,6 +1040,7 @@ function createMoonActivity() {
   });
   if (!hit || found.has(hit.id)) return;
   found.add(hit.id);
+  fxPlay('ok');
   render();
   const summary = found.size === MOON_DIFFS.length ? ' Znalazłaś wszystkie różnice! Prawdziwy Księżyc wygląda jak Obrazek 1.' : '';
   logActivity(`Znaleziono ${found.size} z ${MOON_DIFFS.length}. ${hit.text}${summary}`);
@@ -1108,6 +1116,7 @@ function createPartsActivity(item) {
   const hitIndex = part.hits.findIndex(([hx, hy, hr]) => Math.hypot(px - hx * imgRect.w, py - hy * imgRect.h) <= hr * imgRect.w);
   if (hitIndex < 0 || foundHits.has(hitIndex)) return;
   foundHits.add(hitIndex);
+  fxPlay('ok');
   render();
   const need = Math.min(part.count || 1, part.hits.length);
   if (foundHits.size >= need) {
@@ -1203,6 +1212,7 @@ function closeActivity() {
 actCanvas.addEventListener('pointerdown', event => {
  if (!activeActivity) return;
  try {actCanvas.setPointerCapture(event.pointerId);} catch (error) {}
+ fxPlay('tap');
  activeActivity.onDown(activityPoint(event));
 });
 actCanvas.addEventListener('pointermove', event => {

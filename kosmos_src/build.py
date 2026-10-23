@@ -39,6 +39,7 @@ def main():
     parts = [
         read('head.html'),
         read('consts.js'),
+        read('fx.js'),
         assets,
         read('data.js'),
         core,
