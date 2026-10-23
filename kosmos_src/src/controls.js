@@ -26,6 +26,7 @@ byId('dots').addEventListener('click', event => {
 });
 byId('startButton').addEventListener('click', () => {
  byId('start').hidden = true;
+ musicStart();
  sayNow('Cześć! Dotknij którąś planetę, a opowiem Ci o niej coś ciekawego.');
 });
 

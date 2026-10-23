@@ -203,6 +203,7 @@ function renderSettings() {
  select.disabled = !candidates.length;
  byId('soundToggle').checked = speech.on;
  byId('fxToggle').checked = fx.on;
+ byId('musicToggle').checked = music.on;
  byId('rateRange').value = speech.rate;
  byId('pitchRange').value = speech.pitch;
 }
@@ -234,6 +235,7 @@ byId('pitchRange').addEventListener('input', event => {
 });
 byId('soundToggle').addEventListener('change', event => setVoiceOn(event.target.checked));
 byId('fxToggle').addEventListener('change', event => fxSetOn(event.target.checked));
+byId('musicToggle').addEventListener('change', event => musicSetOn(event.target.checked));
 byId('voiceTest').addEventListener('click', () => {
  const wasOn = speech.on;
  speech.on = true;
