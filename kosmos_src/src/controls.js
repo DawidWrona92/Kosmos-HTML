@@ -26,6 +26,10 @@ byId('startButton').addEventListener('click', () => {
 
 window.addEventListener('keydown', event => {
  const target = event.target;
+ if (!byId('lists').hidden) {
+  if (event.key === 'Escape') closeLists();
+  return;
+ }
  if (!byId('settings').hidden) {
   if (event.key === 'Escape') closeSettings();
   return;
