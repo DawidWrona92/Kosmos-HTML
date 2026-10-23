@@ -264,7 +264,12 @@ function drawAttention(x, y, radius, index) {
  }
 }
 
-const SUNSPOTS = [{x: .36, y: .42, r: .05}, {x: .64, y: .36, r: .04}, {x: .56, y: .64, r: .055}, {x: .3, y: .62, r: .035}];
+const SUNSPOTS = [
+ {x: .32, y: .38, r: .028, tilt: .3}, {x: .58, y: .3, r: .022, tilt: -.5}, {x: .7, y: .58, r: .026, tilt: .9},
+ {x: .42, y: .68, r: .02, tilt: 1.4}, {x: .24, y: .56, r: .018, tilt: -.9}, {x: .52, y: .5, r: .016, tilt: .1},
+ {x: .78, y: .4, r: .015, tilt: 2.}, {x: .36, y: .2, r: .017, tilt: -1.7}, {x: .62, y: .74, r: .019, tilt: .6},
+ {x: .18, y: .34, r: .014, tilt: 1.1}
+];
 let sunSurface = null;
 
 function paintSunSurface(c, size, withSpots) {
@@ -287,19 +292,35 @@ function paintSunSurface(c, size, withSpots) {
   c.fill();
  }
  if (!withSpots) return;
+ c.lineCap = 'round';
  for (const spot of SUNSPOTS) {
   const spotX = spot.x * size;
   const spotY = spot.y * size;
   const spotSize = spot.r * size;
-  c.fillStyle = 'rgba(120,45,10,.55)';
+  /* półcień (penumbra) — jaśniejsza otoczka */
+  c.fillStyle = 'rgba(140,55,12,.32)';
   c.beginPath();
-  c.ellipse(spotX, spotY, spotSize * 1.9, spotSize * 1.6, .3, 0, TAU);
+  c.ellipse(spotX, spotY, spotSize * 2.1, spotSize * 1.7, spot.tilt, 0, TAU);
   c.fill();
-  c.fillStyle = 'rgba(35,12,4,.92)';
+  /* włókna półcienia — krótkie promieniste kreseczki */
+  c.strokeStyle = 'rgba(120,40,8,.28)';
+  c.lineWidth = Math.max(1, spotSize * .22);
+  for (let fiber = 0; fiber < 8; fiber++) {
+   const angle = fiber / 8 * TAU + spot.tilt;
+   const from = spotSize * 1.15;
+   const to = spotSize * 1.9;
+   c.beginPath();
+   c.moveTo(spotX + Math.cos(angle) * from, spotY + Math.sin(angle) * from * .85);
+   c.lineTo(spotX + Math.cos(angle) * to, spotY + Math.sin(angle) * to * .85);
+   c.stroke();
+  }
+  /* umbra — ciemne jądro plamy */
+  c.fillStyle = 'rgba(35,12,4,.9)';
   c.beginPath();
-  c.ellipse(spotX, spotY, spotSize, spotSize * .8, .3, 0, TAU);
+  c.ellipse(spotX, spotY, spotSize, spotSize * .8, spot.tilt, 0, TAU);
   c.fill();
  }
+ c.lineCap = 'butt';
 }
 
 function sunTexture() {
@@ -576,38 +597,68 @@ function drawComet(item, frame) {
  const length = Math.hypot(directionX, directionY) || 1;
  const unitX = directionX / length;
  const unitY = directionY / length;
+ const normalX = -unitY;
+ const normalY = unitX;
  const zoomed = radius > 22;
- const nucleusRadius = zoomed ? Math.min(radius, 70) : Math.min(radius, 5);
- const tailLength = Math.pow(Math.max(0, 1 - distance / 950), .8) * 170 * (zoomed ? 2.4 : clamp(frame.scale, .5, 1.5));
- if (tailLength > 3) {
-  const normalX = -unitY;
-  const normalY = unitX;
-  const layers = [
-   {color: 'rgba(170,225,255,.65)', curve: 0, endSpread: .14},
-   {color: 'rgba(255,232,180,.4)', curve: .2, endSpread: .24}
-  ];
-  for (const layer of layers) {
-   const endX = x + unitX * tailLength + normalX * tailLength * layer.curve;
-   const endY = y + unitY * tailLength + normalY * tailLength * layer.curve;
-   const baseSpread = nucleusRadius * 1.1;
-   const endSpread = tailLength * layer.endSpread;
-   const gradient = ctx.createLinearGradient(x, y, endX, endY);
-   gradient.addColorStop(0, layer.color);
-   gradient.addColorStop(1, 'rgba(170,225,255,0)');
-   ctx.fillStyle = gradient;
-   ctx.beginPath();
-   ctx.moveTo(x + normalX * baseSpread, y + normalY * baseSpread);
-   ctx.quadraticCurveTo(x + unitX * tailLength * .6 + normalX * endSpread * .6, y + unitY * tailLength * .6 + normalY * endSpread * .6, endX + normalX * endSpread, endY + normalY * endSpread);
-   ctx.lineTo(endX - normalX * endSpread, endY - normalY * endSpread);
-   ctx.quadraticCurveTo(x + unitX * tailLength * .6 - normalX * endSpread * .6, y + unitY * tailLength * .6 - normalY * endSpread * .6, x - normalX * baseSpread, y - normalY * baseSpread);
-   ctx.closePath();
-   ctx.fill();
-  }
+ /* jądro: małe i ciemne, coma: duża, jasna otoczka — proporcja jak w naturze */
+ const nucleusRadius = zoomed ? Math.min(radius, 34) : Math.min(radius, 4);
+ const comaRadius = nucleusRadius * (zoomed ? 3.2 : 7.5);
+ const activity = Math.pow(Math.max(0, 1 - distance / 950), .8);
+ const tailLength = activity * 170 * (zoomed ? 4.2 : clamp(frame.scale, .5, 1.5));
+ /* ogon jonowy — wąski, prosty, niebieskawy; ogon pyłowy — szerszy, lekko zakrzywiony, żółtawy */
+ if (tailLength > 4) {
+  const ionEndX = x + unitX * tailLength;
+  const ionEndY = y + unitY * tailLength;
+  const ionSpread = comaRadius * .55;
+  const ionEndSpread = tailLength * .05;
+  let ionGradient = ctx.createLinearGradient(x, y, ionEndX, ionEndY);
+  ionGradient.addColorStop(0, 'rgba(150,215,255,.85)');
+  ionGradient.addColorStop(.5, 'rgba(120,190,255,.35)');
+  ionGradient.addColorStop(1, 'rgba(120,190,255,0)');
+  ctx.fillStyle = ionGradient;
+  ctx.beginPath();
+  ctx.moveTo(x + normalX * ionSpread, y + normalY * ionSpread);
+  ctx.quadraticCurveTo(x + unitX * tailLength * .55 + normalX * ionEndSpread * .7, y + unitY * tailLength * .55 + normalY * ionEndSpread * .7, ionEndX + normalX * ionEndSpread, ionEndY + normalY * ionEndSpread);
+  ctx.lineTo(ionEndX - normalX * ionEndSpread, ionEndY - normalY * ionEndSpread);
+  ctx.quadraticCurveTo(x + unitX * tailLength * .55 - normalX * ionEndSpread * .7, y + unitY * tailLength * .55 - normalY * ionEndSpread * .7, x - normalX * ionSpread, y - normalY * ionSpread);
+  ctx.closePath();
+  ctx.fill();
+  const curve = tailLength * .22;
+  const dustEndX = x + unitX * tailLength * .78 + normalX * curve;
+  const dustEndY = y + unitY * tailLength * .78 + normalY * curve;
+  const dustSpread = comaRadius * 1.2;
+  const dustEndSpread = tailLength * .22;
+  let dustGradient = ctx.createLinearGradient(x, y, dustEndX, dustEndY);
+  dustGradient.addColorStop(0, 'rgba(255,225,170,.6)');
+  dustGradient.addColorStop(.6, 'rgba(255,205,130,.25)');
+  dustGradient.addColorStop(1, 'rgba(255,205,130,0)');
+  ctx.fillStyle = dustGradient;
+  ctx.beginPath();
+  ctx.moveTo(x + normalX * dustSpread, y + normalY * dustSpread);
+  ctx.quadraticCurveTo(x + unitX * tailLength * .4 + normalX * (dustEndSpread * .5 + curve * .4), y + unitY * tailLength * .4 + normalY * (dustEndSpread * .5 + curve * .4), dustEndX + normalX * dustEndSpread, dustEndY + normalY * dustEndSpread);
+  ctx.lineTo(dustEndX - normalX * dustEndSpread, dustEndY - normalY * dustEndSpread);
+  ctx.quadraticCurveTo(x + unitX * tailLength * .4 - normalX * (dustEndSpread * .5 + curve * .4), y + unitY * tailLength * .4 - normalY * (dustEndSpread * .5 + curve * .4), x - normalX * dustSpread, y - normalY * dustSpread);
+  ctx.closePath();
+  ctx.fill();
  }
+ /* coma — rozmyta, jasna otoczka, lekko przesunięta od Słońca */
+ const comaCenterX = x + unitX * comaRadius * .18;
+ const comaCenterY = y + unitY * comaRadius * .18;
+ const coma = ctx.createRadialGradient(comaCenterX, comaCenterY, comaRadius * .1, comaCenterX, comaCenterY, comaRadius);
+ coma.addColorStop(0, 'rgba(240,250,255,.95)');
+ coma.addColorStop(.45, 'rgba(190,230,255,.55)');
+ coma.addColorStop(1, 'rgba(150,210,255,0)');
+ ctx.fillStyle = coma;
+ ctx.beginPath();
+ ctx.arc(comaCenterX, comaCenterY, comaRadius, 0, TAU);
+ ctx.fill();
+ /* jądro */
  if (zoomed) drawNucleus(x, y, nucleusRadius, -unitX, -unitY);
  else {
-  glow(x, y, Math.min(radius, 8), 'rgba(190,235,255,.45)');
-  ctx.fillStyle = '#eaf7ff';
+  const nucleus = ctx.createRadialGradient(x - nucleusRadius * .35, y - nucleusRadius * .35, nucleusRadius * .2, x, y, nucleusRadius * 1.1);
+  nucleus.addColorStop(0, '#8a8177');
+  nucleus.addColorStop(1, '#241f1c');
+  ctx.fillStyle = nucleus;
   ctx.beginPath();
   ctx.arc(x, y, nucleusRadius, 0, TAU);
   ctx.fill();
