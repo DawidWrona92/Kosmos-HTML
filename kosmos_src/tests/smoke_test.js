@@ -356,6 +356,24 @@ async function complete(item, slot = 0) {
     failures++;
   }
 
+  /* ---------- regresja: rysowanie planety z księżycami (drawMoon) ---------- */
+
+  t.resetView();
+  const jupiterIndex = t.bodies.findIndex(body => body.id === 'jupiter');
+  t.view.following = true;
+  t.view.selected = jupiterIndex;
+  t.view.zoom = 30;
+  t.view.zoomGoal = 30;
+  try {
+    for (let frame = 0; frame < 3; frame++) t.draw();
+    if (!t.view.moonTargets.length) throw new Error('brak celów księżyców po rysowaniu Jowisza');
+    console.log(`OK   rysowanie Jowisza z księżycami (${t.view.moonTargets.length} księżyce)`);
+  } catch (error) {
+    failures++;
+    console.error(`FAIL rysowanie planety z księżycami: ${error.message}`);
+  }
+  t.resetView();
+
   if (failures) {
     console.error(`PORAŻKI: ${failures}`);
     process.exit(1);

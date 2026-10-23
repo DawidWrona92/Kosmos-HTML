@@ -2055,7 +2055,7 @@ function drawFinds(items) {
  const freeWidth = view.free.right - view.free.left;
  const freeHeight = view.free.bottom - view.free.top;
  if (moonList.length) {
-  moonList.forEach(moon => drawMoon(item, moon, parent.x, parent.y, parent.radius));
+  moonList.forEach(moon => drawMoon(parent, moon, parent.x, parent.y, parent.radius));
  }
  if (parent.body.ring && parent.body.id === 'saturn') {
   const outer = Math.max(...parent.body.ring.bands.map(band => band.scale + band.width / 2));
