@@ -240,3 +240,47 @@ byId('resetNotebook').addEventListener('click', () => {
  saveStored('kosmos2.discovered', '[]');
  renderNotebook();
 });
+
+/* ---------- listy postępów (po kliknięciu w dzienniczek / zadania) ---------- */
+
+function bodyEmoji(body) {
+ switch (body.id) {
+  case 'sun': return '☀️';
+  case 'mercury': return '⚪';
+  case 'venus': return '🟡';
+  case 'earth': return '🌍';
+  case 'mars': return '🔴';
+  case 'ceres': return '🪨';
+  case 'jupiter': return '🟤';
+  case 'saturn': return '🪐';
+  case 'uranus': return '🔵';
+  case 'neptune': return '💙';
+  case 'pluto': return '💗';
+  case 'halley': return '☄️';
+  default: return '🪐';
+ }
+}
+
+function renderLists() {
+ const all = [...bodies, ...finds];
+ const itemHtml = (item, done) => {
+  const emoji = item.parentId ? '🛰️' : bodyEmoji(item);
+  const label = done ? `${emoji} ${escapeHtml(item.name)}` : '❓ ???';
+  return `<div class="listitem${done ? ' done' : ' locked'}"><span class="listico">${emoji}</span><span class="listlabel">${label}</span><span class="listcheck">✓</span></div>`;
+ };
+ byId('discoverList').innerHTML = all.map(item => itemHtml(item, discovered.has(item.id))).join('');
+ byId('taskList').innerHTML = all.map(item => itemHtml(item, doneTasks.has(item.id))).join('');
+}
+
+function openLists() {
+ renderLists();
+ byId('lists').hidden = false;
+}
+
+function closeLists() {
+ byId('lists').hidden = true;
+}
+
+byId('notebook').addEventListener('click', openLists);
+byId('taskbook').addEventListener('click', openLists);
+byId('listsClose').addEventListener('click', closeLists);
