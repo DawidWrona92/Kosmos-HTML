@@ -343,9 +343,58 @@ const MOONS = {
  ]
 };
 
+/* obiekty poziomów galaktycznych (view.level: -1 Ramię Oriona, -2 Droga Mleczna) */
+const GALAXY_OBJECTS = {
+ orion_arm: [
+  {id: 'solar_system', name: 'Nasz Układ Słoneczny', type: 'Układ planetarny', intro: 'Nasz Układ Słoneczny.', emoji: '☀️',
+   facts: [
+    'To nasz dom w kosmosie! Słońce to gwiazda, a wokół niego krąży osiem planet — w tym nasza Ziemia.',
+    'Nasz Układ Słoneczny leży w Ramieniu Oriona — jednym z wielkich ramion naszej galaktyki, Drogi Mlecznej.',
+    'Światło ze Słońca leci do Ziemi osiem minut. Do najbliższej gwiazdy leciałoby ponad cztery lata!'
+   ]},
+  {id: 'orion_arm', name: 'Ramię Oriona', type: 'Ramię spiralne galaktyki', intro: 'Ramię Oriona.', emoji: '🌌',
+   facts: [
+    'Ramię Oriona to jedno z wielkich ramion Drogi Mlecznej — naszej galaktyki. Ma kształt długiej, zakrzywionej wstęgi pełnej gwiazd.',
+    'Mieszkają w nim miliardy gwiazd — w tym nasze Słońce. Między gwiazdami unoszą się wielkie obłoki gazu i pyłu, w których rodzą się nowe gwiazdy.',
+    'Układ Słoneczny nie jest w centrum galaktyki — leży bliżej jej brzegu, w spokojnym zakątku Ramienia Oriona.'
+   ]}
+ ],
+ milky_way: [
+  {id: 'milky_way', name: 'Droga Mleczna', type: 'Nasza galaktyka', intro: 'Droga Mleczna.', emoji: '🌌',
+   facts: [
+    'Droga Mleczna to nasza galaktyka — ogromny wir z setkami miliardów gwiazd! Nasze Słońce i cały Układ Słoneczny są jej częścią.',
+    'Gdybyś mogła spojrzeć na Drogę Mleczną z boku, wyglądałaby jak wielki, płaski naleśnik z wypukłością w środku.',
+    'Nazwa „Droga Mleczna" wzięła się stąd, że na nocnym niebie widać jasny, mleczny pas — to nasza galaktyka patrzona od środka!',
+    'Słońce okrąża centrum Drogi Mlecznej. Jedna taka podróż trwa aż 230 milionów lat!'
+   ]},
+  {id: 'andromeda', name: 'Galaktyka Andromedy', type: 'Sąsiednia galaktyka', intro: 'Galaktyka Andromedy.', emoji: '🌀',
+   facts: [
+    'Andromeda to sąsiednia galaktyka — najbliższa wielka galaktyka obok naszej Drogi Mlecznej. Razem należą do jednej rodziny galaktyk.',
+    'Jest od nas tak daleko, że światło leci stamtąd ponad dwa i pół miliona lat!',
+    'Za około cztery miliardy lat Droga Mleczna i Andromeda połączą się w jedną wielką galaktykę. To bardzo, bardzo daleka przyszłość — nie ma się czym martwić!',
+    'Między gwiazdami w galaktykach jest tyle miejsca, że gdy galaktyki się łączą, gwiazdy rzadko się zderzają — to jak dwa stada owiec, które się mieszają.'
+   ]},
+  {id: 'voyager1', name: 'Sonda Voyager 1', type: 'Sonda kosmiczna', intro: 'Sonda Voyager 1.', emoji: '🛰️',
+   facts: [
+    'Voyager 1 to sonda kosmiczna — bezzałogowy statek, który ludzie wysłali, żeby poznawał kosmos.',
+    'Wystartował w 1977 roku i przeleciał obok Jowisza oraz Saturna, robiąc im pierwsze dokładne zdjęcia.',
+    'Voyager 1 jest teraz najdalej od Ziemi ze wszystkich rzeczy, które zbudowali ludzie — leci już między gwiazdami!',
+    'Na pokładzie niesie Złotą Płytę z pozdrowieniami dla kosmitów — z dźwiękami Ziemi, muzyką i obrazkami.'
+   ]},
+  {id: 'voyager2', name: 'Sonda Voyager 2', type: 'Sonda kosmiczna', intro: 'Sonda Voyager 2.', emoji: '🛰️',
+   facts: [
+    'Voyager 2 to bliźniak Voyagera 1 — też poleciał w 1977 roku poznawać planety.',
+    'To jedyna sonda na świecie, która przeleciała obok wszystkich czterech wielkich planet: Jowisza, Saturna, Urana i Neptuna!',
+    'Voyager 2 też leci już między gwiazdami i też niesie wiadomość od Ziemian.',
+    'Sygnał z Voyagera 2 leci do nas około 20 godzin — tyle światło potrzebuje, żeby do nas dotrzeć!'
+   ]}
+ ]
+};
+
 const taskCount = item => (item.activity ? 1 : 0) + (item.activity2 ? 1 : 0);
 const TOTAL_TASKS = bodies.reduce((sum, body) => sum + taskCount(body), 0) + finds.reduce((sum, find) => sum + taskCount(find), 0);
 const allMoons = Object.values(MOONS).flat();
-const TOTAL_ITEMS = bodies.length + finds.length + allMoons.length;
+const allGalaxy = [...GALAXY_OBJECTS.orion_arm, ...GALAXY_OBJECTS.milky_way];
+const TOTAL_ITEMS = bodies.length + finds.length + allMoons.length + allGalaxy.length;
 const bodyIndex = id => bodies.findIndex(body => body.id === id);
-const knownIds = new Set([...bodies.map(body => body.id), ...finds.map(find => find.id), ...allMoons.map(moon => moon.id)]);
+const knownIds = new Set([...bodies.map(body => body.id), ...finds.map(find => find.id), ...allMoons.map(moon => moon.id), ...allGalaxy.map(object => object.id)]);

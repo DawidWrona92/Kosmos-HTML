@@ -309,9 +309,56 @@ async function complete(item, slot = 0) {
     console.error(`OCZEKIWANO ${jobs.length} wykonanych zadań`);
     failures++;
   }
+
+  /* ---------- poziomy galaktyczne: Ramię Oriona i Droga Mleczna ---------- */
+
+  t.resetView();
+  if (!t.zoomOutLevel()) { console.error('FAIL nie weszło na poziom -1 (Ramię Oriona)'); failures++; }
+  else {
+    t.draw();
+    const armTargets = t.view.galaxyTargets;
+    if (armTargets.length !== 2) { console.error(`FAIL Ramię Oriona: oczekiwano 2 obiektów, jest ${armTargets.length}`); failures++; }
+    for (const target of armTargets) {
+      try {
+        t.pickAt(target.x, target.y, 'mouse');
+        if (!t.discovered.has(target.object.id)) throw new Error('nie oznaczono jako odkryte');
+        console.log(`OK   galaktyka ${target.object.id}`);
+      } catch (error) {
+        failures++;
+        console.error(`FAIL galaktyka ${target.object.id}: ${error.message}`);
+      }
+    }
+  }
+  if (!t.zoomOutLevel()) { console.error('FAIL nie weszło na poziom -2 (Droga Mleczna)'); failures++; }
+  else {
+    t.draw();
+    const galaxyTargets = t.view.galaxyTargets;
+    if (galaxyTargets.length !== 4) { console.error(`FAIL Droga Mleczna: oczekiwano 4 obiektów, jest ${galaxyTargets.length}`); failures++; }
+    for (const target of galaxyTargets) {
+      try {
+        t.pickAt(target.x, target.y, 'mouse');
+        if (!t.discovered.has(target.object.id)) throw new Error('nie oznaczono jako odkryte');
+        console.log(`OK   galaktyka ${target.object.id}`);
+      } catch (error) {
+        failures++;
+        console.error(`FAIL galaktyka ${target.object.id}: ${error.message}`);
+      }
+    }
+  }
+  if (t.zoomOutLevel()) { console.error('FAIL zoomOutLevel poniżej -2 powinien zwrócić false'); failures++; }
+  t.resetView();
+  if (t.view.level !== 0) { console.error('FAIL resetView nie wrócił na poziom 0'); failures++; }
+
+  const discoveredCount = t.discovered.size;
+  const expectedGalaxy = t.allGalaxy.length; // 6 obiektów galaktycznych klikniętych powyżej
+  if (discoveredCount < expectedGalaxy) {
+    console.error(`FAIL odkryto tylko ${discoveredCount}, oczekiwano co najmniej ${expectedGalaxy} (galaktyczne)`);
+    failures++;
+  }
+
   if (failures) {
     console.error(`PORAŻKI: ${failures}`);
     process.exit(1);
   }
-  console.log(`WSZYSTKIE ${jobs.length} ZADANIA PRZESZŁY`);
+  console.log(`WSZYSTKIE ${jobs.length} ZADANIA + POZIOMY GALAKTYCZNE PRZESZŁY`);
 })();

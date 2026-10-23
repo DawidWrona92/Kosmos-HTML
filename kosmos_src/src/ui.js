@@ -63,7 +63,7 @@ function renderInfo() {
  const icon = byId('planetIcon');
  if (!hasChosen) {
   byId('planetName').textContent = 'Mój Kosmos';
-  byId('planetType').textContent = 'Wybierz, o czym chcesz posłuchać';
+  byId('planetType').textContent = view.level < 0 ? 'Dotknij galaktykę, gwiazdę albo sondę' : 'Wybierz, o czym chcesz posłuchać';
   icon.textContent = '🚀';
   icon.style.background = 'radial-gradient(circle at 30% 28%,#6f9bff,#2c4fa3 55%,#0a1736)';
   icon.style.backgroundImage = '';
@@ -76,7 +76,10 @@ function renderInfo() {
  byId('planetName').textContent = item.name;
  byId('planetType').textContent = item.type;
  icon.style.backgroundImage = '';
- if (view.ring) {
+ if (view.galaxy) {
+  icon.textContent = item.emoji || '✨';
+  icon.style.background = 'radial-gradient(circle at 30% 28%,#8fa8e8,#3a4f8f 55%,#0a1736)';
+ } else if (view.ring) {
   icon.textContent = '🪐';
   icon.style.background = 'radial-gradient(circle at 30% 28%,#e8d9b0,#b99a5f 55%,#5a4326)';
  } else if (view.moon) {
@@ -109,6 +112,10 @@ function renderControls() {
  playButton.classList.toggle('active', !playing);
  playButton.querySelector('.ico').textContent = playing ? '⏸' : '▶️';
  playButton.querySelector('.lbl').textContent = playing ? 'Stop' : 'Start';
+ const outBtn = byId('zoomOutBtn');
+ const inBtn = byId('zoomInBtn');
+ outBtn.hidden = view.following || view.level <= -2;
+ inBtn.hidden = view.level >= 0;
 }
 
 function applySpeed(value) {
@@ -194,6 +201,8 @@ function resetView() {
  view.find = null;
  view.moon = null;
  view.ring = null;
+ view.galaxy = null;
+ view.level = 0;
  setSelection(false, view.selected);
  view.zoomGoal = 1;
  view.angle = Math.atan2(Math.sin(view.angle), Math.cos(view.angle));
@@ -202,8 +211,66 @@ function resetView() {
  renderInfo();
 }
 
+function zoomOutLevel() {
+ if (view.level > -2) {
+  view.level--;
+  view.galaxy = null;
+  hasChosen = false;
+  view.zoom = 1;
+  view.zoomGoal = 1;
+  view.carryX = 0;
+  view.carryY = 0;
+  renderInfo();
+  renderControls();
+  return true;
+ }
+ return false;
+}
+
+function zoomInLevel() {
+ if (view.level < 0) {
+  view.level++;
+  view.galaxy = null;
+  hasChosen = false;
+  view.zoom = 1;
+  view.zoomGoal = 1;
+  view.carryX = 0;
+  view.carryY = 0;
+  renderInfo();
+  renderControls();
+  return true;
+ }
+ return false;
+}
+
+function chooseGalaxy(target) {
+ hasChosen = true;
+ view.find = null;
+ view.moon = null;
+ view.ring = null;
+ view.galaxy = target.object;
+ fxPlay('whoosh');
+ factIndex = 0;
+ markDiscovered(target.object.id);
+ addRipple(target);
+ renderInfo();
+ readFrom(0, true);
+}
+
 function pickAt(clientX, clientY, pointerType) {
  const padding = pointerType === 'mouse' ? 10 : 22;
+ if (view.level < 0) {
+  let best = null;
+  let bestRank = Infinity;
+  for (const target of view.galaxyTargets) {
+   const distance = Math.hypot(target.x - clientX, target.y - clientY);
+   if (distance > target.radius + padding) continue;
+   const rank = distance - target.radius;
+   if (rank < bestRank) {bestRank = rank; best = target;}
+  }
+  if (best) chooseGalaxy(best);
+  return;
+ }
  if (view.following && !view.find && !view.moon && !view.ring) {
   for (const target of view.moonTargets) {
    if (Math.hypot(target.x - clientX, target.y - clientY) <= target.radius + padding * .5) {
@@ -330,9 +397,9 @@ function bodyEmoji(body) {
 }
 
 function renderLists() {
- const all = [...bodies, ...finds, ...allMoons];
+ const all = [...bodies, ...finds, ...allMoons, ...allGalaxy];
  const itemHtml = (item, done) => {
-  const emoji = item.kind === undefined && item.parentId && item.size ? '🌙' : item.parentId ? '🛰️' : bodyEmoji(item);
+  const emoji = item.emoji || (item.kind === undefined && item.parentId && item.size ? '🌙' : item.parentId ? '🛰️' : bodyEmoji(item));
   const label = done ? `${emoji} ${escapeHtml(item.name)}` : '❓ ???';
   return `<div class="listitem${done ? ' done' : ' locked'}"><span class="listico">${emoji}</span><span class="listlabel">${label}</span><span class="listcheck">✓</span></div>`;
  };

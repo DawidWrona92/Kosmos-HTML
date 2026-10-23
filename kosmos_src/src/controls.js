@@ -2,6 +2,8 @@
 
 byId('speedRange').addEventListener('input', event => applySpeed(+event.target.value));
 byId('play').addEventListener('click', togglePlay);
+byId('zoomOutBtn').addEventListener('click', () => {if (zoomOutLevel()) fxPlay('whoosh');});
+byId('zoomInBtn').addEventListener('click', () => {if (zoomInLevel()) fxPlay('whoosh');});
 byId('readAgain').addEventListener('click', () => {
  if (reading) {
   stopSpeech();

@@ -5,8 +5,9 @@ const view = {
  angle: 0, tilt: .32, angleGoal: null, tiltGoal: null,
  zoom: 1, zoomGoal: 1,
  following: false, carryX: 0, carryY: 0,
- selected: bodyIndex('earth'), find: null, moon: null, ring: null,
- targets: [], sunTarget: null, findTargets: [], moonTargets: [], ringTarget: null
+ selected: bodyIndex('earth'), find: null, moon: null, ring: null, galaxy: null,
+ level: 0,
+ targets: [], sunTarget: null, findTargets: [], moonTargets: [], ringTarget: null, galaxyTargets: []
 };
 let speed = clamp(parseFloat(loadStored('kosmos3.speed', String(DEFAULT_SPEED))) || DEFAULT_SPEED, MIN_SPEED, MAX_SPEED);
 let playing = true;
@@ -31,7 +32,7 @@ try {
 //__SPEECH__
 
 function currentItem() {
- return view.find || view.moon || view.ring || bodies[view.selected];
+ return view.find || view.moon || view.ring || view.galaxy || bodies[view.selected];
 }
 
 /* ---------- układ okna i obszar sceny ---------- */
@@ -946,6 +947,10 @@ function drawRipples() {
 function draw() {
  const frame = computeFrame();
  drawBackground();
+ if (view.level < 0) {
+  drawGalaxyScene(frame);
+  return;
+ }
  if (view.zoom < 14) drawOrbits(frame);
  if (view.zoom < 40) drawAsteroids(frame);
  const items = [];
@@ -966,6 +971,151 @@ function draw() {
  drawFinds(items);
  drawLabels(items);
  drawRipples();
+}
+
+/* ---------- poziomy galaktyczne (Ramię Oriona, Droga Mleczna) ---------- */
+
+function galaxyFrame() {
+ const centerX = (view.free.left + view.free.right) / 2 + view.carryX;
+ const centerY = (view.free.top + view.free.bottom) / 2 + view.carryY;
+ const extent = Math.min(view.free.right - view.free.left, view.free.bottom - view.free.top) / 2;
+ const scale = extent * view.zoom * .9;
+ return {centerX, centerY, scale};
+}
+
+function drawGalaxySpiral(c, cx, cy, scale, rotation, armCount, brightness) {
+ c.save();
+ c.translate(cx, cy);
+ c.rotate(rotation);
+ const arms = armCount || 2;
+ const turns = 2.6;
+ const dots = 260;
+ for (let arm = 0; arm < arms; arm++) {
+  for (let step = 0; step < dots; step++) {
+   const t = step / dots;
+   const angle = arm * TAU / arms + t * turns * TAU;
+   const radius = scale * (.08 + t * .92);
+   const spread = scale * (.02 + t * .09);
+   const x = Math.cos(angle) * radius + (Math.random() - .5) * spread;
+   const y = Math.sin(angle) * radius * .38 + (Math.random() - .5) * spread * .38;
+   c.globalAlpha = brightness * (1 - t * .55) * (.35 + Math.random() * .65);
+   c.fillStyle = Math.random() < .75 ? '#cfe2ff' : '#ffe3c2';
+   c.beginPath();
+   c.arc(x, y, Math.max(.6, scale * .006 * (1 - t * .5)), 0, TAU);
+   c.fill();
+  }
+ }
+ c.restore();
+ c.globalAlpha = 1;
+}
+
+function drawGalaxyScene() {
+ view.galaxyTargets = [];
+ const {centerX, centerY, scale} = galaxyFrame();
+ if (view.level === -1) {
+  /* Ramię Oriona: jedno ramię spiralne + Układ Słoneczny na nim */
+  const rotation = view.angle * .3 + frameTime * .000008;
+  drawGalaxySpiral(ctx, centerX, centerY, scale * 1.7, rotation, 1, .8);
+  const armAngle = 1.1 + view.angle * .3;
+  const armRadius = scale * .62;
+  const sunX = centerX + Math.cos(armAngle) * armRadius;
+  const sunY = centerY + Math.sin(armAngle) * armRadius * .38;
+  ctx.strokeStyle = 'rgba(255,217,90,.25)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([2, 6]);
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, armRadius, 0, armAngle);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.textAlign = 'center';
+  ctx.font = '700 13px ui-rounded, system-ui, sans-serif';
+  ctx.fillStyle = '#8fb8e8';
+  ctx.fillText('środek galaktyki', centerX, centerY + 4);
+  const solar = GALAXY_OBJECTS.orion_arm[0];
+  const arm = GALAXY_OBJECTS.orion_arm[1];
+  const targets = [
+   {object: solar, x: sunX, y: sunY, radius: Math.max(20, scale * .05)},
+   {object: arm, x: centerX + Math.cos(armAngle + .9) * scale * 1.05, y: centerY + Math.sin(armAngle + .9) * scale * .4, radius: Math.max(24, scale * .06)}
+  ];
+  for (const target of targets) {
+   const isSolar = target.object === solar;
+   ctx.font = '800 26px system-ui, sans-serif';
+   ctx.fillText(isSolar ? '☀️' : '🌌', target.x, target.y - 6);
+   if (!discovered.has(target.object.id)) {
+    const pulse = Math.sin(frameTime * .003) * .5 + .5;
+    ctx.strokeStyle = `rgba(255,226,110,${.2 + .4 * pulse})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(target.x, target.y, target.radius + 8 + pulse * 5, 0, TAU);
+    ctx.stroke();
+   }
+   ctx.font = '700 14px ui-rounded, system-ui, sans-serif';
+   ctx.fillStyle = '#e6f1ff';
+   ctx.fillText(target.object.name, target.x, target.y + target.radius + 18);
+   view.galaxyTargets.push(target);
+  }
+  return;
+ }
+ /* Droga Mleczna + Andromeda + Voyagery */
+ const rotation = view.angle * .2 + frameTime * .000006;
+ drawGalaxySpiral(ctx, centerX, centerY, scale, rotation, 2, .9);
+ const bulge = ctx.createRadialGradient(centerX, centerY, scale * .02, centerX, centerY, scale * .28);
+ bulge.addColorStop(0, 'rgba(255,240,200,.85)');
+ bulge.addColorStop(.5, 'rgba(255,220,160,.35)');
+ bulge.addColorStop(1, 'rgba(255,220,160,0)');
+ ctx.fillStyle = bulge;
+ ctx.beginPath();
+ ctx.arc(centerX, centerY, scale * .28, 0, TAU);
+ ctx.fill();
+ const andromedaX = centerX + scale * 1.35;
+ const andromedaY = centerY - scale * .9;
+ const andromedaScale = scale * .38;
+ drawGalaxySpiral(ctx, andromedaX, andromedaY, andromedaScale, rotation * -.7, 2, .55);
+ const andromedaBulge = ctx.createRadialGradient(andromedaX, andromedaY, andromedaScale * .02, andromedaX, andromedaY, andromedaScale * .3);
+ andromedaBulge.addColorStop(0, 'rgba(255,245,215,.7)');
+ andromedaBulge.addColorStop(1, 'rgba(255,245,215,0)');
+ ctx.fillStyle = andromedaBulge;
+ ctx.beginPath();
+ ctx.arc(andromedaX, andromedaY, andromedaScale * .3, 0, TAU);
+ ctx.fill();
+ ctx.strokeStyle = 'rgba(150,180,220,.35)';
+ ctx.lineWidth = 1;
+ ctx.setLineDash([3, 6]);
+ ctx.beginPath();
+ ctx.moveTo(centerX + scale * .5, centerY - scale * .3);
+ ctx.lineTo(andromedaX - andromedaScale * .5, andromedaY + andromedaScale * .25);
+ ctx.stroke();
+ ctx.setLineDash([]);
+ ctx.textAlign = 'center';
+ ctx.font = '700 13px ui-rounded, system-ui, sans-serif';
+ ctx.fillStyle = '#9fb8d8';
+ ctx.fillText('2,5 miliona lat świetlnych', (centerX + andromedaX) / 2, (centerY + andromedaY) / 2 - 12);
+ /* Voyagery — przy Układzie Słonecznym (na tej skali nierozróżnialne, więc
+  * pokazujemy je jako małe, opisane znaczniki obok środka galaktyki) */
+ const voyagerY = centerY + scale * .62;
+ const voyagers = GALAXY_OBJECTS.milky_way.slice(2);
+ const marks = [
+  {object: GALAXY_OBJECTS.milky_way[0], x: centerX - scale * .1, y: centerY - scale * .05, radius: Math.max(26, scale * .07), emoji: '🌌', label: 'Droga Mleczna (my mieszkamy w środku!)'},
+  {object: GALAXY_OBJECTS.milky_way[1], x: andromedaX, y: andromedaY, radius: Math.max(24, andromedaScale * .12), emoji: '🌀', label: 'Andromeda'},
+  {object: voyagers[0], x: centerX + scale * .16, y: voyagerY, radius: 16, emoji: '🛰️', label: 'Voyager 1'},
+  {object: voyagers[1], x: centerX + scale * .34, y: voyagerY + scale * .1, radius: 16, emoji: '🛰️', label: 'Voyager 2'}
+ ];
+ for (const mark of marks) {
+  ctx.font = '800 22px system-ui, sans-serif';
+  ctx.fillText(mark.emoji, mark.x, mark.y - 4);
+  if (!discovered.has(mark.object.id)) {
+   const pulse = Math.sin(frameTime * .003 + mark.x) * .5 + .5;
+   ctx.strokeStyle = `rgba(255,226,110,${.2 + .4 * pulse})`;
+   ctx.lineWidth = 2;
+   ctx.beginPath();
+   ctx.arc(mark.x, mark.y, mark.radius + 7 + pulse * 4, 0, TAU);
+   ctx.stroke();
+  }
+  ctx.font = '700 12px ui-rounded, system-ui, sans-serif';
+  ctx.fillStyle = '#e6f1ff';
+  ctx.fillText(mark.label, mark.x, mark.y + mark.radius + 14);
+  view.galaxyTargets.push({...mark, object: mark.object});
+ }
 }
 
 //__UI__
@@ -996,7 +1146,14 @@ canvas.addEventListener('pointermove', event => {
  if (!gesture) return;
  if (gesture.kind === 'pinch') {
   if (pointers.size >= 2) {
-   view.zoomGoal = clamp(gesture.startZoom * pointerDistance() / gesture.startDistance, MIN_ZOOM, MAX_ZOOM);
+   const next = clamp(gesture.startZoom * pointerDistance() / gesture.startDistance, MIN_ZOOM, MAX_ZOOM);
+   if (view.level < 0 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && zoomInLevel()) {
+    fxPlay('whoosh');
+    view.zoom = view.zoomGoal = 1;
+    gesture.startZoom = 1;
+    return;
+   }
+   view.zoomGoal = next;
    view.zoom = view.zoomGoal;
   }
   return;
@@ -1029,6 +1186,12 @@ canvas.addEventListener('pointercancel', endPointer);
 canvas.addEventListener('wheel', event => {
  event.preventDefault();
  const delta = event.deltaMode === 1 ? event.deltaY * 33 : event.deltaY;
+ if (delta > 0 && view.zoomGoal >= MAX_ZOOM * .999 && !view.following) {
+  if (zoomOutLevel()) {fxPlay('whoosh'); return;}
+ }
+ if (delta < 0 && view.level < 0 && view.zoomGoal <= MIN_ZOOM * 1.001) {
+  if (zoomInLevel()) {fxPlay('whoosh'); return;}
+ }
  view.zoomGoal = clamp(view.zoomGoal * Math.exp(-delta * .0015), MIN_ZOOM, MAX_ZOOM);
 }, {passive: false});
 

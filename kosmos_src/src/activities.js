@@ -1519,4 +1519,4 @@ byId('actSay').addEventListener('click', () => {
 
 renderTaskbook();
 
-if (window.__KOSMOS_TEST__) window.__KOSMOS_TEST__ = {openActivity, closeActivity, getActive: () => activeActivity, bodies, finds, doneTasks, PARTS, MOONS, allMoons};
+if (window.__KOSMOS_TEST__) window.__KOSMOS_TEST__ = {openActivity, closeActivity, getActive: () => activeActivity, bodies, finds, doneTasks, PARTS, MOONS, allMoons, allGalaxy, GALAXY_OBJECTS, view, draw, pickAt, zoomOutLevel, zoomInLevel, discovered, resetView};
