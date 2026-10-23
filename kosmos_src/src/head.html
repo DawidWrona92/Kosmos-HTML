@@ -99,6 +99,13 @@ button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px r
 .startcard h1{font-size:46px;margin:14px 0 10px}
 .startcard p{font-size:18px;line-height:1.55;color:#cfe0f5;font-weight:600;margin:0}
 #startButton{margin-top:22px;font-size:24px;font-weight:800;padding:16px 40px;border-radius:999px;border-color:var(--gold);background:#0b4a80}
+.ach{position:fixed;top:76px;left:50%;transform:translateX(-50%) translateY(-30px);z-index:50;display:flex;align-items:center;gap:12px;padding:12px 22px;border-radius:18px;background:linear-gradient(160deg,#112d55,#0a1c38);border:2px solid var(--gold);box-shadow:0 10px 40px #000c,0 0 24px rgba(255,217,90,.25);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;max-width:min(90vw,480px)}
+.ach.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.ach .achico{font-size:30px;flex:none;filter:drop-shadow(0 0 8px rgba(255,217,90,.5))}
+.ach .achwrap{min-width:0}
+.ach .achlabel{font-size:12px;font-weight:800;color:var(--gold);letter-spacing:.6px;text-transform:uppercase}
+.ach .achname{font-size:17px;font-weight:800;color:#f2f8ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:1200px){.ach{top:60px;padding:9px 16px}.ach .achico{font-size:24px}.ach .achlabel{font-size:10px}.ach .achname{font-size:15px}}
 
 @media (max-width:1200px){
  .top{top:12px;left:14px;right:14px}
@@ -228,11 +235,13 @@ button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px r
   </div>
  </div>
 </div>
+<div class="ach" id="achievement" aria-live="polite"><span class="achico" id="achIcon">🎉</span><span class="achwrap"><span class="achlabel" id="achLabel">Nowe odkrycie!</span><span class="achname" id="achName"></span></span></div>
 <div class="start" id="start">
  <div class="startcard">
   <div class="startlogo">🚀</div>
   <h1>Mój Kosmos</h1>
   <p>Dotknij planetę, Słońce albo kometę. Każda ma dla Ciebie ciekawostki i zadanie!</p>
+  <p style="margin-top:10px;font-size:15px;color:#9fb8d8">Widzisz szarą kółko ze znakiem zapytania? To coś, czego jeszcze nie odkryłaś — dotknij tego!</p>
   <button id="startButton">Zaczynamy! ✨</button>
  </div>
 </div>

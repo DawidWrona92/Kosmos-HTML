@@ -130,11 +130,31 @@ function togglePlay() {
  renderControls();
 }
 
+let achTimer = 0;
+function showAchievement(name, icon) {
+ const toast = byId('achievement');
+ byId('achIcon').textContent = icon;
+ byId('achName').textContent = name;
+ toast.classList.remove('show');
+ void toast.offsetWidth;
+ toast.classList.add('show');
+ clearTimeout(achTimer);
+ achTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
 function markDiscovered(id) {
  if (discovered.has(id)) return;
  discovered.add(id);
  saveStored('kosmos2.discovered', JSON.stringify([...discovered]));
  renderNotebook();
+ const body = bodies.find(item => item.id === id);
+ const moon = allMoons.find(item => item.id === id);
+ const find = finds.find(item => item.id === id);
+ const galaxy = allGalaxy.find(item => item.id === id);
+ const name = (body || moon || find || galaxy || {}).name || id;
+ const icon = body ? bodyEmoji(body) : moon ? '🌙' : find ? '🛰️' : galaxy ? (galaxy.emoji || '✨') : '🎉';
+ showAchievement(name, icon);
+ fxPlay('twinkle');
 }
 
 function addRipple(position) {

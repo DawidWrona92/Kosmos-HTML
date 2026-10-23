@@ -312,15 +312,27 @@ function drawBackground() {
  ctx.fillRect(0, 0, view.width, view.height);
 }
 
+/* szara, pulsująca wskazówka nieodkrytego obiektu + znak zapytania —
+ * „tu jest coś do odkrycia” (odkryte obiekty nie mają obwódki) */
+function drawUnknownHint(x, y, radius, pulseSeed) {
+ const pulse = Math.sin(frameTime * .003 + pulseSeed) * .5 + .5;
+ ctx.lineWidth = 1.5;
+ ctx.strokeStyle = `rgba(178,192,214,${.14 + .3 * pulse})`;
+ ctx.beginPath();
+ ctx.arc(x, y, radius + 6 + pulse * 3, 0, TAU);
+ ctx.stroke();
+ ctx.save();
+ ctx.globalAlpha = .5 + .35 * pulse;
+ ctx.fillStyle = '#9fb2cc';
+ ctx.font = '800 13px ui-rounded, system-ui, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.textBaseline = 'middle';
+ ctx.fillText('?', x, y - radius - 12 - pulse * 2);
+ ctx.restore();
+}
+
 function drawAttention(x, y, radius, index) {
- if (!discovered.has(bodies[index].id)) {
-  const pulse = Math.sin(frameTime * .003 + index) * .5 + .5;
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = `rgba(255,226,110,${.1 + .25 * pulse})`;
-  ctx.beginPath();
-  ctx.arc(x, y, radius + 7 + pulse * 4, 0, TAU);
-  ctx.stroke();
- }
+ if (!discovered.has(bodies[index].id)) drawUnknownHint(x, y, radius, index);
  if (index === view.selected && !view.moon && !view.find && !view.ring) {
   ctx.lineWidth = 2;
   ctx.strokeStyle = '#4cbaff';
@@ -837,14 +849,7 @@ function drawMoon(frame, parent, moon, parentX, parentY, parentRadius) {
  const y = parentY + localX * sinTilt + localY * cosTilt;
  const sunAngle = Math.atan2(frame.sunY - y, frame.sunX - x);
  drawMoonBody(x, y, moonRadius, moon, sunAngle);
- if (!discovered.has(moon.id)) {
-  const pulse = Math.sin(frameTime * .003 + moon.startPhase) * .5 + .5;
-  ctx.strokeStyle = `rgba(255,226,110,${.15 + .3 * pulse})`;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(x, y, moonRadius + 6 + pulse * 3, 0, TAU);
-  ctx.stroke();
- }
+ if (!discovered.has(moon.id)) drawUnknownHint(x, y, moonRadius + 1, moon.startPhase);
  ctx.fillStyle = '#dfeaf8';
  ctx.font = '700 11px ui-rounded, system-ui, sans-serif';
  ctx.textAlign = 'center';
@@ -999,14 +1004,7 @@ function drawFinds(items, frame) {
   const angle = frameTime * .00022 + order * TAU / list.length + .6;
   const x = parent.x + Math.cos(angle) * horizontal;
   const y = parent.y + Math.sin(angle) * vertical;
-  if (!discovered.has(find.id)) {
-   const pulse = Math.sin(frameTime * .004) * .5 + .5;
-   ctx.strokeStyle = `rgba(255,226,110,${.3 + .5 * pulse})`;
-   ctx.lineWidth = 2;
-   ctx.beginPath();
-   ctx.arc(x, y, spriteWidth * .6 + pulse * 4, 0, TAU);
-   ctx.stroke();
-  }
+  if (!discovered.has(find.id)) drawUnknownHint(x, y, spriteWidth * .6, order);
   drawProbeSprite(find, x, y, spriteWidth);
   view.findTargets.push({find, x, y, radius: spriteWidth * .6});
  });
@@ -1173,14 +1171,7 @@ function drawGalaxyScene() {
    const isSolar = target.object === solar;
    ctx.font = '800 26px system-ui, sans-serif';
    ctx.fillText(isSolar ? '☀️' : '🌌', target.x, target.y - 6);
-   if (!discovered.has(target.object.id)) {
-    const pulse = Math.sin(frameTime * .003) * .5 + .5;
-    ctx.strokeStyle = `rgba(255,226,110,${.2 + .4 * pulse})`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(target.x, target.y, target.radius + 8 + pulse * 5, 0, TAU);
-    ctx.stroke();
-   }
+   if (!discovered.has(target.object.id)) drawUnknownHint(target.x, target.y, target.radius + 2, target.x);
    ctx.font = '700 14px ui-rounded, system-ui, sans-serif';
    ctx.fillStyle = '#e6f1ff';
    ctx.fillText(target.object.name, target.x, target.y + target.radius + 18);
@@ -1235,14 +1226,7 @@ function drawGalaxyScene() {
  for (const mark of marks) {
   ctx.font = '800 22px system-ui, sans-serif';
   ctx.fillText(mark.emoji, mark.x, mark.y - 4);
-  if (!discovered.has(mark.object.id)) {
-   const pulse = Math.sin(frameTime * .003 + mark.x) * .5 + .5;
-   ctx.strokeStyle = `rgba(255,226,110,${.2 + .4 * pulse})`;
-   ctx.lineWidth = 2;
-   ctx.beginPath();
-   ctx.arc(mark.x, mark.y, mark.radius + 7 + pulse * 4, 0, TAU);
-   ctx.stroke();
-  }
+  if (!discovered.has(mark.object.id)) drawUnknownHint(mark.x, mark.y, mark.radius + 1, mark.x);
   ctx.font = '700 12px ui-rounded, system-ui, sans-serif';
   ctx.fillStyle = '#e6f1ff';
   ctx.fillText(mark.label, mark.x, mark.y + mark.radius + 14);

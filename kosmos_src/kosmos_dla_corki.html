@@ -99,6 +99,13 @@ button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px r
 .startcard h1{font-size:46px;margin:14px 0 10px}
 .startcard p{font-size:18px;line-height:1.55;color:#cfe0f5;font-weight:600;margin:0}
 #startButton{margin-top:22px;font-size:24px;font-weight:800;padding:16px 40px;border-radius:999px;border-color:var(--gold);background:#0b4a80}
+.ach{position:fixed;top:76px;left:50%;transform:translateX(-50%) translateY(-30px);z-index:50;display:flex;align-items:center;gap:12px;padding:12px 22px;border-radius:18px;background:linear-gradient(160deg,#112d55,#0a1c38);border:2px solid var(--gold);box-shadow:0 10px 40px #000c,0 0 24px rgba(255,217,90,.25);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;max-width:min(90vw,480px)}
+.ach.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.ach .achico{font-size:30px;flex:none;filter:drop-shadow(0 0 8px rgba(255,217,90,.5))}
+.ach .achwrap{min-width:0}
+.ach .achlabel{font-size:12px;font-weight:800;color:var(--gold);letter-spacing:.6px;text-transform:uppercase}
+.ach .achname{font-size:17px;font-weight:800;color:#f2f8ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:1200px){.ach{top:60px;padding:9px 16px}.ach .achico{font-size:24px}.ach .achlabel{font-size:10px}.ach .achname{font-size:15px}}
 
 @media (max-width:1200px){
  .top{top:12px;left:14px;right:14px}
@@ -228,11 +235,13 @@ button.active{background:#0b4a80;border-color:var(--gold);box-shadow:0 0 0 3px r
   </div>
  </div>
 </div>
+<div class="ach" id="achievement" aria-live="polite"><span class="achico" id="achIcon">🎉</span><span class="achwrap"><span class="achlabel" id="achLabel">Nowe odkrycie!</span><span class="achname" id="achName"></span></span></div>
 <div class="start" id="start">
  <div class="startcard">
   <div class="startlogo">🚀</div>
   <h1>Mój Kosmos</h1>
   <p>Dotknij planetę, Słońce albo kometę. Każda ma dla Ciebie ciekawostki i zadanie!</p>
+  <p style="margin-top:10px;font-size:15px;color:#9fb8d8">Widzisz szarą kółko ze znakiem zapytania? To coś, czego jeszcze nie odkryłaś — dotknij tego!</p>
   <button id="startButton">Zaczynamy! ✨</button>
  </div>
 </div>
@@ -1504,15 +1513,27 @@ function drawBackground() {
  ctx.fillRect(0, 0, view.width, view.height);
 }
 
+/* szara, pulsująca wskazówka nieodkrytego obiektu + znak zapytania —
+ * „tu jest coś do odkrycia” (odkryte obiekty nie mają obwódki) */
+function drawUnknownHint(x, y, radius, pulseSeed) {
+ const pulse = Math.sin(frameTime * .003 + pulseSeed) * .5 + .5;
+ ctx.lineWidth = 1.5;
+ ctx.strokeStyle = `rgba(178,192,214,${.14 + .3 * pulse})`;
+ ctx.beginPath();
+ ctx.arc(x, y, radius + 6 + pulse * 3, 0, TAU);
+ ctx.stroke();
+ ctx.save();
+ ctx.globalAlpha = .5 + .35 * pulse;
+ ctx.fillStyle = '#9fb2cc';
+ ctx.font = '800 13px ui-rounded, system-ui, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.textBaseline = 'middle';
+ ctx.fillText('?', x, y - radius - 12 - pulse * 2);
+ ctx.restore();
+}
+
 function drawAttention(x, y, radius, index) {
- if (!discovered.has(bodies[index].id)) {
-  const pulse = Math.sin(frameTime * .003 + index) * .5 + .5;
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = `rgba(255,226,110,${.1 + .25 * pulse})`;
-  ctx.beginPath();
-  ctx.arc(x, y, radius + 7 + pulse * 4, 0, TAU);
-  ctx.stroke();
- }
+ if (!discovered.has(bodies[index].id)) drawUnknownHint(x, y, radius, index);
  if (index === view.selected && !view.moon && !view.find && !view.ring) {
   ctx.lineWidth = 2;
   ctx.strokeStyle = '#4cbaff';
@@ -2029,14 +2050,7 @@ function drawMoon(frame, parent, moon, parentX, parentY, parentRadius) {
  const y = parentY + localX * sinTilt + localY * cosTilt;
  const sunAngle = Math.atan2(frame.sunY - y, frame.sunX - x);
  drawMoonBody(x, y, moonRadius, moon, sunAngle);
- if (!discovered.has(moon.id)) {
-  const pulse = Math.sin(frameTime * .003 + moon.startPhase) * .5 + .5;
-  ctx.strokeStyle = `rgba(255,226,110,${.15 + .3 * pulse})`;
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(x, y, moonRadius + 6 + pulse * 3, 0, TAU);
-  ctx.stroke();
- }
+ if (!discovered.has(moon.id)) drawUnknownHint(x, y, moonRadius + 1, moon.startPhase);
  ctx.fillStyle = '#dfeaf8';
  ctx.font = '700 11px ui-rounded, system-ui, sans-serif';
  ctx.textAlign = 'center';
@@ -2191,14 +2205,7 @@ function drawFinds(items, frame) {
   const angle = frameTime * .00022 + order * TAU / list.length + .6;
   const x = parent.x + Math.cos(angle) * horizontal;
   const y = parent.y + Math.sin(angle) * vertical;
-  if (!discovered.has(find.id)) {
-   const pulse = Math.sin(frameTime * .004) * .5 + .5;
-   ctx.strokeStyle = `rgba(255,226,110,${.3 + .5 * pulse})`;
-   ctx.lineWidth = 2;
-   ctx.beginPath();
-   ctx.arc(x, y, spriteWidth * .6 + pulse * 4, 0, TAU);
-   ctx.stroke();
-  }
+  if (!discovered.has(find.id)) drawUnknownHint(x, y, spriteWidth * .6, order);
   drawProbeSprite(find, x, y, spriteWidth);
   view.findTargets.push({find, x, y, radius: spriteWidth * .6});
  });
@@ -2365,14 +2372,7 @@ function drawGalaxyScene() {
    const isSolar = target.object === solar;
    ctx.font = '800 26px system-ui, sans-serif';
    ctx.fillText(isSolar ? '☀️' : '🌌', target.x, target.y - 6);
-   if (!discovered.has(target.object.id)) {
-    const pulse = Math.sin(frameTime * .003) * .5 + .5;
-    ctx.strokeStyle = `rgba(255,226,110,${.2 + .4 * pulse})`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(target.x, target.y, target.radius + 8 + pulse * 5, 0, TAU);
-    ctx.stroke();
-   }
+   if (!discovered.has(target.object.id)) drawUnknownHint(target.x, target.y, target.radius + 2, target.x);
    ctx.font = '700 14px ui-rounded, system-ui, sans-serif';
    ctx.fillStyle = '#e6f1ff';
    ctx.fillText(target.object.name, target.x, target.y + target.radius + 18);
@@ -2427,14 +2427,7 @@ function drawGalaxyScene() {
  for (const mark of marks) {
   ctx.font = '800 22px system-ui, sans-serif';
   ctx.fillText(mark.emoji, mark.x, mark.y - 4);
-  if (!discovered.has(mark.object.id)) {
-   const pulse = Math.sin(frameTime * .003 + mark.x) * .5 + .5;
-   ctx.strokeStyle = `rgba(255,226,110,${.2 + .4 * pulse})`;
-   ctx.lineWidth = 2;
-   ctx.beginPath();
-   ctx.arc(mark.x, mark.y, mark.radius + 7 + pulse * 4, 0, TAU);
-   ctx.stroke();
-  }
+  if (!discovered.has(mark.object.id)) drawUnknownHint(mark.x, mark.y, mark.radius + 1, mark.x);
   ctx.font = '700 12px ui-rounded, system-ui, sans-serif';
   ctx.fillStyle = '#e6f1ff';
   ctx.fillText(mark.label, mark.x, mark.y + mark.radius + 14);
@@ -2574,11 +2567,31 @@ function togglePlay() {
  renderControls();
 }
 
+let achTimer = 0;
+function showAchievement(name, icon) {
+ const toast = byId('achievement');
+ byId('achIcon').textContent = icon;
+ byId('achName').textContent = name;
+ toast.classList.remove('show');
+ void toast.offsetWidth;
+ toast.classList.add('show');
+ clearTimeout(achTimer);
+ achTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
 function markDiscovered(id) {
  if (discovered.has(id)) return;
  discovered.add(id);
  saveStored('kosmos2.discovered', JSON.stringify([...discovered]));
  renderNotebook();
+ const body = bodies.find(item => item.id === id);
+ const moon = allMoons.find(item => item.id === id);
+ const find = finds.find(item => item.id === id);
+ const galaxy = allGalaxy.find(item => item.id === id);
+ const name = (body || moon || find || galaxy || {}).name || id;
+ const icon = body ? bodyEmoji(body) : moon ? '🌙' : find ? '🛰️' : galaxy ? (galaxy.emoji || '✨') : '🎉';
+ showAchievement(name, icon);
+ fxPlay('twinkle');
 }
 
 function addRipple(position) {
