@@ -13,6 +13,7 @@ document.querySelectorAll('[data-home]').forEach(button => button.addEventListen
 let activitySlot = 0;
 byId('activityBtn').addEventListener('click', () => {
  const item = currentItem();
+ if (!item.activity && !item.activity2) return;
  activitySlot = item.activity && !doneTasks.has(item.id) ? 0 : item.activity2 ? 1 : 0;
  openActivity(item, activitySlot);
 });

@@ -705,6 +705,12 @@ const bodies = [
   ]},
  {id: 'saturn', surface: 'saturn', kind: 'planet', name: 'Saturn', type: 'Szósta planeta od Słońca', color: '#d9bd83', radius: 18, orbit: 340, period: 10759, startPhase: 3.2, texture: 'saturn', activity: 'saturn',
   ring: {angle: -.25, bands: [{scale: 1.34, width: .2, color: 'rgba(150,128,96,.55)'}, {scale: 1.74, width: .46, color: 'rgba(222,200,150,.92)'}, {scale: 2.17, width: .26, color: 'rgba(190,168,124,.82)'}, {scale: 2.33, width: .03, color: 'rgba(210,190,150,.55)'}]},
+  ringInfo: {id: 'saturn_rings', parentId: 'saturn', name: 'Pierścienie Saturna', type: 'Pierścienie planety', intro: 'Pierścienie Saturna.',
+   facts: [
+    'Pierścienie Saturna to miliardy kawałków lodu i skał — od ziarenek piasku po bryły wielkości domu!',
+    'Wyglądają jak ogromne, płaskie pierścienie wokół planety, ale nie są jedną litą obręczą. To jak miliardy malutkich księżyców krążących razem.',
+    'Pierścienie są bardzo cienkie — mają zaledwie kilkanaście metrów grubości, a rozciągają się na setki tysięcy kilometrów!'
+   ]},
   facts: [
    'Saturn ma wspaniałe pierścienie. Składają się z miliardów kawałków lodu i skał. Są wśród nich ziarenka wielkości piasku i bryły wielkie jak dom.',
    'Pierścienie Saturna są ogromne, ale bardzo cienkie. Sięgają na setki tysięcy kilometrów, a grube są tylko na około 10 metrów. Gdy Ziemia ustawia się równo z pierścieniami, prawie ich nie widać.',
@@ -877,11 +883,113 @@ const PARTS = {
  ]}
 };
 
-const TOTAL_ITEMS = bodies.length + finds.length;
+/* naturalne księżyce planet — pokazane przy zbliżeniu planety, osobno od sond.
+ * moonOrbit: promień orbity w jednostkach promienia planety (wizualizacja
+ * poglądowa, nie dokładne proporcje). period w dniach, startPhase w radianach.
+ * Księżyc Ziemi jest osobno w bodies[] (kind 'moon') i ma własne zadanie. */
+const MOONS = {
+ mars: [
+  {id: 'phobos', parentId: 'mars', name: 'Fobos', type: 'Księżyc Marsa', intro: 'Fobos.', color: '#a08a76', size: .38, moonOrbit: 2.6, period: .32, startPhase: 1.2, tilt: .5,
+   facts: [
+    'Fobos to jeden z dwóch księżyców Marsa. Okrąża planetę bardzo szybko — prawie trzy razy na dobę!',
+    'Jest też znacznie mniejszy od naszego Księżyca — wygląda jak wielki, szary kartofel.',
+    'Fobos powoli spada na Marsa. Za miliony lat może się na niego rozbić albo rozsypać w pierścień!'
+   ]},
+  {id: 'deimos', parentId: 'mars', name: 'Deimos', type: 'Księżyc Marsa', intro: 'Deimos.', color: '#8f8072', size: .3, moonOrbit: 3.6, period: 1.26, startPhase: 4, tilt: -.4,
+   facts: [
+    'Deimos to drugi, mniejszy księżyc Marsa. Jest tak mały, że wygląda jak ziarenko piasku przy planecie.',
+    'Okrąża Marsa wolniej niż Fobos — potrzebuje na to ponad dnia.',
+    'Jego powierzchnia jest gładka, bo pokrywa ją gruba warstwa pyłu, jak materac na piasku.'
+   ]}
+ ],
+ jupiter: [
+  {id: 'io', parentId: 'jupiter', name: 'Io', type: 'Księżyc Jowisza', intro: 'Io.', color: '#e8c07a', size: .3, moonOrbit: 2.2, period: 1.77, startPhase: .5, tilt: .3,
+   facts: [
+    'Io to księżyc Jowisza, który ma ponad 400 wulkanów! Wyrzucają one siarkę, która maluje Io na żółto i pomarańczowo.',
+    'To najbardziej wulkaniczne miejsce w całym Układzie Słonecznym.',
+    'Wulkany Io wypluwają lawę tak gorącą, że na zdjęciach z sondy świeci ona w ciemności!'
+   ]},
+  {id: 'europa', parentId: 'jupiter', name: 'Europa', type: 'Księżyc Jowisza', intro: 'Europa.', color: '#d8e4f0', size: .27, moonOrbit: 2.9, period: 3.55, startPhase: 2.1, tilt: -.35,
+   facts: [
+    'Europa jest pokryta grubą skorupą lodu — pod nią może być ocean wody!',
+    'Naukowcy myślą, że w tym oceanie mogą żyć małe stworzenia. Jeszcze ich nie znaleźliśmy!',
+    'Lód na Europie pęka i przesuwa się, dlatego jej powierzchnia wygląda jak popękana skorupka jajka.'
+   ]},
+  {id: 'ganymedes', parentId: 'jupiter', name: 'Ganimedes', type: 'Księżyc Jowisza', intro: 'Ganimedes.', color: '#b09a7a', size: .42, moonOrbit: 3.7, period: 7.15, startPhase: 4, tilt: .25,
+   facts: [
+    'Ganimedes to największy księżyc w całym Układzie Słonecznym — większy nawet od planety Merkury!',
+    'Ma własne pole magnetyczne, jak Ziemia. To jedyny księżyc, który je ma!',
+    'Na jego powierzchni są ciemne plamy i jasne, poprzecinane rowy — wygląda jak stary, zamarznięty tort.'
+   ]},
+  {id: 'kallisto', parentId: 'jupiter', name: 'Kallisto', type: 'Księżyc Jowisza', intro: 'Kallisto.', color: '#8a7a66', size: .4, moonOrbit: 4.6, period: 16.7, startPhase: 1.2, tilt: -.2,
+   facts: [
+    'Kallisto jest cały pokryty kraterami — to jeden z najstarszych księżyców Jowisza.',
+    'Jego największy krater nazywa się Valhalla. Ma wielkość Polski!',
+    'Kallisto jest daleko od Jowisza, więc nie jest tak mocno rozgrzewany — to zimny, spokojny świat.'
+   ]}
+ ],
+ saturn: [
+  {id: 'tytan', parentId: 'saturn', name: 'Tytan', type: 'Księżyc Saturna', intro: 'Tytan.', color: '#d9a55b', size: .5, moonOrbit: 2.6, period: 15.9, startPhase: 2.8, tilt: .8,
+   facts: [
+    'Tytan to największy księżyc Saturna — większy od planety Merkury!',
+    'Ma gęstą, pomarańczową atmosferę i prawdziwe jeziora. Tylko że zamiast wody płynie w nich ciekły gaz!',
+    'Sonda Huygens wylądowała na Tytanie w 2005 roku. To był pierwszy lądownik na księżycu innej planety!'
+   ]},
+  {id: 'enceladus', parentId: 'saturn', name: 'Enceladus', type: 'Księżyc Saturna', intro: 'Enceladus.', color: '#eef4fa', size: .22, moonOrbit: 1.9, period: 1.37, startPhase: .8, tilt: -.6,
+   facts: [
+    'Enceladus to mały, ale niezwykły księżyc — jest cały pokryty świeżym, białym lodem.',
+    'Z jego południowego bieguna tryskają w kosmos gejzery wody! Sonda Cassini przeleciała przez te strumienie.',
+    'Pod lodem Enceladusa też może być ocean. To jedno z najlepszych miejsc do szukania życia!'
+   ]},
+  {id: 'japetus', parentId: 'saturn', name: 'Japetus', type: 'Księżyc Saturna', intro: 'Japetus.', color: '#6e5f50', size: .28, moonOrbit: 3.4, period: 79.3, startPhase: 4.6, tilt: 1.4,
+   facts: [
+    'Japetus ma dwie twarze — jedna połowa jest biała jak śnieg, a druga czarna jak węgiel!',
+    'Ciemna strona zbiera pył z pierścieni Saturna. Dlatego wygląda jak księżyc pomalowany na pół.',
+    'Na równiku Japetusa biegnie wielki grzbiet — jak szew na piłce. Naukowcy wciąż nie wiedzą, skąd się wziął!'
+   ]},
+  {id: 'reja', parentId: 'saturn', name: 'Reja', type: 'Księżyc Saturna', intro: 'Reja.', color: '#c8ccd4', size: .3, moonOrbit: 2.1, period: 4.52, startPhase: 1.9, tilt: -.3,
+   facts: [
+    'Reja to drugi co do wielkości księżyc Saturna. Jest szara i pełna kraterów.',
+    'Reja może mieć własne, słabe pierścienie! To pierwszy księżyc, przy którym je znaleziono.',
+    'Krąży blisko Saturna, więc okrąża go w niecałe 5 dni.'
+   ]},
+  {id: 'dione', parentId: 'saturn', name: 'Dione', type: 'Księżyc Saturna', intro: 'Dione.', color: '#dde2ea', size: .28, moonOrbit: 2.8, period: 2.74, startPhase: 5.4, tilt: .5,
+   facts: [
+    'Dione wygląda jak lodowa kula z wielkimi, białymi urwiskami — to klify z lodu!',
+    'Jedna jej połowa jest gładka, a druga pełna kraterów. Dlaczego tak jest? Naukowcy wciąż się zastanawiają.',
+    'Dione okrąża Saturna szybciej niż nasz Księżyc okrąża Ziemię.'
+   ]}
+ ],
+ uranus: [
+  {id: 'tytania', parentId: 'uranus', name: 'Tytania', type: 'Księżyc Urana', intro: 'Tytania.', color: '#9fb4c0', size: .5, moonOrbit: 2.8, period: 8.7, startPhase: 1.6, tilt: .9,
+   facts: [
+    'Tytania to największy księżyc Urana — ma prawie połowę średnicy naszego Księżyca.',
+    'Na jej powierzchni są ogromne kaniony — głębsze niż Wielki Kanion na Ziemi!',
+    'Uran i jego księżyce są bardzo daleko od Słońca, więc jest tam strasznie zimno — około minus 200 stopni!'
+   ]},
+  {id: 'oberon', parentId: 'uranus', name: 'Oberon', type: 'Księżyc Urana', intro: 'Oberon.', color: '#7d8f9a', size: .42, moonOrbit: 3.8, period: 13.5, startPhase: 3.9, tilt: -.7,
+   facts: [
+    'Oberon to najdalszy wielki księżyc Urana. Jest ciemny i pokryty kraterami.',
+    'Ma na sobie górę wysoką na 11 kilometrów — wyższą niż Mount Everest!',
+    'Oberon okrąża Urana w prawie dwa tygodnie.'
+   ]}
+ ],
+ neptune: [
+  {id: 'tryton', parentId: 'neptune', name: 'Tryton', type: 'Księżyc Neptuna', intro: 'Tryton.', color: '#e8d8e0', size: .55, moonOrbit: 2.7, period: -5.88, startPhase: 2.2, tilt: .6,
+   facts: [
+    'Tryton to największy księżyc Neptuna. Krąży w przeciwną stronę niż planeta się obraca!',
+    'Ma lodowe gejzery, które wyrzucają azot wysoko w niebo — na wysokość ośmiu kilometrów!',
+    'Tryton powoli zbliża się do Neptuna. Za miliony lat może się rozpaść i zrobić pierścień wokół planety.'
+   ]}
+ ]
+};
+
 const taskCount = item => (item.activity ? 1 : 0) + (item.activity2 ? 1 : 0);
 const TOTAL_TASKS = bodies.reduce((sum, body) => sum + taskCount(body), 0) + finds.reduce((sum, find) => sum + taskCount(find), 0);
+const allMoons = Object.values(MOONS).flat();
+const TOTAL_ITEMS = bodies.length + finds.length + allMoons.length;
 const bodyIndex = id => bodies.findIndex(body => body.id === id);
-const knownIds = new Set([...bodies.map(body => body.id), ...finds.map(find => find.id)]);
+const knownIds = new Set([...bodies.map(body => body.id), ...finds.map(find => find.id), ...allMoons.map(moon => moon.id)]);
 
 
 const view = {
@@ -890,8 +998,8 @@ const view = {
  angle: 0, tilt: .32, angleGoal: null, tiltGoal: null,
  zoom: 1, zoomGoal: 1,
  following: false, carryX: 0, carryY: 0,
- selected: bodyIndex('earth'), find: null,
- targets: [], sunTarget: null, findTargets: []
+ selected: bodyIndex('earth'), find: null, moon: null, ring: null,
+ targets: [], sunTarget: null, findTargets: [], moonTargets: [], ringTarget: null
 };
 let speed = clamp(parseFloat(loadStored('kosmos3.speed', String(DEFAULT_SPEED))) || DEFAULT_SPEED, MIN_SPEED, MAX_SPEED);
 let playing = true;
@@ -1049,7 +1157,7 @@ if (speech.supported) {
 
 
 function currentItem() {
- return view.find || bodies[view.selected];
+ return view.find || view.moon || view.ring || bodies[view.selected];
 }
 
 /* ---------- układ okna i obszar sceny ---------- */
@@ -1833,13 +1941,74 @@ function drawProbeSprite(find, x, y, width) {
  drawProbeIcon(x, y, width / 5, 0);
 }
 
+function drawMoon(item, moon, parentX, parentY, parentRadius) {
+ const moonRadius = Math.max(3.5, parentRadius * moon.size);
+ const orbit = parentRadius * moon.moonOrbit;
+ const phase = moon.startPhase + simDays / Math.abs(moon.period) * TAU * Math.sign(moon.period) + frameTime * .00013;
+ ctx.save();
+ ctx.translate(parentX, parentY);
+ ctx.rotate(moon.tilt);
+ ctx.strokeStyle = 'rgba(150,180,215,.28)';
+ ctx.lineWidth = 1;
+ ctx.setLineDash([2, 5]);
+ ctx.beginPath();
+ ctx.ellipse(0, 0, orbit, orbit * .55, 0, 0, TAU);
+ ctx.stroke();
+ ctx.setLineDash([]);
+ ctx.restore();
+ const x = parentX + Math.cos(phase) * orbit;
+ const y = parentY + Math.sin(phase) * orbit * .55;
+ const gradient = ctx.createRadialGradient(x - moonRadius * .35, y - moonRadius * .4, moonRadius * .2, x, y, moonRadius * 1.25);
+ gradient.addColorStop(0, lighten(moon.color, 1.4));
+ gradient.addColorStop(.55, moon.color);
+ gradient.addColorStop(1, '#0a0e18');
+ ctx.fillStyle = gradient;
+ ctx.beginPath();
+ ctx.arc(x, y, moonRadius, 0, TAU);
+ ctx.fill();
+ ctx.fillStyle = 'rgba(0,0,0,.18)';
+ [[-.3, -.2, .22], [.35, .3, .18], [.1, .45, .12]].forEach(([ox, oy, r]) => {
+  ctx.beginPath();
+  ctx.arc(x + ox * moonRadius, y + oy * moonRadius, r * moonRadius, 0, TAU);
+  ctx.fill();
+ });
+ if (!discovered.has(moon.id)) {
+  const pulse = Math.sin(frameTime * .003 + moon.startPhase) * .5 + .5;
+  ctx.strokeStyle = `rgba(255,226,110,${.15 + .3 * pulse})`;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(x, y, moonRadius + 6 + pulse * 3, 0, TAU);
+  ctx.stroke();
+ }
+ ctx.fillStyle = '#dfeaf8';
+ ctx.font = '700 11px ui-rounded, system-ui, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText(moon.name, x, y - moonRadius - 7);
+ view.moonTargets.push({moon, x, y, radius: moonRadius});
+}
+
 function drawFinds(items) {
  view.findTargets = [];
+ view.moonTargets = [];
+ view.ringTarget = null;
  const parent = items[view.selected];
  if (!parent || !view.following || parent.radius < 40) return;
- const list = finds.filter(find => find.parentId === parent.body.id);
+ const parentId = parent.body.id;
+ const list = finds.filter(find => find.parentId === parentId);
+ const moonList = MOONS[parentId] || [];
  const freeWidth = view.free.right - view.free.left;
  const freeHeight = view.free.bottom - view.free.top;
+ if (moonList.length) {
+  moonList.forEach(moon => drawMoon(item, moon, parent.x, parent.y, parent.radius));
+ }
+ if (parent.body.ring && parent.body.id === 'saturn') {
+  const outer = Math.max(...parent.body.ring.bands.map(band => band.scale + band.width / 2));
+  const ringOuter = parent.radius * outer;
+  const ratio = .16 + view.tilt * .42;
+  const ringInner = parent.radius * Math.min(...parent.body.ring.bands.map(band => band.scale - band.width / 2));
+  view.ringTarget = {ring: parent.body.ringInfo, x: parent.x, y: parent.y, inner: ringInner, outer: ringOuter, ratio, angle: parent.body.ring.angle};
+ }
+ if (!list.length) return;
  const spriteWidth = clamp(Math.min(freeWidth, freeHeight) * .17, 52, 110);
  const horizontal = Math.max(parent.radius * 1.15, Math.min(parent.radius * 1.7 + spriteWidth * .4, freeWidth / 2 - spriteWidth * .55));
  const vertical = Math.min(horizontal * .66, freeHeight / 2 - spriteWidth * .45);
@@ -2003,7 +2172,13 @@ function renderInfo() {
  byId('planetName').textContent = item.name;
  byId('planetType').textContent = item.type;
  icon.style.backgroundImage = '';
- if (view.find) {
+ if (view.ring) {
+  icon.textContent = '🪐';
+  icon.style.background = 'radial-gradient(circle at 30% 28%,#e8d9b0,#b99a5f 55%,#5a4326)';
+ } else if (view.moon) {
+  icon.textContent = '🌙';
+  icon.style.background = `radial-gradient(circle at 30% 28%,${lighten(view.moon.color, 1.4)},${view.moon.color} 48%,#060b18)`;
+ } else if (view.find) {
   icon.textContent = '';
   icon.style.background = 'radial-gradient(circle at 30% 28%,#6f9bff,#2c4fa3 55%,#0a1736)';
   const sprite = item.sprite && imageOf(item.sprite);
@@ -2015,7 +2190,7 @@ function renderInfo() {
   const photo = body.photo && ASSET_DATA[body.texture];
   icon.style.background = photo ? `url(${photo}) center/cover` : `radial-gradient(circle at 30% 28%,${lighten(body.color, 1.5)},${body.color} 48%,#060b18)`;
  }
- byId('activityBtn').hidden = false;
+ byId('activityBtn').hidden = !(item.activity || item.activity2);
  renderFact(-1);
 }
 
@@ -2058,6 +2233,8 @@ function addRipple(position) {
 function choose(index) {
  hasChosen = true;
  view.find = null;
+ view.moon = null;
+ view.ring = null;
  fxPlay('whoosh');
  setSelection(true, index);
  view.zoomGoal = followZoom(index);
@@ -2071,10 +2248,37 @@ function choose(index) {
 function chooseFind(target) {
  hasChosen = true;
  view.find = target.find;
+ view.moon = null;
+ view.ring = null;
  fxPlay('whoosh');
  factIndex = 0;
  markDiscovered(target.find.id);
  addRipple(target);
+ renderInfo();
+ readFrom(0, true);
+}
+
+function chooseMoon(target) {
+ hasChosen = true;
+ view.find = null;
+ view.moon = target.moon;
+ fxPlay('whoosh');
+ factIndex = 0;
+ markDiscovered(target.moon.id);
+ addRipple(target);
+ renderInfo();
+ readFrom(0, true);
+}
+
+function chooseRing(target) {
+ hasChosen = true;
+ view.find = null;
+ view.moon = null;
+ view.ring = target.ring;
+ fxPlay('whoosh');
+ factIndex = 0;
+ markDiscovered(target.ring.id);
+ addRipple({x: target.x, y: target.y, radius: target.outer});
  renderInfo();
  readFrom(0, true);
 }
@@ -2084,6 +2288,8 @@ function resetView() {
  setReading(false);
  hasChosen = false;
  view.find = null;
+ view.moon = null;
+ view.ring = null;
  setSelection(false, view.selected);
  view.zoomGoal = 1;
  view.angle = Math.atan2(Math.sin(view.angle), Math.cos(view.angle));
@@ -2094,6 +2300,30 @@ function resetView() {
 
 function pickAt(clientX, clientY, pointerType) {
  const padding = pointerType === 'mouse' ? 10 : 22;
+ if (view.following && !view.find && !view.moon && !view.ring) {
+  for (const target of view.moonTargets) {
+   if (Math.hypot(target.x - clientX, target.y - clientY) <= target.radius + padding * .5) {
+    chooseMoon(target);
+    return;
+   }
+  }
+  const ring = view.ringTarget;
+  if (ring && !ring.pressed) {
+   ctx.save();
+   ctx.translate(ring.x, ring.y);
+   ctx.rotate(ring.angle);
+   const dx = (clientX - ring.x) * Math.cos(-ring.angle) - (clientY - ring.y) * Math.sin(-ring.angle);
+   const dy = (clientX - ring.x) * Math.sin(-ring.angle) + (clientY - ring.y) * Math.cos(-ring.angle);
+   const radial = Math.hypot(dx, dy / ring.ratio);
+   ctx.restore();
+   const near = radial <= ring.outer + padding * .7 && radial >= ring.inner - padding * .7;
+   const around = Math.abs(dy) <= ring.outer * ring.ratio + padding * .7;
+   if (near && around) {
+    chooseRing(ring);
+    return;
+   }
+  }
+ }
  for (const target of view.findTargets) {
   if (Math.hypot(target.x - clientX, target.y - clientY) <= target.radius + padding * .5) {
    chooseFind(target);
@@ -2196,15 +2426,16 @@ function bodyEmoji(body) {
 }
 
 function renderLists() {
- const all = [...bodies, ...finds];
+ const all = [...bodies, ...finds, ...allMoons];
  const itemHtml = (item, done) => {
-  const emoji = item.parentId ? '🛰️' : bodyEmoji(item);
+  const emoji = item.kind === undefined && item.parentId && item.size ? '🌙' : item.parentId ? '🛰️' : bodyEmoji(item);
   const label = done ? `${emoji} ${escapeHtml(item.name)}` : '❓ ???';
   return `<div class="listitem${done ? ' done' : ' locked'}"><span class="listico">${emoji}</span><span class="listlabel">${label}</span><span class="listcheck">✓</span></div>`;
  };
  const tasksDone = item => (!item.activity || doneTasks.has(item.id)) && (!item.activity2 || doneTasks.has(`${item.id}#2`));
+ const withTasks = all.filter(item => item.activity || item.activity2);
  byId('discoverList').innerHTML = all.map(item => itemHtml(item, discovered.has(item.id))).join('');
- byId('taskList').innerHTML = all.map(item => itemHtml(item, tasksDone(item))).join('');
+ byId('taskList').innerHTML = withTasks.map(item => itemHtml(item, tasksDone(item))).join('');
 }
 
 function openLists() {
@@ -4038,7 +4269,7 @@ byId('actSay').addEventListener('click', () => {
 
 renderTaskbook();
 
-if (window.__KOSMOS_TEST__) window.__KOSMOS_TEST__ = {openActivity, closeActivity, getActive: () => activeActivity, bodies, finds, doneTasks, PARTS};
+if (window.__KOSMOS_TEST__) window.__KOSMOS_TEST__ = {openActivity, closeActivity, getActive: () => activeActivity, bodies, finds, doneTasks, PARTS, MOONS, allMoons};
 
 /* ---------- sterowanie ---------- */
 
@@ -4055,6 +4286,7 @@ document.querySelectorAll('[data-home]').forEach(button => button.addEventListen
 let activitySlot = 0;
 byId('activityBtn').addEventListener('click', () => {
  const item = currentItem();
+ if (!item.activity && !item.activity2) return;
  activitySlot = item.activity && !doneTasks.has(item.id) ? 0 : item.activity2 ? 1 : 0;
  openActivity(item, activitySlot);
 });

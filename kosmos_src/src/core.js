@@ -5,8 +5,8 @@ const view = {
  angle: 0, tilt: .32, angleGoal: null, tiltGoal: null,
  zoom: 1, zoomGoal: 1,
  following: false, carryX: 0, carryY: 0,
- selected: bodyIndex('earth'), find: null,
- targets: [], sunTarget: null, findTargets: []
+ selected: bodyIndex('earth'), find: null, moon: null, ring: null,
+ targets: [], sunTarget: null, findTargets: [], moonTargets: [], ringTarget: null
 };
 let speed = clamp(parseFloat(loadStored('kosmos3.speed', String(DEFAULT_SPEED))) || DEFAULT_SPEED, MIN_SPEED, MAX_SPEED);
 let playing = true;
@@ -31,7 +31,7 @@ try {
 //__SPEECH__
 
 function currentItem() {
- return view.find || bodies[view.selected];
+ return view.find || view.moon || view.ring || bodies[view.selected];
 }
 
 /* ---------- układ okna i obszar sceny ---------- */
@@ -815,13 +815,74 @@ function drawProbeSprite(find, x, y, width) {
  drawProbeIcon(x, y, width / 5, 0);
 }
 
+function drawMoon(item, moon, parentX, parentY, parentRadius) {
+ const moonRadius = Math.max(3.5, parentRadius * moon.size);
+ const orbit = parentRadius * moon.moonOrbit;
+ const phase = moon.startPhase + simDays / Math.abs(moon.period) * TAU * Math.sign(moon.period) + frameTime * .00013;
+ ctx.save();
+ ctx.translate(parentX, parentY);
+ ctx.rotate(moon.tilt);
+ ctx.strokeStyle = 'rgba(150,180,215,.28)';
+ ctx.lineWidth = 1;
+ ctx.setLineDash([2, 5]);
+ ctx.beginPath();
+ ctx.ellipse(0, 0, orbit, orbit * .55, 0, 0, TAU);
+ ctx.stroke();
+ ctx.setLineDash([]);
+ ctx.restore();
+ const x = parentX + Math.cos(phase) * orbit;
+ const y = parentY + Math.sin(phase) * orbit * .55;
+ const gradient = ctx.createRadialGradient(x - moonRadius * .35, y - moonRadius * .4, moonRadius * .2, x, y, moonRadius * 1.25);
+ gradient.addColorStop(0, lighten(moon.color, 1.4));
+ gradient.addColorStop(.55, moon.color);
+ gradient.addColorStop(1, '#0a0e18');
+ ctx.fillStyle = gradient;
+ ctx.beginPath();
+ ctx.arc(x, y, moonRadius, 0, TAU);
+ ctx.fill();
+ ctx.fillStyle = 'rgba(0,0,0,.18)';
+ [[-.3, -.2, .22], [.35, .3, .18], [.1, .45, .12]].forEach(([ox, oy, r]) => {
+  ctx.beginPath();
+  ctx.arc(x + ox * moonRadius, y + oy * moonRadius, r * moonRadius, 0, TAU);
+  ctx.fill();
+ });
+ if (!discovered.has(moon.id)) {
+  const pulse = Math.sin(frameTime * .003 + moon.startPhase) * .5 + .5;
+  ctx.strokeStyle = `rgba(255,226,110,${.15 + .3 * pulse})`;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(x, y, moonRadius + 6 + pulse * 3, 0, TAU);
+  ctx.stroke();
+ }
+ ctx.fillStyle = '#dfeaf8';
+ ctx.font = '700 11px ui-rounded, system-ui, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillText(moon.name, x, y - moonRadius - 7);
+ view.moonTargets.push({moon, x, y, radius: moonRadius});
+}
+
 function drawFinds(items) {
  view.findTargets = [];
+ view.moonTargets = [];
+ view.ringTarget = null;
  const parent = items[view.selected];
  if (!parent || !view.following || parent.radius < 40) return;
- const list = finds.filter(find => find.parentId === parent.body.id);
+ const parentId = parent.body.id;
+ const list = finds.filter(find => find.parentId === parentId);
+ const moonList = MOONS[parentId] || [];
  const freeWidth = view.free.right - view.free.left;
  const freeHeight = view.free.bottom - view.free.top;
+ if (moonList.length) {
+  moonList.forEach(moon => drawMoon(item, moon, parent.x, parent.y, parent.radius));
+ }
+ if (parent.body.ring && parent.body.id === 'saturn') {
+  const outer = Math.max(...parent.body.ring.bands.map(band => band.scale + band.width / 2));
+  const ringOuter = parent.radius * outer;
+  const ratio = .16 + view.tilt * .42;
+  const ringInner = parent.radius * Math.min(...parent.body.ring.bands.map(band => band.scale - band.width / 2));
+  view.ringTarget = {ring: parent.body.ringInfo, x: parent.x, y: parent.y, inner: ringInner, outer: ringOuter, ratio, angle: parent.body.ring.angle};
+ }
+ if (!list.length) return;
  const spriteWidth = clamp(Math.min(freeWidth, freeHeight) * .17, 52, 110);
  const horizontal = Math.max(parent.radius * 1.15, Math.min(parent.radius * 1.7 + spriteWidth * .4, freeWidth / 2 - spriteWidth * .55));
  const vertical = Math.min(horizontal * .66, freeHeight / 2 - spriteWidth * .45);
