@@ -18,7 +18,6 @@ const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const BUILT = path.join(ROOT, 'kosmos_dla_corki.html');
-const EXPECTED_DONE = 23;
 
 /* ---------- mock płótna 2d ---------- */
 
@@ -177,6 +176,11 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 /* ---------- przejście wszystkich zadań ---------- */
 
 const items = [...t.bodies, ...t.finds];
+const jobs = [];
+for (const item of items) {
+  if (item.activity) jobs.push([item, 0]);
+  if (item.activity2) jobs.push([item, 1]);
+}
 let failures = 0;
 
 function gridClicks(act, step = 10) {
@@ -194,12 +198,13 @@ function itemDone() {
   return currentItemId && t.doneTasks.has(currentItemId);
 }
 
-async function complete(item) {
-  currentItemId = item.id;
-  t.openActivity(item);
+async function complete(item, slot = 0) {
+  currentItemId = slot ? `${item.id}#2` : item.id;
+  t.openActivity(item, slot);
   const act = t.getActive();
   if (!act) throw new Error('aktywność nie została utworzona');
-  if (item.activity === 'venus' || item.activity === 'rover') {
+  const kind = slot ? item.activity2 : item.activity;
+  if (kind === 'venus' || kind === 'rover') {
     // wycieranie: siatka przeciągnięć; test czeka między krokami, bo aplikacja
     // sprawdza ilość pozostałego brudu nie częściej niż co 120 ms
     act.onDown({x: 0, y: 0});
@@ -211,15 +216,15 @@ async function complete(item) {
       await sleep(140);
     }
     act.onUp();
-  } else if (item.activity === 'uranus') {
+  } else if (kind === 'uranus') {
     act.onDown({x: act.width / 2, y: act.height / 2});
     for (let x = act.width / 2; x <= act.width; x += 8) act.onMove({x, y: act.height / 2});
     act.onUp();
-  } else if (item.activity === 'tail') {
+  } else if (kind === 'tail') {
     act.onDown({x: 96 + 178, y: 252});
     for (let a = 0; a < 2.6; a += .04) act.onMove({x: 96 + Math.cos(a) * 178, y: 252 + Math.sin(a) * 178});
     act.onUp();
-  } else if (item.activity === 'moon') {
+  } else if (kind === 'moon') {
     const diffs = [
       {x: 343, y: 100}, {x: 470, y: 42}, {x: 168, y: 172}, {x: 445, y: 178}, {x: 280, y: 50}
     ];
@@ -229,13 +234,13 @@ async function complete(item) {
       act.onDown({x: d.x, y: d.y + 212});
       act.onUp();
     }
-  } else if (item.activity === 'neptune') {
+  } else if (kind === 'neptune') {
     // Tryton siedzi w miejscu wynikającym z czasu ostatniej klatki
     if (act.frame) act.frame(.016, 5000);
     const angle = 5000 * .0016;
     act.onDown({x: 280 + Math.cos(angle) * 209, y: 170 + Math.sin(angle) * 114.95});
     act.onUp();
-  } else if (item.activity === 'parts') {
+  } else if (kind === 'parts') {
     // klikamy dokładnie w hit areas kolejnych części (różne miejsca przy count > 1)
     // imgRect liczymy tak samo jak aplikacja: obraz „contain” w 560x340 z marginesem 60
     const spec = t.PARTS[item.sprite || item.draw];
@@ -251,6 +256,32 @@ async function complete(item) {
         await sleep(0);
       }
     }
+  } else if (kind === 'order') {
+    // klikamy chip planety (dół), potem jej slot (góra) — po kolei 1..8
+    for (let i = 0; i < act.slots.length; i++) {
+      const chip = act.chips.find(c => c.planetIndex === i);
+      const slot = act.slots[i];
+      act.onDown({x: chip.x, y: chip.y});
+      act.onUp();
+      act.onDown({x: slot.x, y: slot.y});
+      act.onUp();
+    }
+  } else if (kind === 'seasons') {
+    // przeciągamy Ziemię kolejno przez cztery strefy pór roku
+    const startX = act.sun.x + Math.cos(act.angleStart) * act.orbit;
+    const startY = act.sun.y + Math.sin(act.angleStart) * act.orbit;
+    act.onDown({x: startX, y: startY});
+    for (const zone of act.zones) {
+      act.onMove({x: act.sun.x + Math.cos(zone.angle) * act.orbit, y: act.sun.y + Math.sin(zone.angle) * act.orbit});
+    }
+    act.onUp();
+  } else if (kind === 'galilean') {
+    // pozycje księżyców ustawia frame(), klikamy w każdy środek
+    if (act.frame) act.frame(.016, 5000);
+    for (const moon of act.moons) {
+      act.onDown({x: moon.x, y: moon.y});
+      act.onUp();
+    }
   } else {
     // znajdź-klik (sunspots, mercury, ceres, jupiter, saturn, heart):
     // klikamy gęstą siatką, aż zadanie się skończy
@@ -259,28 +290,75 @@ async function complete(item) {
   if (act.frame) act.frame(.016, performance.now() + 100);
   t.closeActivity();
   currentItemId = null;
-  if (!t.doneTasks.has(item.id)) throw new Error('zadanie nie zostało oznaczone jako wykonane');
+  if (!t.doneTasks.has(slot ? `${item.id}#2` : item.id)) throw new Error('zadanie nie zostało oznaczone jako wykonane');
 }
 
 (async () => {
-  for (const item of items) {
+  for (const [item, slot] of jobs) {
     try {
-      await complete(item);
-      console.log(`OK   ${item.id} (${item.activity})`);
+      await complete(item, slot);
+      console.log(`OK   ${item.id}${slot ? ' (zadanie 2)' : ''} (${slot ? item.activity2 : item.activity})`);
     } catch (error) {
       failures++;
-      console.error(`FAIL ${item.id} (${item.activity}): ${error.message}`);
+      console.error(`FAIL ${item.id}${slot ? ' (zadanie 2)' : ''} (${slot ? item.activity2 : item.activity}): ${error.message}`);
     }
   }
   const doneCount = t.doneTasks.size;
-  console.log(`wykonanych zadań: ${doneCount}/${items.length}`);
-  if (doneCount !== EXPECTED_DONE) {
-    console.error(`OCZEKIWANO ${EXPECTED_DONE} wykonanych zadań`);
+  console.log(`wykonanych zadań: ${doneCount}/${jobs.length}`);
+  if (doneCount !== jobs.length) {
+    console.error(`OCZEKIWANO ${jobs.length} wykonanych zadań`);
     failures++;
   }
+
+  /* ---------- poziomy galaktyczne: Ramię Oriona i Droga Mleczna ---------- */
+
+  t.resetView();
+  if (!t.zoomOutLevel()) { console.error('FAIL nie weszło na poziom -1 (Ramię Oriona)'); failures++; }
+  else {
+    t.draw();
+    const armTargets = t.view.galaxyTargets;
+    if (armTargets.length !== 2) { console.error(`FAIL Ramię Oriona: oczekiwano 2 obiektów, jest ${armTargets.length}`); failures++; }
+    for (const target of armTargets) {
+      try {
+        t.pickAt(target.x, target.y, 'mouse');
+        if (!t.discovered.has(target.object.id)) throw new Error('nie oznaczono jako odkryte');
+        console.log(`OK   galaktyka ${target.object.id}`);
+      } catch (error) {
+        failures++;
+        console.error(`FAIL galaktyka ${target.object.id}: ${error.message}`);
+      }
+    }
+  }
+  if (!t.zoomOutLevel()) { console.error('FAIL nie weszło na poziom -2 (Droga Mleczna)'); failures++; }
+  else {
+    t.draw();
+    const galaxyTargets = t.view.galaxyTargets;
+    if (galaxyTargets.length !== 4) { console.error(`FAIL Droga Mleczna: oczekiwano 4 obiektów, jest ${galaxyTargets.length}`); failures++; }
+    for (const target of galaxyTargets) {
+      try {
+        t.pickAt(target.x, target.y, 'mouse');
+        if (!t.discovered.has(target.object.id)) throw new Error('nie oznaczono jako odkryte');
+        console.log(`OK   galaktyka ${target.object.id}`);
+      } catch (error) {
+        failures++;
+        console.error(`FAIL galaktyka ${target.object.id}: ${error.message}`);
+      }
+    }
+  }
+  if (t.zoomOutLevel()) { console.error('FAIL zoomOutLevel poniżej -2 powinien zwrócić false'); failures++; }
+  t.resetView();
+  if (t.view.level !== 0) { console.error('FAIL resetView nie wrócił na poziom 0'); failures++; }
+
+  const discoveredCount = t.discovered.size;
+  const expectedGalaxy = t.allGalaxy.length; // 6 obiektów galaktycznych klikniętych powyżej
+  if (discoveredCount < expectedGalaxy) {
+    console.error(`FAIL odkryto tylko ${discoveredCount}, oczekiwano co najmniej ${expectedGalaxy} (galaktyczne)`);
+    failures++;
+  }
+
   if (failures) {
     console.error(`PORAŻKI: ${failures}`);
     process.exit(1);
   }
-  console.log(`WSZYSTKIE ${items.length} ZADANIA PRZESZŁY`);
+  console.log(`WSZYSTKIE ${jobs.length} ZADANIA + POZIOMY GALAKTYCZNE PRZESZŁY`);
 })();

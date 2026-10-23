@@ -2,6 +2,8 @@
 
 byId('speedRange').addEventListener('input', event => applySpeed(+event.target.value));
 byId('play').addEventListener('click', togglePlay);
+byId('zoomOutBtn').addEventListener('click', () => {if (zoomOutLevel()) fxPlay('whoosh');});
+byId('zoomInBtn').addEventListener('click', () => {if (zoomInLevel()) fxPlay('whoosh');});
 byId('readAgain').addEventListener('click', () => {
  if (reading) {
   stopSpeech();
@@ -10,7 +12,13 @@ byId('readAgain').addEventListener('click', () => {
  } else if (hasChosen) readFrom(0, true);
 });
 document.querySelectorAll('[data-home]').forEach(button => button.addEventListener('click', resetView));
-byId('activityBtn').addEventListener('click', () => openActivity(currentItem()));
+let activitySlot = 0;
+byId('activityBtn').addEventListener('click', () => {
+ const item = currentItem();
+ if (!item.activity && !item.activity2) return;
+ activitySlot = item.activity && !doneTasks.has(item.id) ? 0 : item.activity2 ? 1 : 0;
+ openActivity(item, activitySlot);
+});
 byId('fact').addEventListener('click', () => {
  if (!hasChosen) return;
  readFrom((factIndex + 1) % currentItem().facts.length, false);
@@ -21,6 +29,7 @@ byId('dots').addEventListener('click', event => {
 });
 byId('startButton').addEventListener('click', () => {
  byId('start').hidden = true;
+ musicStart();
  sayNow('Cześć! Dotknij którąś planetę, a opowiem Ci o niej coś ciekawego.');
 });
 

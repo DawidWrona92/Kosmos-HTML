@@ -1,7 +1,7 @@
 /* ---------- dane ---------- */
 
 const bodies = [
- {id: 'sun', kind: 'star', name: 'Słońce', type: 'Nasza gwiazda', color: '#ffb43a', radius: 25, activity: 'sunspots',
+ {id: 'sun', kind: 'star', name: 'Słońce', type: 'Nasza gwiazda', color: '#ffb43a', radius: 25, activity: 'sunspots', activity2: 'order',
   facts: [
    'Słońce to gwiazda, czyli wielka kula gorącego gazu. Świeci własnym światłem i daje nam ciepło. Dzięki niemu na Ziemi jest dzień, rosną rośliny i żyją zwierzęta. Wszystkie planety krążą wokół Słońca.',
    'Słońce jest ogromne. Zmieściłoby się w nim ponad milion Ziem! Gdyby Ziemia była wielkości piłeczki do ping-ponga, Słońce miałoby ponad cztery metry szerokości. To tyle, co duży pokój.',
@@ -23,13 +23,21 @@ const bodies = [
    'Wenus kręci się w drugą stronę niż prawie wszystkie planety. Dlatego Słońce wschodzi tam na zachodzie! Jeden obrót trwa 243 ziemskie dni, a rok tylko 225 dni. Obrót trwa więc dłużej niż rok.',
    'Wenus jest prawie tak duża jak Ziemia, więc nazywa się ją siostrą Ziemi. Na niebie widać ją wieczorem albo rano jako bardzo jasny punkt. Ludzie nazywają ją Gwiazdą Wieczorną, ale to wcale nie gwiazda, tylko planeta.'
   ]},
- {id: 'earth', surface: 'earth', kind: 'planet', name: 'Ziemia', type: 'Trzecia planeta od Słońca', color: '#268de0', radius: 8, orbit: 145, period: 365.25, startPhase: 4.1, texture: 'earth_photo', photo: true, activity: 'moon',
+ {id: 'earth', surface: 'earth', kind: 'planet', name: 'Ziemia', type: 'Trzecia planeta od Słońca', color: '#268de0', radius: 8, orbit: 145, period: 365.25, startPhase: 4.1, texture: 'earth_photo', photo: true, activity2: 'seasons',
   facts: [
    'Ziemia to nasz dom! To jedyne miejsce, na którym znamy życie: ludzi, zwierzęta i rośliny. Mamy tu powietrze do oddychania i wodę do picia. Ziemia jest w sam raz daleko od Słońca, więc nie jest ani za gorąca, ani za zimna.',
    'Z kosmosu Ziemia wygląda jak niebieska kula. Aż 71 procent jej powierzchni pokrywa woda. Widać też białe chmury i brązowe lądy. Dlatego mówimy na nią Błękitna Planeta.',
    'Ziemia kręci się wokół własnej osi. Jeden obrót trwa 24 godziny, czyli jedną dobę. Dzięki temu jest dzień i noc. Wokół Słońca Ziemia okrąża się raz na rok, czyli w 365 dni.',
    'Wokół Ziemi krąży Księżyc. To nasz jedyny naturalny księżyc. Zawsze pokazuje nam tę samą stronę. W 1969 roku stanęli na nim pierwsi ludzie.',
    'Ziemię chroni atmosfera, czyli warstwa powietrza. Większość małych skał, które lecą z kosmosu, spala się w niej wysoko nad nami. My widzimy to jako spadające gwiazdy. Możesz wtedy pomyśleć życzenie!'
+  ]},
+ {id: 'moon', kind: 'moon', parentId: 'earth', name: 'Księżyc', type: 'Nasz księżyc', intro: 'Księżyc.', color: '#b9b9c4', radius: 3, orbit: 145, moonOrbit: 26, period: 27.3, startPhase: .5, texture: 'moon_photo', photo: true, activity: 'moon',
+  facts: [
+   'Księżyc to nasz najbliższy sąsiad w kosmosie. Krąży wokół Ziemi raz na około 27 dni. Zawsze pokazuje nam tę samą stronę — jakby patrzył na nas jednym okiem!',
+   'Na Księżycu nie ma powietrza, wiatru ani deszczu. Niebo jest tam czarne nawet w dzień. Astronauci musieli mieć specjalne skafandry, żeby móc tam oddychać.',
+   'W 1969 roku wylądowali na Księżycu pierwsi ludzie — Neil Armstrong i Buzz Aldrin. Neil powiedział słynne słowa: „To mały krok dla człowieka, a wielki skok dla ludzkości”.',
+   'Księżyc nie świeci sam z siebie — odbija światło Słońca, dlatego świeci na niebie. Gdy Ziemia zasłania Słońce, Księżyc robi się ciemny — to zaćmienie Księżyca.',
+   'Księżyc przyciąga wodę w oceanach. Dzięki temu mamy przypływy i odpływy — morze podnosi się i opada dwa razy na dobę!'
   ]},
  {id: 'mars', surface: 'mars', kind: 'planet', name: 'Mars', type: 'Czwarta planeta od Słońca', color: '#d75a36', radius: 6, orbit: 184, period: 687, startPhase: 5.5, texture: 'mars', activity: 'rover',
   facts: [
@@ -46,7 +54,7 @@ const bodies = [
    'Ceres odkrył 1 stycznia 1801 roku włoski astronom Giuseppe Piazzi. Najpierw ogłoszono, że to nowa planeta. Potem znaleziono podobne skały i Ceres nazwano planetoidą. Dziś mówimy o niej planeta karłowata.',
    'Na Ceres są jasne plamy w kraterze o nazwie Occator. To sól, która została po wyparowaniu słonej wody. Naukowcy znaleźli pod powierzchnią Ceres zbiornik słonej wody. Woda dostała się kiedyś na wierzch i wyschła.'
   ]},
- {id: 'jupiter', surface: 'jupiter', kind: 'planet', name: 'Jowisz', type: 'Piąta planeta od Słońca', color: '#d5b18a', radius: 22, orbit: 260, period: 4333, startPhase: 1.3, texture: 'jupiter', activity: 'jupiter',
+ {id: 'jupiter', surface: 'jupiter', kind: 'planet', name: 'Jowisz', type: 'Piąta planeta od Słońca', color: '#d5b18a', radius: 22, orbit: 260, period: 4333, startPhase: 1.3, texture: 'jupiter', activity: 'jupiter', activity2: 'galilean',
   facts: [
    'Jowisz jest największą planetą. Zmieściłoby się w nim ponad tysiąc Ziem! Jest cięższy niż wszystkie inne planety razem wzięte. Mimo to jest bardzo daleko, więc na niebie wygląda jak jasny punkt.',
    'Jowisz nie ma twardej powierzchni. To wielka kula z gazu, czyli gazowy olbrzym. Nie da się na nim wylądować, bo nie ma gdzie stanąć. Jego chmury układają się w kolorowe pasy.',
@@ -56,6 +64,12 @@ const bodies = [
   ]},
  {id: 'saturn', surface: 'saturn', kind: 'planet', name: 'Saturn', type: 'Szósta planeta od Słońca', color: '#d9bd83', radius: 18, orbit: 340, period: 10759, startPhase: 3.2, texture: 'saturn', activity: 'saturn',
   ring: {angle: -.25, bands: [{scale: 1.34, width: .2, color: 'rgba(150,128,96,.55)'}, {scale: 1.74, width: .46, color: 'rgba(222,200,150,.92)'}, {scale: 2.17, width: .26, color: 'rgba(190,168,124,.82)'}, {scale: 2.33, width: .03, color: 'rgba(210,190,150,.55)'}]},
+  ringInfo: {id: 'saturn_rings', parentId: 'saturn', name: 'Pierścienie Saturna', type: 'Pierścienie planety', intro: 'Pierścienie Saturna.',
+   facts: [
+    'Pierścienie Saturna to miliardy kawałków lodu i skał — od ziarenek piasku po bryły wielkości domu!',
+    'Wyglądają jak ogromne, płaskie pierścienie wokół planety, ale nie są jedną litą obręczą. To jak miliardy malutkich księżyców krążących razem.',
+    'Pierścienie są bardzo cienkie — mają zaledwie kilkanaście metrów grubości, a rozciągają się na setki tysięcy kilometrów!'
+   ]},
   facts: [
    'Saturn ma wspaniałe pierścienie. Składają się z miliardów kawałków lodu i skał. Są wśród nich ziarenka wielkości piasku i bryły wielkie jak dom.',
    'Pierścienie Saturna są ogromne, ale bardzo cienkie. Sięgają na setki tysięcy kilometrów, a grube są tylko na około 10 metrów. Gdy Ziemia ustawia się równo z pierścieniami, prawie ich nie widać.',
@@ -159,6 +173,12 @@ const finds = [
    'W lipcu 2015 roku przeleciała tuż obok Plutona z prędkością około 50 tysięcy kilometrów na godzinę. Zrobiła zdjęcie serca Plutona i znalazła góry z lodu.',
    'Potem poleciała dalej, w stronę lodowych światów na krańcach Układu Słonecznego. W 2019 roku odwiedziła lodowo-skalny obiekt Arrokoth, który wygląda jak bałwanek z dwóch kul.'
   ]},
+ {id: 'ingenuity', parentId: 'mars', name: 'Helikopter Ingenuity', type: 'Znajdźka: mały helikopter', intro: 'Helikopter Ingenuity.', sprite: null, draw: 'ingenuity', activity: 'parts',
+  facts: [
+   'Ingenuity to mały helikopter, który poleciał razem z łazikiem Perseverance. Był pierwszym helikopterem, który latał na innej planecie!',
+   'Na Marsie powietrze jest bardzo cienkie, więc łopatki Ingenuity musiały kręcić się bardzo, bardzo szybko — ponad 2500 razy na minutę!',
+   'Ingenuity był planowany na 5 lotów, a zrobił ich aż 72! Pracował prawie 3 lata.'
+  ]},
  {id: 'giotto', parentId: 'halley', name: 'Sonda Giotto', type: 'Sonda kosmiczna', intro: 'Sonda Giotto.', sprite: null, draw: 'giotto', activity: 'parts',
   facts: [
    'W 1986 roku europejska sonda Giotto podleciała do jądra komety Halleya. Zbliżyła się do niego na około 600 kilometrów.',
@@ -211,12 +231,170 @@ const PARTS = {
   {name: 'Antena', ask: 'Gdzie jest antena? To duży, biały talerz.', hint: 'Szukaj dużego, białego talerza na górze.', ok: 'To antena. Dzięki niej sonda wysłała na Ziemię zdjęcia Plutona.', hits: [[.5, .27, .17]]},
   {name: 'Generator prądu', ask: 'Teraz znajdź generator prądu. To szary walec z boku.', hint: 'Szukaj szarego walca z prawej strony.', ok: 'To generator prądu. Przy Plutonie Słońce prawie nie świeci, więc sonda nie ma paneli, tylko taki mały generator.', hits: [[.82, .55, .12]]}
  ]},
+ ingenuity: {draw: 'ingenuity', parts: [
+  {name: 'Wirniki', ask: 'Gdzie są wirniki? To dwa duże śmigła na górze.', hint: 'Szukaj dwóch dużych, białych kół na górze.', ok: 'To wirniki — dwa śmigła kręcące się w przeciwnych stronach. Dzięki nim helikopter unosi się w cienkim marsjańskim powietrzu.', hits: [[.28, .18, .16], [.72, .18, .16]]},
+  {name: 'Kadłub', ask: 'Teraz znajdź kadłub. To małe pudełko na dole.', hint: 'Szukaj małego, biało-pomarańczowego pudełka pod wirnikami.', ok: 'To kadłub. W środku są kamery i komputer. Ingenuity jest wielkości pudełka na chusteczki!', hits: [[.5, .68, .18]]},
+  {name: 'Nóżki', ask: 'Na koniec znajdź nóżki. To cienkie patyczki na dole.', hint: 'Szukaj cienkich czarnych patyczków pod kadłubem.', ok: 'To nóżki. Dzięki nim Ingenuity ląduje na kamieniach i piasku Marsa.', hits: [[.38, .92, .08], [.62, .92, .08]]}
+ ]},
  giotto: {draw: 'giotto', parts: [
   {name: 'Antena', ask: 'Gdzie jest antena? To okrągły talerz na górze.', hint: 'Szukaj okrągłego talerza na górze.', ok: 'To antena. Dzięki niej Giotto przesłała zdjęcia komety.', hits: [[.5, .2, .15]]},
   {name: 'Tarcza przed pyłem', ask: 'Teraz znajdź tarczę przed pyłem. To płaski dysk na dole sondy.', hint: 'Szukaj płaskiego dysku na samym dole.', ok: 'To tarcza przed pyłem. Chroniła sondę przed drobinkami pyłu z komety.', hits: [[.5, .82, .17]]}
  ]}
 };
 
-const TOTAL_ITEMS = bodies.length + finds.length;
+/* naturalne księżyce planet — pokazane przy zbliżeniu planety, osobno od sond.
+ * moonOrbit: promień orbity w jednostkach promienia planety (wizualizacja
+ * poglądowa, nie dokładne proporcje). period w dniach, startPhase w radianach.
+ * Księżyc Ziemi jest osobno w bodies[] (kind 'moon') i ma własne zadanie. */
+const MOONS = {
+ mars: [
+  {id: 'phobos', parentId: 'mars', name: 'Fobos', type: 'Księżyc Marsa', intro: 'Fobos.', color: '#a08a76', size: .38, moonOrbit: 2.6, period: .32, startPhase: 1.2, tilt: .5,
+   facts: [
+    'Fobos to jeden z dwóch księżyców Marsa. Okrąża planetę bardzo szybko — prawie trzy razy na dobę!',
+    'Jest też znacznie mniejszy od naszego Księżyca — wygląda jak wielki, szary kartofel.',
+    'Fobos powoli spada na Marsa. Za miliony lat może się na niego rozbić albo rozsypać w pierścień!'
+   ]},
+  {id: 'deimos', parentId: 'mars', name: 'Deimos', type: 'Księżyc Marsa', intro: 'Deimos.', color: '#8f8072', size: .3, moonOrbit: 3.6, period: 1.26, startPhase: 4, tilt: -.4,
+   facts: [
+    'Deimos to drugi, mniejszy księżyc Marsa. Jest tak mały, że wygląda jak ziarenko piasku przy planecie.',
+    'Okrąża Marsa wolniej niż Fobos — potrzebuje na to ponad dnia.',
+    'Jego powierzchnia jest gładka, bo pokrywa ją gruba warstwa pyłu, jak materac na piasku.'
+   ]}
+ ],
+ jupiter: [
+  {id: 'io', parentId: 'jupiter', name: 'Io', type: 'Księżyc Jowisza', intro: 'Io.', color: '#e8c07a', size: .3, moonOrbit: 2.2, period: 1.77, startPhase: .5, tilt: .3,
+   facts: [
+    'Io to księżyc Jowisza, który ma ponad 400 wulkanów! Wyrzucają one siarkę, która maluje Io na żółto i pomarańczowo.',
+    'To najbardziej wulkaniczne miejsce w całym Układzie Słonecznym.',
+    'Wulkany Io wypluwają lawę tak gorącą, że na zdjęciach z sondy świeci ona w ciemności!'
+   ]},
+  {id: 'europa', parentId: 'jupiter', name: 'Europa', type: 'Księżyc Jowisza', intro: 'Europa.', color: '#d8e4f0', size: .27, moonOrbit: 2.9, period: 3.55, startPhase: 2.1, tilt: -.35,
+   facts: [
+    'Europa jest pokryta grubą skorupą lodu — pod nią może być ocean wody!',
+    'Naukowcy myślą, że w tym oceanie mogą żyć małe stworzenia. Jeszcze ich nie znaleźliśmy!',
+    'Lód na Europie pęka i przesuwa się, dlatego jej powierzchnia wygląda jak popękana skorupka jajka.'
+   ]},
+  {id: 'ganymedes', parentId: 'jupiter', name: 'Ganimedes', type: 'Księżyc Jowisza', intro: 'Ganimedes.', color: '#b09a7a', size: .42, moonOrbit: 3.7, period: 7.15, startPhase: 4, tilt: .25,
+   facts: [
+    'Ganimedes to największy księżyc w całym Układzie Słonecznym — większy nawet od planety Merkury!',
+    'Ma własne pole magnetyczne, jak Ziemia. To jedyny księżyc, który je ma!',
+    'Na jego powierzchni są ciemne plamy i jasne, poprzecinane rowy — wygląda jak stary, zamarznięty tort.'
+   ]},
+  {id: 'kallisto', parentId: 'jupiter', name: 'Kallisto', type: 'Księżyc Jowisza', intro: 'Kallisto.', color: '#8a7a66', size: .4, moonOrbit: 4.6, period: 16.7, startPhase: 1.2, tilt: -.2,
+   facts: [
+    'Kallisto jest cały pokryty kraterami — to jeden z najstarszych księżyców Jowisza.',
+    'Jego największy krater nazywa się Valhalla. Ma wielkość Polski!',
+    'Kallisto jest daleko od Jowisza, więc nie jest tak mocno rozgrzewany — to zimny, spokojny świat.'
+   ]}
+ ],
+ saturn: [
+  {id: 'tytan', parentId: 'saturn', name: 'Tytan', type: 'Księżyc Saturna', intro: 'Tytan.', color: '#d9a55b', size: .5, moonOrbit: 2.6, period: 15.9, startPhase: 2.8, tilt: .8,
+   facts: [
+    'Tytan to największy księżyc Saturna — większy od planety Merkury!',
+    'Ma gęstą, pomarańczową atmosferę i prawdziwe jeziora. Tylko że zamiast wody płynie w nich ciekły gaz!',
+    'Sonda Huygens wylądowała na Tytanie w 2005 roku. To był pierwszy lądownik na księżycu innej planety!'
+   ]},
+  {id: 'enceladus', parentId: 'saturn', name: 'Enceladus', type: 'Księżyc Saturna', intro: 'Enceladus.', color: '#eef4fa', size: .22, moonOrbit: 1.9, period: 1.37, startPhase: .8, tilt: -.6,
+   facts: [
+    'Enceladus to mały, ale niezwykły księżyc — jest cały pokryty świeżym, białym lodem.',
+    'Z jego południowego bieguna tryskają w kosmos gejzery wody! Sonda Cassini przeleciała przez te strumienie.',
+    'Pod lodem Enceladusa też może być ocean. To jedno z najlepszych miejsc do szukania życia!'
+   ]},
+  {id: 'japetus', parentId: 'saturn', name: 'Japetus', type: 'Księżyc Saturna', intro: 'Japetus.', color: '#6e5f50', size: .28, moonOrbit: 3.4, period: 79.3, startPhase: 4.6, tilt: 1.4,
+   facts: [
+    'Japetus ma dwie twarze — jedna połowa jest biała jak śnieg, a druga czarna jak węgiel!',
+    'Ciemna strona zbiera pył z pierścieni Saturna. Dlatego wygląda jak księżyc pomalowany na pół.',
+    'Na równiku Japetusa biegnie wielki grzbiet — jak szew na piłce. Naukowcy wciąż nie wiedzą, skąd się wziął!'
+   ]},
+  {id: 'reja', parentId: 'saturn', name: 'Reja', type: 'Księżyc Saturna', intro: 'Reja.', color: '#c8ccd4', size: .3, moonOrbit: 2.1, period: 4.52, startPhase: 1.9, tilt: -.3,
+   facts: [
+    'Reja to drugi co do wielkości księżyc Saturna. Jest szara i pełna kraterów.',
+    'Reja może mieć własne, słabe pierścienie! To pierwszy księżyc, przy którym je znaleziono.',
+    'Krąży blisko Saturna, więc okrąża go w niecałe 5 dni.'
+   ]},
+  {id: 'dione', parentId: 'saturn', name: 'Dione', type: 'Księżyc Saturna', intro: 'Dione.', color: '#dde2ea', size: .28, moonOrbit: 2.8, period: 2.74, startPhase: 5.4, tilt: .5,
+   facts: [
+    'Dione wygląda jak lodowa kula z wielkimi, białymi urwiskami — to klify z lodu!',
+    'Jedna jej połowa jest gładka, a druga pełna kraterów. Dlaczego tak jest? Naukowcy wciąż się zastanawiają.',
+    'Dione okrąża Saturna szybciej niż nasz Księżyc okrąża Ziemię.'
+   ]}
+ ],
+ uranus: [
+  {id: 'tytania', parentId: 'uranus', name: 'Tytania', type: 'Księżyc Urana', intro: 'Tytania.', color: '#9fb4c0', size: .5, moonOrbit: 2.8, period: 8.7, startPhase: 1.6, tilt: .9,
+   facts: [
+    'Tytania to największy księżyc Urana — ma prawie połowę średnicy naszego Księżyca.',
+    'Na jej powierzchni są ogromne kaniony — głębsze niż Wielki Kanion na Ziemi!',
+    'Uran i jego księżyce są bardzo daleko od Słońca, więc jest tam strasznie zimno — około minus 200 stopni!'
+   ]},
+  {id: 'oberon', parentId: 'uranus', name: 'Oberon', type: 'Księżyc Urana', intro: 'Oberon.', color: '#7d8f9a', size: .42, moonOrbit: 3.8, period: 13.5, startPhase: 3.9, tilt: -.7,
+   facts: [
+    'Oberon to najdalszy wielki księżyc Urana. Jest ciemny i pokryty kraterami.',
+    'Ma na sobie górę wysoką na 11 kilometrów — wyższą niż Mount Everest!',
+    'Oberon okrąża Urana w prawie dwa tygodnie.'
+   ]}
+ ],
+ neptune: [
+  {id: 'tryton', parentId: 'neptune', name: 'Tryton', type: 'Księżyc Neptuna', intro: 'Tryton.', color: '#e8d8e0', size: .55, moonOrbit: 2.7, period: -5.88, startPhase: 2.2, tilt: .6,
+   facts: [
+    'Tryton to największy księżyc Neptuna. Krąży w przeciwną stronę niż planeta się obraca!',
+    'Ma lodowe gejzery, które wyrzucają azot wysoko w niebo — na wysokość ośmiu kilometrów!',
+    'Tryton powoli zbliża się do Neptuna. Za miliony lat może się rozpaść i zrobić pierścień wokół planety.'
+   ]}
+ ]
+};
+
+/* obiekty poziomów galaktycznych (view.level: -1 Ramię Oriona, -2 Droga Mleczna) */
+const GALAXY_OBJECTS = {
+ orion_arm: [
+  {id: 'solar_system', name: 'Nasz Układ Słoneczny', type: 'Układ planetarny', intro: 'Nasz Układ Słoneczny.', emoji: '☀️',
+   facts: [
+    'To nasz dom w kosmosie! Słońce to gwiazda, a wokół niego krąży osiem planet — w tym nasza Ziemia.',
+    'Nasz Układ Słoneczny leży w Ramieniu Oriona — jednym z wielkich ramion naszej galaktyki, Drogi Mlecznej.',
+    'Światło ze Słońca leci do Ziemi osiem minut. Do najbliższej gwiazdy leciałoby ponad cztery lata!'
+   ]},
+  {id: 'orion_arm', name: 'Ramię Oriona', type: 'Ramię spiralne galaktyki', intro: 'Ramię Oriona.', emoji: '🌌',
+   facts: [
+    'Ramię Oriona to jedno z wielkich ramion Drogi Mlecznej — naszej galaktyki. Ma kształt długiej, zakrzywionej wstęgi pełnej gwiazd.',
+    'Mieszkają w nim miliardy gwiazd — w tym nasze Słońce. Między gwiazdami unoszą się wielkie obłoki gazu i pyłu, w których rodzą się nowe gwiazdy.',
+    'Układ Słoneczny nie jest w centrum galaktyki — leży bliżej jej brzegu, w spokojnym zakątku Ramienia Oriona.'
+   ]}
+ ],
+ milky_way: [
+  {id: 'milky_way', name: 'Droga Mleczna', type: 'Nasza galaktyka', intro: 'Droga Mleczna.', emoji: '🌌',
+   facts: [
+    'Droga Mleczna to nasza galaktyka — ogromny wir z setkami miliardów gwiazd! Nasze Słońce i cały Układ Słoneczny są jej częścią.',
+    'Gdybyś mogła spojrzeć na Drogę Mleczną z boku, wyglądałaby jak wielki, płaski naleśnik z wypukłością w środku.',
+    'Nazwa „Droga Mleczna" wzięła się stąd, że na nocnym niebie widać jasny, mleczny pas — to nasza galaktyka patrzona od środka!',
+    'Słońce okrąża centrum Drogi Mlecznej. Jedna taka podróż trwa aż 230 milionów lat!'
+   ]},
+  {id: 'andromeda', name: 'Galaktyka Andromedy', type: 'Sąsiednia galaktyka', intro: 'Galaktyka Andromedy.', emoji: '🌀',
+   facts: [
+    'Andromeda to sąsiednia galaktyka — najbliższa wielka galaktyka obok naszej Drogi Mlecznej. Razem należą do jednej rodziny galaktyk.',
+    'Jest od nas tak daleko, że światło leci stamtąd ponad dwa i pół miliona lat!',
+    'Za około cztery miliardy lat Droga Mleczna i Andromeda połączą się w jedną wielką galaktykę. To bardzo, bardzo daleka przyszłość — nie ma się czym martwić!',
+    'Między gwiazdami w galaktykach jest tyle miejsca, że gdy galaktyki się łączą, gwiazdy rzadko się zderzają — to jak dwa stada owiec, które się mieszają.'
+   ]},
+  {id: 'voyager1', name: 'Sonda Voyager 1', type: 'Sonda kosmiczna', intro: 'Sonda Voyager 1.', emoji: '🛰️',
+   facts: [
+    'Voyager 1 to sonda kosmiczna — bezzałogowy statek, który ludzie wysłali, żeby poznawał kosmos.',
+    'Wystartował w 1977 roku i przeleciał obok Jowisza oraz Saturna, robiąc im pierwsze dokładne zdjęcia.',
+    'Voyager 1 jest teraz najdalej od Ziemi ze wszystkich rzeczy, które zbudowali ludzie — leci już między gwiazdami!',
+    'Na pokładzie niesie Złotą Płytę z pozdrowieniami dla kosmitów — z dźwiękami Ziemi, muzyką i obrazkami.'
+   ]},
+  {id: 'voyager2', name: 'Sonda Voyager 2', type: 'Sonda kosmiczna', intro: 'Sonda Voyager 2.', emoji: '🛰️',
+   facts: [
+    'Voyager 2 to bliźniak Voyagera 1 — też poleciał w 1977 roku poznawać planety.',
+    'To jedyna sonda na świecie, która przeleciała obok wszystkich czterech wielkich planet: Jowisza, Saturna, Urana i Neptuna!',
+    'Voyager 2 też leci już między gwiazdami i też niesie wiadomość od Ziemian.',
+    'Sygnał z Voyagera 2 leci do nas około 20 godzin — tyle światło potrzebuje, żeby do nas dotrzeć!'
+   ]}
+ ]
+};
+
+const taskCount = item => (item.activity ? 1 : 0) + (item.activity2 ? 1 : 0);
+const TOTAL_TASKS = bodies.reduce((sum, body) => sum + taskCount(body), 0) + finds.reduce((sum, find) => sum + taskCount(find), 0);
+const allMoons = Object.values(MOONS).flat();
+const allGalaxy = [...GALAXY_OBJECTS.orion_arm, ...GALAXY_OBJECTS.milky_way];
+const TOTAL_ITEMS = bodies.length + finds.length + allMoons.length + allGalaxy.length;
 const bodyIndex = id => bodies.findIndex(body => body.id === id);
-const knownIds = new Set([...bodies.map(body => body.id), ...finds.map(find => find.id)]);
+const knownIds = new Set([...bodies.map(body => body.id), ...finds.map(find => find.id), ...allMoons.map(moon => moon.id), ...allGalaxy.map(object => object.id)]);
