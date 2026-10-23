@@ -607,3 +607,436 @@ function createSaturnActivity() {
  };
  return {title: '💍 Dotknij pierścieni Saturna', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
 }
+
+function createUranusActivity() {
+ const width = 560, height = 340, cx = 280, cy = 170, radius = 104;
+ const bg = makeLayer(width, height);
+ paintActStars(bg.ctx, width, height, 90);
+ const globe = globeOf('uranus', 256, 0);
+ if (globe) globe.render(0);
+ let tilt = 0;
+ let done = false;
+ let startX = 0;
+ const lead = 'Uran stoi prosto. Przeciągnij palcem w bok, żeby przewrócić go na bok — tak jak naprawdę leży!';
+ const render = () => {
+  actCtx.drawImage(bg.canvas, 0, 0, width, height);
+  drawActRing(actCtx, cx, cy, radius, tilt, URANUS_BANDS, 'back');
+  actCtx.save();
+  actCtx.beginPath();
+  actCtx.arc(cx, cy, radius, 0, TAU);
+  actCtx.clip();
+  if (globe) actCtx.drawImage(globe.canvas, cx - radius, cy - radius, radius * 2, radius * 2);
+  else {
+   const gradient = actCtx.createRadialGradient(cx - radius * .35, cy - radius * .4, radius * .1, cx, cy, radius * 1.2);
+   gradient.addColorStop(0, '#7ed9e5');
+   gradient.addColorStop(1, '#070b16');
+   actCtx.fillStyle = gradient;
+   actCtx.beginPath();
+   actCtx.arc(cx, cy, radius, 0, TAU);
+   actCtx.fill();
+  }
+  actCtx.restore();
+  const shade = actCtx.createRadialGradient(cx - radius * .3, cy - radius * .3, radius * .1, cx, cy, radius * 1.1);
+  shade.addColorStop(0, 'rgba(0,0,10,0)');
+  shade.addColorStop(.7, 'rgba(0,0,10,.25)');
+  shade.addColorStop(1, 'rgba(0,0,10,.6)');
+  actCtx.fillStyle = shade;
+  actCtx.beginPath();
+  actCtx.arc(cx, cy, radius, 0, TAU);
+  actCtx.fill();
+  drawActRing(actCtx, cx, cy, radius, tilt, URANUS_BANDS, 'front');
+  if (done) strokeHit(cx, cy, radius + 12, radius + 12, 0);
+ };
+ return {
+  title: '🌀 Przewróć Urana na bok',
+  lead, width, height,
+  start: render,
+  onDown: point => {startX = point.x;},
+  onMove: point => {
+   if (done) return;
+   tilt = clamp(-Math.abs(point.x - startX) / 130, -1.25, 0);
+   render();
+   if (tilt <= -1.05) {
+    done = true;
+    finishActivity('Uran leży na boku! Kręci się wokół Słońca jak toczona piłka. Naukowcy myślą, że dawno temu uderzyło w niego coś wielkiego i go przewróciło.');
+   }
+  },
+  onUp: () => {},
+  frame: done ? (dt, now) => {
+   tilt = -1.15 + Math.sin(now * .002) * .04;
+   render();
+  } : undefined,
+  repeatText: lead
+ };
+}
+
+function createNeptuneActivity() {
+ const width = 560, height = 340, cx = 280, cy = 170, radius = 110;
+ const bg = makeLayer(width, height);
+ paintActStars(bg.ctx, width, height, 80);
+ drawActBall(bg.ctx, 'neptune', cx, cy, radius, '#356ce0');
+ let caught = false;
+ let angle = .8;
+ const orbitX = radius * 1.9;
+ const orbitY = radius * 1.9 * .55;
+ const lead = 'Wokół Neptuna krąży jego księżyc Tryton. Złap go — szybko!';
+ const render = () => {
+  actCtx.drawImage(bg.canvas, 0, 0, width, height);
+  actCtx.strokeStyle = 'rgba(255,217,90,.25)';
+  actCtx.lineWidth = 1.5;
+  actCtx.setLineDash([4, 7]);
+  actCtx.beginPath();
+  actCtx.ellipse(cx, cy, orbitX, orbitY, 0, 0, TAU);
+  actCtx.stroke();
+  actCtx.setLineDash([]);
+  const tx = cx + Math.cos(angle) * orbitX;
+  const ty = cy + Math.sin(angle) * orbitY;
+  actCtx.fillStyle = '#e8f2ff';
+  actCtx.beginPath();
+  actCtx.arc(tx, ty, 9, 0, TAU);
+  actCtx.fill();
+  actCtx.fillStyle = 'rgba(120,160,220,.4)';
+  actCtx.beginPath();
+  actCtx.arc(tx - 2, ty - 2, 4, 0, TAU);
+  actCtx.fill();
+  if (caught) strokeHit(tx, ty, 20, 20, 0);
+ };
+ const tap = point => {
+  if (caught) return;
+  const tx = cx + Math.cos(angle) * orbitX;
+  const ty = cy + Math.sin(angle) * orbitY;
+  if (Math.hypot(point.x - tx, point.y - ty) <= 30) {
+   caught = true;
+   render();
+   finishActivity('Złapałaś Trytona! To największy księżyc Neptuna. Jest tam strasznie zimno, a mimo to Tryton ma gejzery, które wyrzucają w górę lodowy pył.');
+  }
+ };
+ return {
+  title: '🎯 Złap Trytona',
+  lead, width, height,
+  start: render,
+  onDown: tap, onMove: () => {}, onUp: () => {},
+  frame: (dt, now) => {
+   angle = now * .0016;
+   render();
+  },
+  repeatText: lead
+ };
+}
+
+function createHeartActivity() {
+ const width = 560, height = 340, cx = 280, cy = 172, radius = 138;
+ const heart = heartPath(cx + radius * .18, cy - radius * .05, radius * .52);
+ return createTorchActivity({
+  title: '💗 Znajdź serce Plutona',
+  lead: 'Na Plutonie jest bardzo ciemno. Poruszaj palcem, żeby oświetlać powierzchnię, i znajdź wielkie serce.',
+  width, height,
+  paintScene(c) {
+   paintActStars(c, width, height, 90);
+   drawActBall(c, 'pluto', cx, cy, radius, '#c8a98c');
+   c.save();
+   c.beginPath();
+   c.arc(cx, cy, radius, 0, TAU);
+   c.clip();
+   const fill = c.createLinearGradient(cx, cy - radius, cx, cy + radius);
+   fill.addColorStop(0, 'rgba(255,246,230,.95)');
+   fill.addColorStop(1, 'rgba(234,217,194,.9)');
+   c.fillStyle = fill;
+   c.fill(heart);
+   c.restore();
+  },
+  isReveal: point => actCtx.isPointInPath(heart, point.x * ACT_SCALE, point.y * ACT_SCALE),
+  revealMark(c) {
+   c.strokeStyle = '#ffd95a';
+   c.lineWidth = 4;
+   c.stroke(heart);
+  },
+  doneText: 'Znalazłaś serce Plutona! To jasna równina Tombaugh Regio. Zdjęcia zrobiła sonda New Horizons w lipcu 2015 roku. Lewa część serca to wielka równina z zamarzniętego azotu. Azot to gaz, który jest też w naszym powietrzu — tylko na Plutonie jest tak zimno, że zamarzł.'
+ });
+}
+
+function createTailActivity() {
+ const width = 560, height = 340;
+ const sun = {x: 96, y: 252, r: 34};
+ const orbit = 178;
+ const bg = makeLayer(width, height);
+ paintActStars(bg.ctx, width, height, 110);
+ let angle = -.6;
+ let totalDrag = 0;
+ let done = false;
+ let dragging = false;
+ const lead = 'Przeciągnij palcem kometę wokół Słońca. Zobacz, w którą stronę pokazuje jej ogon!';
+ const render = now => {
+  actCtx.drawImage(bg.canvas, 0, 0, width, height);
+  actCtx.strokeStyle = 'rgba(104,171,239,.35)';
+  actCtx.lineWidth = 1.5;
+  actCtx.setLineDash([4, 7]);
+  actCtx.beginPath();
+  actCtx.arc(sun.x, sun.y, orbit, 0, TAU);
+  actCtx.stroke();
+  actCtx.setLineDash([]);
+  const glow = actCtx.createRadialGradient(sun.x, sun.y, 4, sun.x, sun.y, sun.r * 2.6);
+  glow.addColorStop(0, 'rgba(255,170,60,.5)');
+  glow.addColorStop(1, 'rgba(255,170,60,0)');
+  actCtx.fillStyle = glow;
+  actCtx.beginPath();
+  actCtx.arc(sun.x, sun.y, sun.r * 2.6, 0, TAU);
+  actCtx.fill();
+  const sg = actCtx.createRadialGradient(sun.x - 10, sun.y - 12, 2, sun.x, sun.y, sun.r);
+  sg.addColorStop(0, '#fff3a0');
+  sg.addColorStop(.6, '#ffb43a');
+  sg.addColorStop(1, '#e06a1a');
+  actCtx.fillStyle = sg;
+  actCtx.beginPath();
+  actCtx.arc(sun.x, sun.y, sun.r, 0, TAU);
+  actCtx.fill();
+  const cx = sun.x + Math.cos(angle) * orbit;
+  const cy = sun.y + Math.sin(angle) * orbit;
+  const dx = cx - sun.x, dy = cy - sun.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len;
+  const tail = 130 * (1 + Math.sin(now * .003) * .07);
+  [{color: 'rgba(170,225,255,.6)', spread: .13}, {color: 'rgba(255,232,180,.4)', spread: .24}].forEach(layer => {
+   const endX = cx + ux * tail;
+   const endY = cy + uy * tail;
+   const nx = -uy, ny = ux;
+   const grad = actCtx.createLinearGradient(cx, cy, endX, endY);
+   grad.addColorStop(0, layer.color);
+   grad.addColorStop(1, 'rgba(170,225,255,0)');
+   actCtx.fillStyle = grad;
+   actCtx.beginPath();
+   actCtx.moveTo(cx + nx * 14, cy + ny * 14);
+   actCtx.quadraticCurveTo(cx + ux * tail * .6 + nx * tail * layer.spread * .6, cy + uy * tail * .6 + ny * tail * layer.spread * .6, endX + nx * tail * layer.spread, endY + ny * tail * layer.spread);
+   actCtx.lineTo(endX - nx * tail * layer.spread, endY - ny * tail * layer.spread);
+   actCtx.quadraticCurveTo(cx + ux * tail * .6 - nx * tail * layer.spread * .6, cy + uy * tail * .6 - ny * tail * layer.spread * .6, cx - nx * 14, cy - ny * 14);
+   actCtx.closePath();
+   actCtx.fill();
+  });
+  const ng = actCtx.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, 15);
+  ng.addColorStop(0, '#6b6157');
+  ng.addColorStop(1, '#17120f');
+  actCtx.fillStyle = ng;
+  actCtx.beginPath();
+  actCtx.arc(cx, cy, 14, 0, TAU);
+  actCtx.fill();
+  actCtx.fillStyle = 'rgba(0,0,0,.4)';
+  [[-4, -3, 3], [5, 2, 2.4], [1, 6, 2]].forEach(([ox, oy, r]) => {
+   actCtx.beginPath();
+   actCtx.arc(cx + ox, cy + oy, r, 0, TAU);
+   actCtx.fill();
+  });
+  if (done) strokeHit(cx, cy, 26, 26, 0);
+ };
+ const angleFrom = point => Math.atan2(point.y - sun.y, point.x - sun.x);
+ const move = point => {
+  if (!dragging || done) return;
+  const next = angleFrom(point);
+  let delta = next - angle;
+  while (delta > Math.PI) delta -= TAU;
+  while (delta < -Math.PI) delta += TAU;
+  totalDrag += Math.abs(delta);
+  angle = next;
+  render(performance.now());
+  if (totalDrag > 2.4) {
+   done = true;
+   finishActivity('Widzisz? Ogon zawsze wskazuje od Słońca! Odpycha go wiatr słoneczny. Nawet gdy kometa odlatuje, ogon jest przed nią — jak włosy, gdy biegniesz pod wiatr.');
+  }
+ };
+ return {
+  title: '☄️ Przeciągnij kometę',
+  lead, width, height,
+  start: () => render(performance.now()),
+  onDown: point => {
+   dragging = true;
+   angle = angleFrom(point);
+   render(performance.now());
+  },
+  onMove: move,
+  onUp: () => {dragging = false;},
+  frame: (dt, now) => {if (!done) render(now);},
+  repeatText: lead
+ };
+}
+
+/* ---------- Księżyc: znajdź różnice (scena z poprzedniej wersji) ---------- */
+
+const MOON_DIFFS = [
+ {id: 'flag', shape: 'circle', x: 343, y: 100, r: 36, text: 'Flaga. Na Księżycu nie ma powietrza, więc nie ma wiatru. Flaga nie powiewa, więc astronauci dali w niej poziomy drążek, żeby się rozpościerała.'},
+ {id: 'earth', shape: 'circle', x: 470, y: 42, r: 30, text: 'Ziemia na niebie. Z Księżyca widać Ziemię jako dużą niebieską kulę. Z jednej strony Księżyca wisi ona prawie w jednym miejscu nieba.'},
+ {id: 'steps', shape: 'circle', x: 168, y: 172, r: 50, text: 'Ślady butów. Na Księżycu nie ma wiatru ani deszczu, więc ślady astronautów mogą zostać tam bardzo, bardzo długo.'},
+ {id: 'crater', shape: 'circle', x: 445, y: 178, r: 38, text: 'Krater. To ślad po uderzeniu meteorytu. Na Księżycu jest ich mnóstwo, bo nie ma atmosfery, która spaliłaby meteory.'},
+ {id: 'sky', shape: 'sky', text: 'Niebo. Na Księżycu niebo jest czarne nawet w dzień, bo nie ma atmosfery, która rozprasza światło. Na Ziemi dlatego niebo jest niebieskie.'}
+];
+
+function drawMoonScene(c, top, original) {
+ c.save();
+ c.translate(0, top);
+ c.beginPath();
+ c.rect(0, 0, 560, 200);
+ c.clip();
+ if (original) {
+  c.fillStyle = '#02030a';
+  c.fillRect(0, 0, 560, 200);
+  c.fillStyle = '#fff';
+  [[40, 30], [120, 70], [200, 25], [270, 60], [390, 20], [520, 80], [90, 100], [430, 90], [300, 15], [560, 40]].forEach(([x, y]) => c.fillRect(x, y, 2, 2));
+ } else {
+  const sky = c.createLinearGradient(0, 0, 0, 130);
+  sky.addColorStop(0, '#3f86dc');
+  sky.addColorStop(1, '#a9d4f7');
+  c.fillStyle = sky;
+  c.fillRect(0, 0, 560, 200);
+ }
+ const ground = c.createLinearGradient(0, 128, 0, 200);
+ ground.addColorStop(0, '#9a9aa2');
+ ground.addColorStop(1, '#5a5a62');
+ c.fillStyle = ground;
+ c.beginPath();
+ c.moveTo(0, 140);
+ c.quadraticCurveTo(140, 122, 280, 134);
+ c.quadraticCurveTo(420, 146, 560, 128);
+ c.lineTo(560, 200);
+ c.lineTo(0, 200);
+ c.closePath();
+ c.fill();
+ const crater = (x, y, w, h) => {
+  c.fillStyle = 'rgba(40,40,48,.5)';
+  c.beginPath();
+  c.ellipse(x, y, w, h, 0, 0, TAU);
+  c.fill();
+  c.strokeStyle = 'rgba(210,210,220,.45)';
+  c.lineWidth = 2;
+  c.beginPath();
+  c.ellipse(x, y - 1, w, h, 0, Math.PI, TAU);
+  c.stroke();
+ };
+ crater(90, 172, 34, 9);
+ crater(360, 184, 44, 11);
+ crater(520, 160, 24, 7);
+ if (original) crater(445, 178, 36, 10);
+ c.fillStyle = '#c9a24b';
+ c.fillRect(55, 105, 50, 32);
+ c.fillStyle = '#e8e8ee';
+ c.fillRect(62, 96, 36, 10);
+ c.strokeStyle = '#d0d0d8';
+ c.lineWidth = 3;
+ [[60, 137, 40, 160], [100, 137, 122, 160], [80, 137, 80, 160]].forEach(([fromX, fromY, toX, toY]) => {
+  c.beginPath();
+  c.moveTo(fromX, fromY);
+  c.lineTo(toX, toY);
+  c.stroke();
+ });
+ c.fillStyle = '#9a9aa4';
+ c.fillRect(212, 110, 10, 28);
+ c.fillStyle = '#f4f4f8';
+ c.fillRect(221, 108, 28, 34);
+ c.fillRect(223, 140, 10, 26);
+ c.fillRect(237, 140, 10, 26);
+ c.fillStyle = '#6a6a74';
+ c.fillRect(222, 164, 12, 6);
+ c.fillRect(236, 164, 12, 6);
+ c.fillStyle = '#f4f4f8';
+ c.beginPath();
+ c.arc(235, 94, 15, 0, TAU);
+ c.fill();
+ const visor = c.createLinearGradient(225, 86, 245, 102);
+ visor.addColorStop(0, '#f6d77a');
+ visor.addColorStop(1, '#a8742a');
+ c.fillStyle = visor;
+ c.beginPath();
+ c.ellipse(238, 94, 9, 8, 0, 0, TAU);
+ c.fill();
+ c.strokeStyle = '#f4f4f8';
+ c.lineWidth = 8;
+ c.lineCap = 'round';
+ c.beginPath();
+ c.moveTo(249, 116);
+ c.lineTo(268, 126);
+ c.stroke();
+ if (original) {
+  c.strokeStyle = '#d8d8e0';
+  c.lineWidth = 3;
+  c.beginPath();
+  c.moveTo(320, 150);
+  c.lineTo(320, 82);
+  c.moveTo(320, 84);
+  c.lineTo(366, 84);
+  c.stroke();
+  c.fillStyle = '#ffffff';
+  c.fillRect(320, 85, 46, 28);
+  c.fillStyle = '#d23a3a';
+  [86, 93, 100, 107].forEach(stripeY => c.fillRect(320, stripeY, 46, 3.5));
+  c.fillStyle = '#243a8a';
+  c.fillRect(320, 85, 20, 14);
+  const planet = c.createRadialGradient(464, 36, 2, 470, 42, 22);
+  planet.addColorStop(0, '#9ad0ff');
+  planet.addColorStop(1, '#2a62c0');
+  c.fillStyle = planet;
+  c.beginPath();
+  c.arc(470, 42, 20, 0, TAU);
+  c.fill();
+  c.fillStyle = '#4eaa69';
+  c.beginPath();
+  c.ellipse(464, 40, 8, 6, -.4, 0, TAU);
+  c.ellipse(476, 50, 6, 8, .5, 0, TAU);
+  c.fill();
+  c.fillStyle = 'rgba(255,255,255,.75)';
+  c.beginPath();
+  c.ellipse(472, 33, 9, 3, .2, 0, TAU);
+  c.fill();
+  c.fillStyle = 'rgba(30,30,38,.6)';
+  for (let step = 0; step < 6; step++) {
+   c.beginPath();
+   c.ellipse(120 + step * 17, step % 2 ? 176 : 168, 6, 2.6, 0, 0, TAU);
+   c.fill();
+  }
+ }
+ c.restore();
+}
+
+function createMoonActivity() {
+ const width = 560;
+ const height = 412;
+ const found = new Set();
+ const scene = makeLayer(width, height);
+ drawMoonScene(scene.ctx, 0, true);
+ drawMoonScene(scene.ctx, 212, false);
+ scene.ctx.fillStyle = '#020611';
+ scene.ctx.fillRect(0, 200, width, 12);
+ const lead = 'Te dwa obrazki różnią się pięcioma szczegółami. Dotknij miejsca, w którym coś się nie zgadza. Obrazek 1 pokazuje prawdziwy Księżyc.';
+ const marks = diff => {
+  actCtx.strokeStyle = '#ffd95a';
+  actCtx.lineWidth = 4;
+  [0, 212].forEach(offsetY => {
+   actCtx.beginPath();
+   if (diff.shape === 'circle') actCtx.arc(diff.x, diff.y + offsetY, diff.r, 0, TAU);
+   else actCtx.rect(6, offsetY + 6, 548, 90);
+   actCtx.stroke();
+  });
+ };
+ const render = () => {
+  actCtx.drawImage(scene.canvas, 0, 0, width, height);
+  actCtx.font = '700 14px system-ui, sans-serif';
+  actCtx.fillStyle = 'rgba(0,0,0,.55)';
+  actCtx.fillRect(8, 172, 78, 22);
+  actCtx.fillRect(8, 384, 78, 22);
+  actCtx.fillStyle = '#fff';
+  actCtx.fillText('Obrazek 1', 14, 188);
+  actCtx.fillText('Obrazek 2', 14, 400);
+  MOON_DIFFS.filter(diff => found.has(diff.id)).forEach(marks);
+ };
+ const tap = point => {
+  if (point.y > 200 && point.y < 212) return;
+  const localY = point.y >= 212 ? point.y - 212 : point.y;
+  const hit = MOON_DIFFS.find(diff => {
+   if (diff.shape === 'circle') return Math.hypot(point.x - diff.x, localY - diff.y) <= diff.r;
+   return localY < 105;
+  });
+  if (!hit || found.has(hit.id)) return;
+  found.add(hit.id);
+  render();
+  const summary = found.size === MOON_DIFFS.length ? ' Znalazłaś wszystkie różnice! Prawdziwy Księżyc wygląda jak Obrazek 1.' : '';
+  logActivity(`Znaleziono ${found.size} z ${MOON_DIFFS.length}. ${hit.text}${summary}`);
+  if (found.size === MOON_DIFFS.length) markTaskDone('earth');
+ };
+ return {title: '🌙 Księżyc: znajdź 5 różnic', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
+}
