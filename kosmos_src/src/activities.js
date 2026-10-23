@@ -617,6 +617,57 @@ function createSaturnActivity() {
  return {title: '💍 Dotknij pierścieni Saturna', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
 }
 
+function createBeltActivity() {
+ const width = 560, height = 340;
+ const bg = makeLayer(width, height);
+ paintActStars(bg.ctx, width, height, 100);
+ let seed = 42;
+ const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+ const rocks = Array.from({length: 26}, () => ({
+  x: 60 + random() * (width - 120),
+  y: 40 + random() * (height - 80),
+  r: 3 + random() * 5
+ }));
+ const ceres = {x: 120 + random() * (width - 240), y: 90 + random() * (height - 180), r: 16};
+ let found = false;
+ const lead = 'To pas planetoid — miliony skał między Marsem a Jowiszem. Największa skała to planeta karłowata Ceres. Znajdź ją i dotknij!';
+ const render = () => {
+  actCtx.drawImage(bg.canvas, 0, 0, width, height);
+  rocks.forEach(rock => {
+   actCtx.fillStyle = '#8d8781';
+   actCtx.beginPath();
+   actCtx.arc(rock.x, rock.y, rock.r, 0, TAU);
+   actCtx.fill();
+   actCtx.fillStyle = 'rgba(255,255,255,.18)';
+   actCtx.beginPath();
+   actCtx.arc(rock.x - rock.r * .3, rock.y - rock.r * .3, rock.r * .5, 0, TAU);
+   actCtx.fill();
+  });
+  actCtx.fillStyle = '#9a948c';
+  actCtx.beginPath();
+  actCtx.arc(ceres.x, ceres.y, ceres.r, 0, TAU);
+  actCtx.fill();
+  actCtx.fillStyle = 'rgba(255,255,255,.9)';
+  actCtx.beginPath();
+  actCtx.arc(ceres.x + ceres.r * .25, ceres.y - ceres.r * .25, Math.max(1, ceres.r * .16), 0, TAU);
+  actCtx.fill();
+  if (found) strokeHit(ceres.x, ceres.y, ceres.r + 6, ceres.r + 6, 0);
+ };
+ const tap = point => {
+  if (found) return;
+  if (Math.hypot(point.x - ceres.x, point.y - ceres.y) <= ceres.r + 6) {
+   found = true;
+   fxPlay('ok');
+   render();
+   finishActivity('Brawo, to Ceres! Największa skała w pasie planetoid. Jest taka duża, że nazywamy ją planetą karłowatą. Ma w kraterach sól po dawnej słonej wodzie!');
+  } else {
+   const rock = rocks.find(r => Math.hypot(point.x - r.x, point.y - r.y) <= r.r + 4);
+   if (rock) sayNow('To zwykła planetoida — mała skała. Ceres jest większa! Szukaj największej kuli.');
+  }
+ };
+ return {title: '🪨 Znajdź Ceres w pasie planetoid', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
+}
+
 function createUranusActivity() {
  const width = 560, height = 340, cx = 280, cy = 170, radius = 104;
  const bg = makeLayer(width, height);
@@ -1461,6 +1512,7 @@ const activityFactories = {
  neptune: createNeptuneActivity,
  heart: createHeartActivity,
  tail: createTailActivity,
+ belt: createBeltActivity,
  order: createOrderActivity,
  seasons: createSeasonsActivity,
  galilean: createGalileanActivity

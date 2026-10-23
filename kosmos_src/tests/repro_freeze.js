@@ -37,6 +37,12 @@ function makeCtx() {
 }
 
 function makeEl(id) {
+  /* realistyczne recty paneli: info po prawej, controls na dole — layout() liczy z nich scenę */
+  const rect = id === 'info'
+    ? {left: 900, top: 18, right: 1280, bottom: 718, width: 380, height: 700}
+    : id === 'controls'
+      ? {left: 320, top: 730, right: 960, bottom: 782, width: 640, height: 52}
+      : {left: 0, top: 0, right: 1280, bottom: 800, width: 1280, height: 800};
   const el = {
     id, hidden: false, textContent: '', innerHTML: '', value: '', checked: false,
     disabled: false, style: {}, dataset: {}, scrollTop: 0, firstChild: null,
@@ -48,7 +54,7 @@ function makeEl(id) {
     querySelector: () => makeEl('q'),
     querySelectorAll: () => [],
     closest: () => null,
-    getBoundingClientRect: () => ({left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600}),
+    getBoundingClientRect: () => rect,
     setPointerCapture() {},
     getContext: () => makeCtx()
   };
@@ -157,11 +163,14 @@ function runFrames(count) {
       const moon = t.view.moonTargets[0];
       t.pickAt(moon.x, moon.y, 'mouse');
       runFrames(10);
+      /* klik w księżyc ustawia własny zoom — czekamy aż dojdzie i moonTargets się odświeżą */
+      for (let i = 0; i < 200 && !t.view.moonTargets.length; i++) { runFrames(5); }
       t.draw();
       const selectedMoon = t.view.moon && t.view.moon.id;
       if (!selectedMoon) throw new Error('klik w księżyc nie zaznaczył go');
       /* odkliknięcie: ponowny klik w ten sam księżyc musi go odznaczyć */
-      const again = t.view.moonTargets.find(m => m.moon.id === selectedMoon) || t.view.moonTargets[0];
+      const again = t.view.moonTargets.find(m => m.moon.id === selectedMoon);
+      if (!again) throw new Error('księżyc zniknął z celów po zaznaczeniu');
       t.pickAt(again.x, again.y, 'mouse');
       if (t.view.moon) throw new Error('ponowny klik w księżyc go nie odznaczył');
       runFrames(60);

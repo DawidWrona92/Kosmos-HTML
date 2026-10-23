@@ -176,6 +176,17 @@ function chooseFind(target) {
  readFrom(0, true);
 }
 
+function moonZoom(moon) {
+ const parent = bodies[view.selected];
+ const fit = fitScale();
+ const moonUnit = Math.max(parent.radius * fit * 1.25 * moon.size * .6, .01);
+ const orbitUnit = Math.max(parent.radius * fit * 1.25 * moon.moonOrbit, 1);
+ const half = Math.min(view.free.right - view.free.left, view.free.bottom - view.free.top) / 2;
+ /* planeta musi po przybliżeniu wciąż mieć radius >= 52 px, żeby księżyce i sondy były widoczne */
+ const maxZoom = 52 / Math.max(parent.radius * fit * 1.25, .01);
+ return clamp(Math.min(22 / moonUnit, (half - 60) / orbitUnit, maxZoom), MIN_ZOOM, MAX_ZOOM);
+}
+
 function chooseMoon(target) {
  hasChosen = true;
  view.find = null;
@@ -184,6 +195,7 @@ function chooseMoon(target) {
  factIndex = 0;
  markDiscovered(target.moon.id);
  addRipple(target);
+ view.zoomGoal = moonZoom(target.moon);
  renderInfo();
  readFrom(0, true);
 }
@@ -223,6 +235,10 @@ function zoomOutLevel() {
   view.level--;
   view.galaxy = null;
   hasChosen = false;
+  view.moon = null;
+  view.find = null;
+  view.ring = null;
+  if (view.level === 0) setSelection(false, view.selected);
   view.zoom = 1;
   view.zoomGoal = 1;
   view.carryX = 0;
@@ -284,6 +300,7 @@ function pickAt(clientX, clientY, pointerType) {
     if (view.moon === target.moon) {
      view.moon = null;
      factIndex = 0;
+     view.zoomGoal = followZoom(view.selected);
      renderInfo();
      readFrom(0, false);
     } else chooseMoon(target);
@@ -333,6 +350,7 @@ function pickAt(clientX, clientY, pointerType) {
    view.moon = null;
    view.ring = null;
    factIndex = 0;
+   view.zoomGoal = followZoom(view.selected);
    renderInfo();
    readFrom(0, false);
   }

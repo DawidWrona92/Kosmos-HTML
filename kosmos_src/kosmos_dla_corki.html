@@ -745,6 +745,13 @@ const bodies = [
    'W lipcu 2015 roku sonda New Horizons przeleciała tuż obok Plutona. Zrobiła zdjęcia serca, gór z lodu i niebieskiej mgiełki w atmosferze. To był pierwszy raz, kiedy zobaczyliśmy Plutona z bliska.',
    'Największy księżyc Plutona nazywa się Charon. Jest tak duży, że Pluton i Charon krążą wokół wspólnego punktu, jak w tańcu. Pluton ma w sumie pięć księżyców. Jeden rok na Plutonie trwa 248 naszych lat.'
   ]},
+ {id: 'belt', kind: 'belt', name: 'Pas planetoid', type: 'Pierścień skał między Marsem a Jowiszem', intro: 'Pas planetoid.', color: '#a7a5a1', radius: 9, orbit: 223, period: 1682, startPhase: 2.9, activity: 'belt',
+  facts: [
+   'Pas planetoid to miliony skał krążących między Marsem a Jowiszem. Największa z nich to Ceres — planeta karłowata, którą możesz tu kliknąć!',
+   'Choć skał jest bardzo dużo, wszystkie razem ważą mniej niż nasz Księżyc. Między skałami jest mnóstwo miejsca, więc sondy przelatują przez pas bez obawy.',
+   'Skały w pasie to pozostałości z czasów, gdy rodził się Układ Słoneczny. Planeta z nich nie powstała, bo pobliski Jowisz ciągnął je swoją wielką siłą i rozproszył.',
+   'Największe skały mają własne imiona. Oprócz Ceres to też Westa i Palas — każda jest inna i naukowcy badają je jak kosmiczne skarby.'
+  ]},
  {id: 'halley', kind: 'comet', name: 'Kometa Halleya', type: 'Kometa', intro: 'Kometa Halleya.', color: '#dff1ff', radius: 2.5, period: 27759, startAnomaly: 5.68, semiMajor: 850, eccentricity: .85, perihelionAngle: 2.2, activity: 'tail',
   facts: [
    'Kometa to wielka, brudna kula z lodu i pyłu. Czasem nazywa się ją brudną śnieżką. Gdy zbliża się do Słońca, lód paruje i robi się z niego jasny ogon.',
@@ -982,6 +989,14 @@ const MOONS = {
     'Tryton to największy księżyc Neptuna. Krąży w przeciwną stronę niż planeta się obraca!',
     'Ma lodowe gejzery, które wyrzucają azot wysoko w niebo — na wysokość ośmiu kilometrów!',
     'Tryton powoli zbliża się do Neptuna. Za miliony lat może się rozpaść i zrobić pierścień wokół planety.'
+   ]}
+ ],
+ pluto: [
+  {id: 'charon', parentId: 'pluto', name: 'Charon', type: 'Księżyc Plutona', intro: 'Charon.', color: '#b8b0aa', size: .5, moonOrbit: 2.4, period: 6.39, startPhase: 1.1, tilt: .3,
+   facts: [
+    'Charon to największy księżyc Plutona. Jest tak duży, że Pluton i Charon krążą razem wokół wspólnego punktu — jak w tańcu!',
+    'Charon ma na sobie wielki ciemny obszar na biegunie. Naukowcy nazwali go Mordorem — tak jak złośliwą krainę z bajki!',
+    'Na Charonie jest wielki kanion. Gdyby przeciągnąć go dalej, okrążyłby cały księżyc. Zrobiła go wielka szczelina w lodzie.'
    ]}
  ]
 };
@@ -1286,6 +1301,10 @@ function cometState(body) {
 
 function bodyOffset(body, scaleValue) {
  if (body.kind === 'star') return {x: 0, y: 0, distance: 0};
+ if (body.kind === 'belt') {
+  const phase = orbitPhase(body);
+  return {x: Math.cos(phase) * body.orbit * scaleValue, y: Math.sin(phase) * body.orbit * scaleValue * view.tilt, distance: body.orbit};
+ }
  if (body.kind === 'comet') {
   const state = cometState(body);
   return {x: state.x * scaleValue, y: state.y * scaleValue * view.tilt, distance: state.distance};
@@ -1304,6 +1323,7 @@ function bodyOffset(body, scaleValue) {
 }
 
 function bodyRadius(body, scaleValue) {
+ if (body.kind === 'belt') return Math.max(16, (BELT_OUTER - BELT_INNER) * scaleValue * .3);
  return Math.max(3 + body.radius * .3, body.radius * scaleValue * 1.25);
 }
 
@@ -1618,7 +1638,7 @@ function drawOrbits(frame) {
   if (body.kind === 'star' || body.kind === 'moon') return;
   const selected = index === view.selected;
   ctx.strokeStyle = selected ? 'rgba(88,185,255,.6)' : 'rgba(104,171,239,.29)';
-  ctx.setLineDash(body.kind === 'planet' ? [] : [4, 6]);
+  ctx.setLineDash(body.kind === 'planet' || body.kind === 'belt' ? [] : [4, 6]);
   ctx.beginPath();
   if (body.kind === 'comet') {
    for (let step = 0; step <= 120; step++) {
@@ -1647,6 +1667,20 @@ function drawOrbits(frame) {
 
 function drawAsteroids(frame) {
  ctx.fillStyle = '#a7a5a1';
+ const beltItem = view.targets && view.targets.find(item => item.body.kind === 'belt');
+ const focused = beltItem && view.following && view.selected === beltItem.index;
+ if (focused) {
+  /* przybliżenie pasa: wyraźniejsze skały i lekka mgiełka — widać, że to nie pusty pierścień */
+  const spread = Math.max(1, frame.scale);
+  ctx.save();
+  ctx.globalAlpha = .12;
+  ctx.strokeStyle = '#cfc9c0';
+  ctx.lineWidth = (BELT_OUTER - BELT_INNER) * frame.scale;
+  ctx.beginPath();
+  ctx.ellipse(frame.sunX, frame.sunY, (BELT_INNER + BELT_OUTER) / 2 * frame.scale, (BELT_INNER + BELT_OUTER) / 2 * frame.scale * view.tilt, 0, 0, TAU);
+  ctx.stroke();
+  ctx.restore();
+ }
  for (const rock of asteroids) {
   const phase = rock.phase + simDays / rock.period * TAU + view.angle;
   const x = frame.sunX + Math.cos(phase) * rock.orbit * frame.scale;
@@ -1793,68 +1827,40 @@ function drawComet(item, frame) {
  const length = Math.hypot(directionX, directionY) || 1;
  const unitX = directionX / length;
  const unitY = directionY / length;
- const normalX = -unitY;
- const normalY = unitX;
  const zoomed = radius > 22;
- /* jądro: małe i ciemne, coma: duża, jasna otoczka — proporcja jak w naturze */
- const nucleusRadius = zoomed ? Math.min(radius, 26) : Math.min(radius, 4);
- const comaRadius = nucleusRadius * (zoomed ? 2.4 : 7.5);
+ const nucleusRadius = zoomed ? Math.min(radius, 26) : Math.min(radius, 5);
  const activity = Math.pow(Math.max(0, 1 - distance / 950), .8);
- const tailLength = activity * 170 * (zoomed ? 2.6 : clamp(frame.scale, .5, 1.5));
- /* ogon jonowy — wąski, prosty, niebieskawy; ogon pyłowy — szerszy, lekko zakrzywiony, żółtawy */
- if (tailLength > 4) {
-  const ionEndX = x + unitX * tailLength;
-  const ionEndY = y + unitY * tailLength;
-  const ionSpread = comaRadius * .55;
-  const ionEndSpread = tailLength * .05;
-  let ionGradient = ctx.createLinearGradient(x, y, ionEndX, ionEndY);
-  ionGradient.addColorStop(0, 'rgba(150,215,255,.85)');
-  ionGradient.addColorStop(.5, 'rgba(120,190,255,.35)');
-  ionGradient.addColorStop(1, 'rgba(120,190,255,0)');
-  ctx.fillStyle = ionGradient;
-  ctx.beginPath();
-  ctx.moveTo(x + normalX * ionSpread, y + normalY * ionSpread);
-  ctx.quadraticCurveTo(x + unitX * tailLength * .55 + normalX * ionEndSpread * .7, y + unitY * tailLength * .55 + normalY * ionEndSpread * .7, ionEndX + normalX * ionEndSpread, ionEndY + normalY * ionEndSpread);
-  ctx.lineTo(ionEndX - normalX * ionEndSpread, ionEndY - normalY * ionEndSpread);
-  ctx.quadraticCurveTo(x + unitX * tailLength * .55 - normalX * ionEndSpread * .7, y + unitY * tailLength * .55 - normalY * ionEndSpread * .7, x - normalX * ionSpread, y - normalY * ionSpread);
-  ctx.closePath();
-  ctx.fill();
-  const curve = tailLength * .22;
-  const dustEndX = x + unitX * tailLength * .78 + normalX * curve;
-  const dustEndY = y + unitY * tailLength * .78 + normalY * curve;
-  const dustSpread = comaRadius * 1.2;
-  const dustEndSpread = tailLength * .22;
-  let dustGradient = ctx.createLinearGradient(x, y, dustEndX, dustEndY);
-  dustGradient.addColorStop(0, 'rgba(255,225,170,.6)');
-  dustGradient.addColorStop(.6, 'rgba(255,205,130,.25)');
-  dustGradient.addColorStop(1, 'rgba(255,205,130,0)');
-  ctx.fillStyle = dustGradient;
-  ctx.beginPath();
-  ctx.moveTo(x + normalX * dustSpread, y + normalY * dustSpread);
-  ctx.quadraticCurveTo(x + unitX * tailLength * .4 + normalX * (dustEndSpread * .5 + curve * .4), y + unitY * tailLength * .4 + normalY * (dustEndSpread * .5 + curve * .4), dustEndX + normalX * dustEndSpread, dustEndY + normalY * dustEndSpread);
-  ctx.lineTo(dustEndX - normalX * dustEndSpread, dustEndY - normalY * dustEndSpread);
-  ctx.quadraticCurveTo(x + unitX * tailLength * .4 - normalX * (dustEndSpread * .5 + curve * .4), y + unitY * tailLength * .4 - normalY * (dustEndSpread * .5 + curve * .4), x - normalX * dustSpread, y - normalY * dustSpread);
-  ctx.closePath();
-  ctx.fill();
+ /* ogon zawsze od Słońca: jonowy (w±ski, prosty, niebieski) + py³owy (szerszy, ³agodnie zakrzywiony) */
+ const tailLength = activity * 170 * (zoomed ? 2.2 : clamp(frame.scale, .5, 1.5));
+ if (tailLength > 3) {
+  const normalX = -unitY;
+  const normalY = unitX;
+  const layers = [
+   {color: 'rgba(170,225,255,.65)', curve: 0, endSpread: .14},
+   {color: 'rgba(255,232,180,.4)', curve: .2, endSpread: .24}
+  ];
+  for (const layer of layers) {
+   const endX = x + unitX * tailLength + normalX * tailLength * layer.curve;
+   const endY = y + unitY * tailLength + normalY * tailLength * layer.curve;
+   const baseSpread = nucleusRadius * 1.1;
+   const endSpread = tailLength * layer.endSpread;
+   const gradient = ctx.createLinearGradient(x, y, endX, endY);
+   gradient.addColorStop(0, layer.color);
+   gradient.addColorStop(1, 'rgba(170,225,255,0)');
+   ctx.fillStyle = gradient;
+   ctx.beginPath();
+   ctx.moveTo(x + normalX * baseSpread, y + normalY * baseSpread);
+   ctx.quadraticCurveTo(x + unitX * tailLength * .6 + normalX * endSpread * .6, y + unitY * tailLength * .6 + normalY * endSpread * .6, endX + normalX * endSpread, endY + normalY * endSpread);
+   ctx.lineTo(endX - normalX * endSpread, endY - normalY * endSpread);
+   ctx.quadraticCurveTo(x + unitX * tailLength * .6 - normalX * endSpread * .6, y + unitY * tailLength * .6 - normalY * endSpread * .6, x - normalX * baseSpread, y - normalY * baseSpread);
+   ctx.closePath();
+   ctx.fill();
+  }
  }
- /* coma — rozmyta, jasna otoczka, lekko przesunięta od Słońca */
- const comaCenterX = x + unitX * comaRadius * .18;
- const comaCenterY = y + unitY * comaRadius * .18;
- const coma = ctx.createRadialGradient(comaCenterX, comaCenterY, comaRadius * .1, comaCenterX, comaCenterY, comaRadius);
- coma.addColorStop(0, 'rgba(240,250,255,.95)');
- coma.addColorStop(.45, 'rgba(190,230,255,.55)');
- coma.addColorStop(1, 'rgba(150,210,255,0)');
- ctx.fillStyle = coma;
- ctx.beginPath();
- ctx.arc(comaCenterX, comaCenterY, comaRadius, 0, TAU);
- ctx.fill();
- /* jądro */
+ glow(x, y, Math.min(radius, 8) * (zoomed ? 2 : 1), 'rgba(190,235,255,.45)');
  if (zoomed) drawNucleus(x, y, nucleusRadius, -unitX, -unitY);
  else {
-  const nucleus = ctx.createRadialGradient(x - nucleusRadius * .35, y - nucleusRadius * .35, nucleusRadius * .2, x, y, nucleusRadius * 1.1);
-  nucleus.addColorStop(0, '#8a8177');
-  nucleus.addColorStop(1, '#241f1c');
-  ctx.fillStyle = nucleus;
+  ctx.fillStyle = '#eaf7ff';
   ctx.beginPath();
   ctx.arc(x, y, nucleusRadius, 0, TAU);
   ctx.fill();
@@ -1914,6 +1920,11 @@ function drawTexturedBall(body, x, y, radius, frame) {
  ctx.restore();
  shadeBall(x, y, radius, frame);
  return true;
+}
+
+function drawBeltTarget(item) {
+ /* widoczny „biegun” pasa — duży przezroczysty cel do kliknięcia; kropki rysuje drawAsteroids */
+ drawAttention(item.x, item.y, item.radius, item.index);
 }
 
 function drawPlanet(item, frame) {
@@ -2226,7 +2237,7 @@ function draw() {
  view.targets = planetItems;
  const behind = planetItems.filter(item => item.y < frame.sunY).sort((a, b) => a.y - b.y);
  const inFront = planetItems.filter(item => item.y >= frame.sunY).sort((a, b) => a.y - b.y);
- const paint = item => item.body.kind === 'comet' ? drawComet(item, frame) : drawPlanet(item, frame);
+ const paint = item => item.body.kind === 'comet' ? drawComet(item, frame) : item.body.kind === 'belt' ? drawBeltTarget(item) : drawPlanet(item, frame);
  behind.forEach(paint);
  drawSun(frame);
  inFront.forEach(paint);
@@ -2559,6 +2570,17 @@ function chooseFind(target) {
  readFrom(0, true);
 }
 
+function moonZoom(moon) {
+ const parent = bodies[view.selected];
+ const fit = fitScale();
+ const moonUnit = Math.max(parent.radius * fit * 1.25 * moon.size * .6, .01);
+ const orbitUnit = Math.max(parent.radius * fit * 1.25 * moon.moonOrbit, 1);
+ const half = Math.min(view.free.right - view.free.left, view.free.bottom - view.free.top) / 2;
+ /* planeta musi po przybliżeniu wciąż mieć radius >= 52 px, żeby księżyce i sondy były widoczne */
+ const maxZoom = 52 / Math.max(parent.radius * fit * 1.25, .01);
+ return clamp(Math.min(22 / moonUnit, (half - 60) / orbitUnit, maxZoom), MIN_ZOOM, MAX_ZOOM);
+}
+
 function chooseMoon(target) {
  hasChosen = true;
  view.find = null;
@@ -2567,6 +2589,7 @@ function chooseMoon(target) {
  factIndex = 0;
  markDiscovered(target.moon.id);
  addRipple(target);
+ view.zoomGoal = moonZoom(target.moon);
  renderInfo();
  readFrom(0, true);
 }
@@ -2606,6 +2629,10 @@ function zoomOutLevel() {
   view.level--;
   view.galaxy = null;
   hasChosen = false;
+  view.moon = null;
+  view.find = null;
+  view.ring = null;
+  if (view.level === 0) setSelection(false, view.selected);
   view.zoom = 1;
   view.zoomGoal = 1;
   view.carryX = 0;
@@ -2667,6 +2694,7 @@ function pickAt(clientX, clientY, pointerType) {
     if (view.moon === target.moon) {
      view.moon = null;
      factIndex = 0;
+     view.zoomGoal = followZoom(view.selected);
      renderInfo();
      readFrom(0, false);
     } else chooseMoon(target);
@@ -2716,6 +2744,7 @@ function pickAt(clientX, clientY, pointerType) {
    view.moon = null;
    view.ring = null;
    factIndex = 0;
+   view.zoomGoal = followZoom(view.selected);
    renderInfo();
    readFrom(0, false);
   }
@@ -2864,9 +2893,14 @@ canvas.addEventListener('pointermove', event => {
  if (gesture.kind === 'pinch') {
   if (pointers.size >= 2) {
    const next = clamp(gesture.startZoom * pointerDistance() / gesture.startDistance, MIN_ZOOM, MAX_ZOOM);
-   if (view.level < 0 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && zoomInLevel()) {
+   if (view.level < 0 && next >= MAX_ZOOM * .999 && gesture.startZoom < MAX_ZOOM * .99 && zoomInLevel()) {
     fxPlay('whoosh');
     view.zoom = view.zoomGoal = 1;
+    gesture.startZoom = 1;
+    return;
+   }
+   if (view.level === 0 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && !view.following && zoomOutLevel()) {
+    fxPlay('whoosh');
     gesture.startZoom = 1;
     return;
    }
@@ -2908,10 +2942,12 @@ canvas.addEventListener('pointercancel', endPointer);
 canvas.addEventListener('wheel', event => {
  event.preventDefault();
  const delta = event.deltaMode === 1 ? event.deltaY * 33 : event.deltaY;
- if (delta > 0 && view.zoomGoal >= MAX_ZOOM * .999 && !view.following) {
+ /* oddalanie: planeta -> Układ Słoneczny -> Ramię Oriona -> Droga Mleczna */
+ if (delta > 0 && view.zoomGoal <= MIN_ZOOM * 1.001 && !view.following) {
   if (zoomOutLevel()) {fxPlay('whoosh'); return;}
  }
- if (delta < 0 && view.level < 0 && view.zoomGoal <= MIN_ZOOM * 1.001) {
+ /* przybliżanie z poziomów galaktycznych */
+ if (delta < 0 && view.level < 0 && view.zoomGoal >= MAX_ZOOM * .999) {
   if (zoomInLevel()) {fxPlay('whoosh'); return;}
  }
  view.zoomGoal = clamp(view.zoomGoal * Math.exp(-delta * .0015), MIN_ZOOM, MAX_ZOOM);
@@ -3770,6 +3806,57 @@ function createSaturnActivity() {
  return {title: '💍 Dotknij pierścieni Saturna', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
 }
 
+function createBeltActivity() {
+ const width = 560, height = 340;
+ const bg = makeLayer(width, height);
+ paintActStars(bg.ctx, width, height, 100);
+ let seed = 42;
+ const random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+ const rocks = Array.from({length: 26}, () => ({
+  x: 60 + random() * (width - 120),
+  y: 40 + random() * (height - 80),
+  r: 3 + random() * 5
+ }));
+ const ceres = {x: 120 + random() * (width - 240), y: 90 + random() * (height - 180), r: 16};
+ let found = false;
+ const lead = 'To pas planetoid — miliony skał między Marsem a Jowiszem. Największa skała to planeta karłowata Ceres. Znajdź ją i dotknij!';
+ const render = () => {
+  actCtx.drawImage(bg.canvas, 0, 0, width, height);
+  rocks.forEach(rock => {
+   actCtx.fillStyle = '#8d8781';
+   actCtx.beginPath();
+   actCtx.arc(rock.x, rock.y, rock.r, 0, TAU);
+   actCtx.fill();
+   actCtx.fillStyle = 'rgba(255,255,255,.18)';
+   actCtx.beginPath();
+   actCtx.arc(rock.x - rock.r * .3, rock.y - rock.r * .3, rock.r * .5, 0, TAU);
+   actCtx.fill();
+  });
+  actCtx.fillStyle = '#9a948c';
+  actCtx.beginPath();
+  actCtx.arc(ceres.x, ceres.y, ceres.r, 0, TAU);
+  actCtx.fill();
+  actCtx.fillStyle = 'rgba(255,255,255,.9)';
+  actCtx.beginPath();
+  actCtx.arc(ceres.x + ceres.r * .25, ceres.y - ceres.r * .25, Math.max(1, ceres.r * .16), 0, TAU);
+  actCtx.fill();
+  if (found) strokeHit(ceres.x, ceres.y, ceres.r + 6, ceres.r + 6, 0);
+ };
+ const tap = point => {
+  if (found) return;
+  if (Math.hypot(point.x - ceres.x, point.y - ceres.y) <= ceres.r + 6) {
+   found = true;
+   fxPlay('ok');
+   render();
+   finishActivity('Brawo, to Ceres! Największa skała w pasie planetoid. Jest taka duża, że nazywamy ją planetą karłowatą. Ma w kraterach sól po dawnej słonej wodzie!');
+  } else {
+   const rock = rocks.find(r => Math.hypot(point.x - r.x, point.y - r.y) <= r.r + 4);
+   if (rock) sayNow('To zwykła planetoida — mała skała. Ceres jest większa! Szukaj największej kuli.');
+  }
+ };
+ return {title: '🪨 Znajdź Ceres w pasie planetoid', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
+}
+
 function createUranusActivity() {
  const width = 560, height = 340, cx = 280, cy = 170, radius = 104;
  const bg = makeLayer(width, height);
@@ -4614,6 +4701,7 @@ const activityFactories = {
  neptune: createNeptuneActivity,
  heart: createHeartActivity,
  tail: createTailActivity,
+ belt: createBeltActivity,
  order: createOrderActivity,
  seasons: createSeasonsActivity,
  galilean: createGalileanActivity

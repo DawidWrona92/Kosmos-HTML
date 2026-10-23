@@ -109,6 +109,10 @@ function cometState(body) {
 
 function bodyOffset(body, scaleValue) {
  if (body.kind === 'star') return {x: 0, y: 0, distance: 0};
+ if (body.kind === 'belt') {
+  const phase = orbitPhase(body);
+  return {x: Math.cos(phase) * body.orbit * scaleValue, y: Math.sin(phase) * body.orbit * scaleValue * view.tilt, distance: body.orbit};
+ }
  if (body.kind === 'comet') {
   const state = cometState(body);
   return {x: state.x * scaleValue, y: state.y * scaleValue * view.tilt, distance: state.distance};
@@ -127,6 +131,7 @@ function bodyOffset(body, scaleValue) {
 }
 
 function bodyRadius(body, scaleValue) {
+ if (body.kind === 'belt') return Math.max(16, (BELT_OUTER - BELT_INNER) * scaleValue * .3);
  return Math.max(3 + body.radius * .3, body.radius * scaleValue * 1.25);
 }
 
@@ -441,7 +446,7 @@ function drawOrbits(frame) {
   if (body.kind === 'star' || body.kind === 'moon') return;
   const selected = index === view.selected;
   ctx.strokeStyle = selected ? 'rgba(88,185,255,.6)' : 'rgba(104,171,239,.29)';
-  ctx.setLineDash(body.kind === 'planet' ? [] : [4, 6]);
+  ctx.setLineDash(body.kind === 'planet' || body.kind === 'belt' ? [] : [4, 6]);
   ctx.beginPath();
   if (body.kind === 'comet') {
    for (let step = 0; step <= 120; step++) {
@@ -470,6 +475,20 @@ function drawOrbits(frame) {
 
 function drawAsteroids(frame) {
  ctx.fillStyle = '#a7a5a1';
+ const beltItem = view.targets && view.targets.find(item => item.body.kind === 'belt');
+ const focused = beltItem && view.following && view.selected === beltItem.index;
+ if (focused) {
+  /* przybliżenie pasa: wyraźniejsze skały i lekka mgiełka — widać, że to nie pusty pierścień */
+  const spread = Math.max(1, frame.scale);
+  ctx.save();
+  ctx.globalAlpha = .12;
+  ctx.strokeStyle = '#cfc9c0';
+  ctx.lineWidth = (BELT_OUTER - BELT_INNER) * frame.scale;
+  ctx.beginPath();
+  ctx.ellipse(frame.sunX, frame.sunY, (BELT_INNER + BELT_OUTER) / 2 * frame.scale, (BELT_INNER + BELT_OUTER) / 2 * frame.scale * view.tilt, 0, 0, TAU);
+  ctx.stroke();
+  ctx.restore();
+ }
  for (const rock of asteroids) {
   const phase = rock.phase + simDays / rock.period * TAU + view.angle;
   const x = frame.sunX + Math.cos(phase) * rock.orbit * frame.scale;
@@ -616,68 +635,40 @@ function drawComet(item, frame) {
  const length = Math.hypot(directionX, directionY) || 1;
  const unitX = directionX / length;
  const unitY = directionY / length;
- const normalX = -unitY;
- const normalY = unitX;
  const zoomed = radius > 22;
- /* jądro: małe i ciemne, coma: duża, jasna otoczka — proporcja jak w naturze */
- const nucleusRadius = zoomed ? Math.min(radius, 26) : Math.min(radius, 4);
- const comaRadius = nucleusRadius * (zoomed ? 2.4 : 7.5);
+ const nucleusRadius = zoomed ? Math.min(radius, 26) : Math.min(radius, 5);
  const activity = Math.pow(Math.max(0, 1 - distance / 950), .8);
- const tailLength = activity * 170 * (zoomed ? 2.6 : clamp(frame.scale, .5, 1.5));
- /* ogon jonowy — wąski, prosty, niebieskawy; ogon pyłowy — szerszy, lekko zakrzywiony, żółtawy */
- if (tailLength > 4) {
-  const ionEndX = x + unitX * tailLength;
-  const ionEndY = y + unitY * tailLength;
-  const ionSpread = comaRadius * .55;
-  const ionEndSpread = tailLength * .05;
-  let ionGradient = ctx.createLinearGradient(x, y, ionEndX, ionEndY);
-  ionGradient.addColorStop(0, 'rgba(150,215,255,.85)');
-  ionGradient.addColorStop(.5, 'rgba(120,190,255,.35)');
-  ionGradient.addColorStop(1, 'rgba(120,190,255,0)');
-  ctx.fillStyle = ionGradient;
-  ctx.beginPath();
-  ctx.moveTo(x + normalX * ionSpread, y + normalY * ionSpread);
-  ctx.quadraticCurveTo(x + unitX * tailLength * .55 + normalX * ionEndSpread * .7, y + unitY * tailLength * .55 + normalY * ionEndSpread * .7, ionEndX + normalX * ionEndSpread, ionEndY + normalY * ionEndSpread);
-  ctx.lineTo(ionEndX - normalX * ionEndSpread, ionEndY - normalY * ionEndSpread);
-  ctx.quadraticCurveTo(x + unitX * tailLength * .55 - normalX * ionEndSpread * .7, y + unitY * tailLength * .55 - normalY * ionEndSpread * .7, x - normalX * ionSpread, y - normalY * ionSpread);
-  ctx.closePath();
-  ctx.fill();
-  const curve = tailLength * .22;
-  const dustEndX = x + unitX * tailLength * .78 + normalX * curve;
-  const dustEndY = y + unitY * tailLength * .78 + normalY * curve;
-  const dustSpread = comaRadius * 1.2;
-  const dustEndSpread = tailLength * .22;
-  let dustGradient = ctx.createLinearGradient(x, y, dustEndX, dustEndY);
-  dustGradient.addColorStop(0, 'rgba(255,225,170,.6)');
-  dustGradient.addColorStop(.6, 'rgba(255,205,130,.25)');
-  dustGradient.addColorStop(1, 'rgba(255,205,130,0)');
-  ctx.fillStyle = dustGradient;
-  ctx.beginPath();
-  ctx.moveTo(x + normalX * dustSpread, y + normalY * dustSpread);
-  ctx.quadraticCurveTo(x + unitX * tailLength * .4 + normalX * (dustEndSpread * .5 + curve * .4), y + unitY * tailLength * .4 + normalY * (dustEndSpread * .5 + curve * .4), dustEndX + normalX * dustEndSpread, dustEndY + normalY * dustEndSpread);
-  ctx.lineTo(dustEndX - normalX * dustEndSpread, dustEndY - normalY * dustEndSpread);
-  ctx.quadraticCurveTo(x + unitX * tailLength * .4 - normalX * (dustEndSpread * .5 + curve * .4), y + unitY * tailLength * .4 - normalY * (dustEndSpread * .5 + curve * .4), x - normalX * dustSpread, y - normalY * dustSpread);
-  ctx.closePath();
-  ctx.fill();
+ /* ogon zawsze od Słońca: jonowy (w±ski, prosty, niebieski) + py³owy (szerszy, ³agodnie zakrzywiony) */
+ const tailLength = activity * 170 * (zoomed ? 2.2 : clamp(frame.scale, .5, 1.5));
+ if (tailLength > 3) {
+  const normalX = -unitY;
+  const normalY = unitX;
+  const layers = [
+   {color: 'rgba(170,225,255,.65)', curve: 0, endSpread: .14},
+   {color: 'rgba(255,232,180,.4)', curve: .2, endSpread: .24}
+  ];
+  for (const layer of layers) {
+   const endX = x + unitX * tailLength + normalX * tailLength * layer.curve;
+   const endY = y + unitY * tailLength + normalY * tailLength * layer.curve;
+   const baseSpread = nucleusRadius * 1.1;
+   const endSpread = tailLength * layer.endSpread;
+   const gradient = ctx.createLinearGradient(x, y, endX, endY);
+   gradient.addColorStop(0, layer.color);
+   gradient.addColorStop(1, 'rgba(170,225,255,0)');
+   ctx.fillStyle = gradient;
+   ctx.beginPath();
+   ctx.moveTo(x + normalX * baseSpread, y + normalY * baseSpread);
+   ctx.quadraticCurveTo(x + unitX * tailLength * .6 + normalX * endSpread * .6, y + unitY * tailLength * .6 + normalY * endSpread * .6, endX + normalX * endSpread, endY + normalY * endSpread);
+   ctx.lineTo(endX - normalX * endSpread, endY - normalY * endSpread);
+   ctx.quadraticCurveTo(x + unitX * tailLength * .6 - normalX * endSpread * .6, y + unitY * tailLength * .6 - normalY * endSpread * .6, x - normalX * baseSpread, y - normalY * baseSpread);
+   ctx.closePath();
+   ctx.fill();
+  }
  }
- /* coma — rozmyta, jasna otoczka, lekko przesunięta od Słońca */
- const comaCenterX = x + unitX * comaRadius * .18;
- const comaCenterY = y + unitY * comaRadius * .18;
- const coma = ctx.createRadialGradient(comaCenterX, comaCenterY, comaRadius * .1, comaCenterX, comaCenterY, comaRadius);
- coma.addColorStop(0, 'rgba(240,250,255,.95)');
- coma.addColorStop(.45, 'rgba(190,230,255,.55)');
- coma.addColorStop(1, 'rgba(150,210,255,0)');
- ctx.fillStyle = coma;
- ctx.beginPath();
- ctx.arc(comaCenterX, comaCenterY, comaRadius, 0, TAU);
- ctx.fill();
- /* jądro */
+ glow(x, y, Math.min(radius, 8) * (zoomed ? 2 : 1), 'rgba(190,235,255,.45)');
  if (zoomed) drawNucleus(x, y, nucleusRadius, -unitX, -unitY);
  else {
-  const nucleus = ctx.createRadialGradient(x - nucleusRadius * .35, y - nucleusRadius * .35, nucleusRadius * .2, x, y, nucleusRadius * 1.1);
-  nucleus.addColorStop(0, '#8a8177');
-  nucleus.addColorStop(1, '#241f1c');
-  ctx.fillStyle = nucleus;
+  ctx.fillStyle = '#eaf7ff';
   ctx.beginPath();
   ctx.arc(x, y, nucleusRadius, 0, TAU);
   ctx.fill();
@@ -737,6 +728,11 @@ function drawTexturedBall(body, x, y, radius, frame) {
  ctx.restore();
  shadeBall(x, y, radius, frame);
  return true;
+}
+
+function drawBeltTarget(item) {
+ /* widoczny „biegun” pasa — duży przezroczysty cel do kliknięcia; kropki rysuje drawAsteroids */
+ drawAttention(item.x, item.y, item.radius, item.index);
 }
 
 function drawPlanet(item, frame) {
@@ -1049,7 +1045,7 @@ function draw() {
  view.targets = planetItems;
  const behind = planetItems.filter(item => item.y < frame.sunY).sort((a, b) => a.y - b.y);
  const inFront = planetItems.filter(item => item.y >= frame.sunY).sort((a, b) => a.y - b.y);
- const paint = item => item.body.kind === 'comet' ? drawComet(item, frame) : drawPlanet(item, frame);
+ const paint = item => item.body.kind === 'comet' ? drawComet(item, frame) : item.body.kind === 'belt' ? drawBeltTarget(item) : drawPlanet(item, frame);
  behind.forEach(paint);
  drawSun(frame);
  inFront.forEach(paint);
@@ -1233,9 +1229,14 @@ canvas.addEventListener('pointermove', event => {
  if (gesture.kind === 'pinch') {
   if (pointers.size >= 2) {
    const next = clamp(gesture.startZoom * pointerDistance() / gesture.startDistance, MIN_ZOOM, MAX_ZOOM);
-   if (view.level < 0 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && zoomInLevel()) {
+   if (view.level < 0 && next >= MAX_ZOOM * .999 && gesture.startZoom < MAX_ZOOM * .99 && zoomInLevel()) {
     fxPlay('whoosh');
     view.zoom = view.zoomGoal = 1;
+    gesture.startZoom = 1;
+    return;
+   }
+   if (view.level === 0 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && !view.following && zoomOutLevel()) {
+    fxPlay('whoosh');
     gesture.startZoom = 1;
     return;
    }
@@ -1277,10 +1278,12 @@ canvas.addEventListener('pointercancel', endPointer);
 canvas.addEventListener('wheel', event => {
  event.preventDefault();
  const delta = event.deltaMode === 1 ? event.deltaY * 33 : event.deltaY;
- if (delta > 0 && view.zoomGoal >= MAX_ZOOM * .999 && !view.following) {
+ /* oddalanie: planeta -> Układ Słoneczny -> Ramię Oriona -> Droga Mleczna */
+ if (delta > 0 && view.zoomGoal <= MIN_ZOOM * 1.001 && !view.following) {
   if (zoomOutLevel()) {fxPlay('whoosh'); return;}
  }
- if (delta < 0 && view.level < 0 && view.zoomGoal <= MIN_ZOOM * 1.001) {
+ /* przybliżanie z poziomów galaktycznych */
+ if (delta < 0 && view.level < 0 && view.zoomGoal >= MAX_ZOOM * .999) {
   if (zoomInLevel()) {fxPlay('whoosh'); return;}
  }
  view.zoomGoal = clamp(view.zoomGoal * Math.exp(-delta * .0015), MIN_ZOOM, MAX_ZOOM);

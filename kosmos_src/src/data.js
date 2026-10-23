@@ -102,6 +102,13 @@ const bodies = [
    'W lipcu 2015 roku sonda New Horizons przeleciała tuż obok Plutona. Zrobiła zdjęcia serca, gór z lodu i niebieskiej mgiełki w atmosferze. To był pierwszy raz, kiedy zobaczyliśmy Plutona z bliska.',
    'Największy księżyc Plutona nazywa się Charon. Jest tak duży, że Pluton i Charon krążą wokół wspólnego punktu, jak w tańcu. Pluton ma w sumie pięć księżyców. Jeden rok na Plutonie trwa 248 naszych lat.'
   ]},
+ {id: 'belt', kind: 'belt', name: 'Pas planetoid', type: 'Pierścień skał między Marsem a Jowiszem', intro: 'Pas planetoid.', color: '#a7a5a1', radius: 9, orbit: 223, period: 1682, startPhase: 2.9, activity: 'belt',
+  facts: [
+   'Pas planetoid to miliony skał krążących między Marsem a Jowiszem. Największa z nich to Ceres — planeta karłowata, którą możesz tu kliknąć!',
+   'Choć skał jest bardzo dużo, wszystkie razem ważą mniej niż nasz Księżyc. Między skałami jest mnóstwo miejsca, więc sondy przelatują przez pas bez obawy.',
+   'Skały w pasie to pozostałości z czasów, gdy rodził się Układ Słoneczny. Planeta z nich nie powstała, bo pobliski Jowisz ciągnął je swoją wielką siłą i rozproszył.',
+   'Największe skały mają własne imiona. Oprócz Ceres to też Westa i Palas — każda jest inna i naukowcy badają je jak kosmiczne skarby.'
+  ]},
  {id: 'halley', kind: 'comet', name: 'Kometa Halleya', type: 'Kometa', intro: 'Kometa Halleya.', color: '#dff1ff', radius: 2.5, period: 27759, startAnomaly: 5.68, semiMajor: 850, eccentricity: .85, perihelionAngle: 2.2, activity: 'tail',
   facts: [
    'Kometa to wielka, brudna kula z lodu i pyłu. Czasem nazywa się ją brudną śnieżką. Gdy zbliża się do Słońca, lód paruje i robi się z niego jasny ogon.',
@@ -339,6 +346,14 @@ const MOONS = {
     'Tryton to największy księżyc Neptuna. Krąży w przeciwną stronę niż planeta się obraca!',
     'Ma lodowe gejzery, które wyrzucają azot wysoko w niebo — na wysokość ośmiu kilometrów!',
     'Tryton powoli zbliża się do Neptuna. Za miliony lat może się rozpaść i zrobić pierścień wokół planety.'
+   ]}
+ ],
+ pluto: [
+  {id: 'charon', parentId: 'pluto', name: 'Charon', type: 'Księżyc Plutona', intro: 'Charon.', color: '#b8b0aa', size: .5, moonOrbit: 2.4, period: 6.39, startPhase: 1.1, tilt: .3,
+   facts: [
+    'Charon to największy księżyc Plutona. Jest tak duży, że Pluton i Charon krążą razem wokół wspólnego punktu — jak w tańcu!',
+    'Charon ma na sobie wielki ciemny obszar na biegunie. Naukowcy nazwali go Mordorem — tak jak złośliwą krainę z bajki!',
+    'Na Charonie jest wielki kanion. Gdyby przeciągnąć go dalej, okrążyłby cały księżyc. Zrobiła go wielka szczelina w lodzie.'
    ]}
  ]
 };
