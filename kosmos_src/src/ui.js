@@ -201,12 +201,18 @@ function chooseFind(target) {
 function moonZoom(moon) {
  const parent = bodies[view.selected];
  const fit = fitScale();
- const moonUnit = Math.max(parent.radius * fit * 1.25 * moon.size * .6, .01);
- const orbitUnit = Math.max(parent.radius * fit * 1.25 * moon.moonOrbit, 1);
+ /* równy kadr dla wszystkich księżyców planety: zoom wynika z promienia orbity
+  * najdalszego księżyca, nie z rozmiaru księżyca — przełączanie Io <-> Ganimedes
+  * nie zmienia odległości kamery */
+ const moonList = MOONS[parent.id] || [moon];
+ const widestOrbit = Math.max(...moonList.map(item => item.moonOrbit));
+ const outermost = Math.max(widestOrbit, finds.some(item => item.parentId === parent.id) ? 2.2 : 0);
+ const orbitUnit = Math.max(parent.radius * fit * 1.25 * outermost, 1);
  const half = Math.min(view.free.right - view.free.left, view.free.bottom - view.free.top) / 2;
+ const targetZoom = (half - 60) / orbitUnit;
  /* planeta musi po przybliżeniu wciąż mieć radius >= 52 px, żeby księżyce i sondy były widoczne */
  const maxZoom = 52 / Math.max(parent.radius * fit * 1.25, .01);
- return clamp(Math.min(22 / moonUnit, (half - 60) / orbitUnit, maxZoom), MIN_ZOOM, MAX_ZOOM);
+ return clamp(Math.min(targetZoom, maxZoom), MIN_ZOOM, MAX_ZOOM);
 }
 
 function chooseMoon(target) {
@@ -259,6 +265,14 @@ function resetView() {
  renderInfo();
 }
 
+/* przejścia między poziomami z zachowaniem ciągłości obrazu:
+ *   Układ (zoom MIN) <-> Ramię Oriona (zoom 2)
+ *   Ramię Oriona (zoom 1) <-> Droga Mleczna (zoom 4, wycentrowana na Słońcu)
+ * obraz galaktyki na -2 przy zoom 4 ma na ekranie dokładnie tę samą wielkość
+ * co wycinek ¼ obrazu na -1 przy zoom 1, więc przejście jest bezszwowe */
+const LEVEL_OUT_ENTER = 2;
+const LEVEL_GALAXY_ENTER = 4;
+
 function zoomOutLevel() {
  if (view.level > -2) {
   view.level--;
@@ -267,11 +281,11 @@ function zoomOutLevel() {
   view.moon = null;
   view.find = null;
   view.ring = null;
-  if (view.level === 0) setSelection(false, view.selected);
-  view.zoom = 1;
-  view.zoomGoal = 1;
+  view.zoom = view.level === -1 ? LEVEL_OUT_ENTER : LEVEL_GALAXY_ENTER;
+  view.zoomGoal = view.zoom;
   view.carryX = 0;
   view.carryY = 0;
+  if (view.level === 0) setSelection(false, view.selected);
   renderInfo();
   renderControls();
   return true;
@@ -284,8 +298,8 @@ function zoomInLevel() {
   view.level++;
   view.galaxy = null;
   hasChosen = false;
-  view.zoom = 1;
-  view.zoomGoal = 1;
+  view.zoom = view.level === -1 ? 1 : MIN_ZOOM * 1.1;
+  view.zoomGoal = view.zoom;
   view.carryX = 0;
   view.carryY = 0;
   renderInfo();
