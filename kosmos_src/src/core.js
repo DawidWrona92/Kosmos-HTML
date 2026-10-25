@@ -2,7 +2,7 @@
 const view = {
  width: 0, height: 0, dpr: 1,
  free: {left: 0, top: 0, right: 0, bottom: 0},
- angle: 0, tilt: .32, angleGoal: null, tiltGoal: null,
+ angle: 0, tilt: .32, angleGoal: null, tiltGoal: null, roll: 0,
  zoom: 1, zoomGoal: 1,
  following: false, carryX: 0, carryY: 0,
  selected: bodyIndex('earth'), find: null, moon: null, ring: null, galaxy: null,
@@ -255,7 +255,8 @@ function heartPath(centerX, centerY, size) {
 
 function drawBackground() {
  ctx.fillStyle = '#020611';
- ctx.fillRect(0, 0, view.width, view.height);
+ /* zapas przy rotacji roll — pokrywa rogi ekranu po obrocie sceny */
+ ctx.fillRect(-view.width, -view.height, view.width * 3, view.height * 3);
  /* projekcja sferyczna: gwiazdy leżą na odległej sferze niebieskiej i
   * obracają się razem z ruchem kamery (view.angle / view.tilt), więc przy
   * przesuwaniu nie wyglądają jak nieruchoma warstwa UI; przy oddalaniu
@@ -1149,6 +1150,15 @@ function drawRipples() {
 
 function draw() {
  const frame = computeFrame();
+ /* roll kamery: scena obrócona wokół centrum ekranu (obserwacja obiektu z każdej strony) */
+ const rollCenterX = (view.free.left + view.free.right) / 2;
+ const rollCenterY = (view.free.top + view.free.bottom) / 2;
+ if (view.roll) {
+  ctx.save();
+  ctx.translate(rollCenterX, rollCenterY);
+  ctx.rotate(view.roll);
+  ctx.translate(-rollCenterX, -rollCenterY);
+ }
  drawBackground();
  if (view.level < 0) {
   drawGalaxyScene(frame);
@@ -1175,6 +1185,7 @@ function draw() {
  drawLabels(items);
  drawSelectionRing();
  drawRipples();
+ if (view.roll) ctx.restore();
 }
 
 /* złota obręcz wokół aktualnie zaznaczonego obiektu (planety, księżyca, sondy, pierścienia) —
@@ -1521,12 +1532,20 @@ canvas.addEventListener('pointermove', event => {
  const deltaY = event.clientY - gesture.startY;
  if (!gesture.moved && Math.abs(deltaX) + Math.abs(deltaY) > 8) gesture.moved = true;
  if (!gesture.moved) return;
- /* przeciąganie obraca kamerę wokół obiektu (azymut + wysokość), a nie samą
-  * planetę — planeta kręci się swoim tempem (auto-spin w frameLoop) */
+ /* przeciąganie obraca kamerę: przy Słońcu/widoku ogólnym zmienia fazę orbitalną
+  * (planety krążą wokół Słońca), a przy zaznaczonej planecie — roll sceny
+  * wokół niej (widać orbity i księżyce krążące wokół planety); planety
+  * kręcą się swoim tempem (auto-spin) */
  view.angleGoal = null;
  view.tiltGoal = null;
- view.angle = gesture.angle - deltaX * .006;
- view.tilt = clamp(gesture.tilt + deltaY * .003, MIN_TILT, MAX_TILT);
+ const orbiting = view.following && view.selected !== null && bodies[view.selected].kind !== 'star';
+ if (orbiting) {
+  view.roll -= deltaX * .006;
+  view.tilt = clamp(gesture.tilt + deltaY * .003, MIN_TILT, MAX_TILT);
+ } else {
+  view.angle = gesture.angle - deltaX * .006;
+  view.tilt = clamp(gesture.tilt + deltaY * .003, MIN_TILT, MAX_TILT);
+ }
 });
 
 function endPointer(event) {
