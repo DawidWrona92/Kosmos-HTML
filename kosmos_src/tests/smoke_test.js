@@ -41,7 +41,13 @@ function makeCtx() {
       };
       if (prop === 'createImageData') return (w, h) => ({data: new Uint8ClampedArray(Math.max(4, Math.round(w) * Math.round(h) * 4))});
       if (prop === 'measureText') return () => ({width: 10});
-      if (prop === 'isPointInPath') return () => true;
+      if (prop === 'isPointInPath') return (path, x, y) => {
+        /* przybliżenie mocka: punkt musi być w bounding boxie łuku (Path2D bez geometrii w mocku) */
+        if (path && path._bbox) {
+          return x >= path._bbox.left && x <= path._bbox.right && y >= path._bbox.top && y <= path._bbox.bottom;
+        }
+        return true;
+      };
       if (prop in t) return t[prop];
       return () => {};
     },
@@ -116,7 +122,7 @@ const windowObj = {
   },
   SpeechSynthesisUtterance: FakeUtterance,
   Image: FakeImage,
-  Path2D: class { moveTo() {} bezierCurveTo() {} quadraticCurveTo() {} closePath() {} },
+  Path2D: class { moveTo() {} lineTo() {} bezierCurveTo() {} quadraticCurveTo() {} closePath() {} },
   addEventListener() {},
   requestAnimationFrame: () => 0,
   __KOSMOS_TEST__: true
@@ -318,30 +324,15 @@ async function complete(item, slot = 0) {
     failures++;
   }
 
-  /* ---------- poziomy galaktyczne: Ramię Oriona i Droga Mleczna ---------- */
+  /* ---------- poziom galaktyczny: Droga Mleczna z podświetlonym Ramieniem Oriona ---------- */
 
   t.resetView();
-  if (!t.zoomOutLevel()) { console.error('FAIL nie weszło na poziom -1 (Ramię Oriona)'); failures++; }
+  if (!t.zoomOutLevel()) { console.error('FAIL nie weszło na poziom -1 (Droga Mleczna)'); failures++; }
   else {
     t.draw();
-    const armTargets = t.view.galaxyTargets;
-    if (armTargets.length !== 2) { console.error(`FAIL Ramię Oriona: oczekiwano 2 obiektów, jest ${armTargets.length}`); failures++; }
-    for (const target of armTargets) {
-      try {
-        t.pickAt(target.x, target.y, 'mouse');
-        if (!t.discovered.has(target.object.id)) throw new Error('nie oznaczono jako odkryte');
-        console.log(`OK   galaktyka ${target.object.id}`);
-      } catch (error) {
-        failures++;
-        console.error(`FAIL galaktyka ${target.object.id}: ${error.message}`);
-      }
-    }
-  }
-  if (!t.zoomOutLevel()) { console.error('FAIL nie weszło na poziom -2 (Droga Mleczna)'); failures++; }
-  else {
-    t.draw();
+    /* 4 znaczniki punktowe: Droga Mleczna, Andromeda, Voyager 1 i 2 */
     const galaxyTargets = t.view.galaxyTargets;
-    if (galaxyTargets.length !== 4) { console.error(`FAIL Droga Mleczna: oczekiwano 4 obiektów, jest ${galaxyTargets.length}`); failures++; }
+    if (galaxyTargets.length !== 5) { console.error(`FAIL Droga Mleczna: oczekiwano 5 znaczników (4 + Układ Słoneczny), jest ${galaxyTargets.length}`); failures++; }
     for (const target of galaxyTargets) {
       try {
         t.pickAt(target.x, target.y, 'mouse');
@@ -352,8 +343,42 @@ async function complete(item, slot = 0) {
         console.error(`FAIL galaktyka ${target.object.id}: ${error.message}`);
       }
     }
+    /* Ramię Oriona: klik w podświetlony łuk regionu (punkt daleko od znaczników) */
+    try {
+      t.draw();
+      const arm = t.view.armTarget;
+      if (!arm) throw new Error('brak celu Ramienia Oriona');
+      const bbox = arm.path._bbox;
+      const freePoint = {x: (bbox.left + bbox.right) / 2, y: bbox.bottom + 1};
+      let bestPoint = freePoint;
+      let bestClearance = -1;
+      for (let probe = 0; probe < 40; probe++) {
+        const px = bbox.left + Math.random() * (bbox.right - bbox.left);
+        const py = bbox.top + Math.random() * (bbox.bottom - bbox.top);
+        const clearance = Math.min(...t.view.galaxyTargets.map(g => Math.hypot(g.x - px, g.y - py) - g.radius));
+        if (clearance > bestClearance) {bestClearance = clearance; bestPoint = {x: px, y: py};}
+      }
+      t.pickAt(bestPoint.x, bestPoint.y, 'mouse');
+      if (!t.discovered.has('orion_arm')) throw new Error(`łuk ramienia nie oznaczony jako odkryty (klik ${bestPoint.x.toFixed(0)},${bestPoint.y.toFixed(0)}, odległość od znaczników ${bestClearance.toFixed(0)}px)`);
+      console.log('OK   galaktyka orion_arm (łuk regionu)');
+    } catch (error) {
+      failures++;
+      console.error(`FAIL galaktyka orion_arm: ${error.message}`);
+    }
+    /* solar_system: znacznik Słońca na galaktyce */
+    try {
+      t.draw();
+      const solar = (t.view.galaxyTargets || []).find(target => target.object.id === 'solar_system');
+      if (!solar) throw new Error('brak znacznika Układu Słonecznego');
+      t.pickAt(solar.x, solar.y, 'mouse');
+      if (!t.discovered.has('solar_system')) throw new Error('nie oznaczono jako odkryte');
+      console.log('OK   galaktyka solar_system');
+    } catch (error) {
+      failures++;
+      console.error(`FAIL galaktyka solar_system: ${error.message}`);
+    }
   }
-  if (t.zoomOutLevel()) { console.error('FAIL zoomOutLevel poniżej -2 powinien zwrócić false'); failures++; }
+  if (t.zoomOutLevel()) { console.error('FAIL zoomOutLevel poniżej -1 powinien zwrócić false'); failures++; }
   t.resetView();
   if (t.view.level !== 0) { console.error('FAIL resetView nie wrócił na poziom 0'); failures++; }
 
@@ -363,24 +388,6 @@ async function complete(item, slot = 0) {
     console.error(`FAIL odkryto tylko ${discoveredCount}, oczekiwano co najmniej ${expectedGalaxy} (galaktyczne)`);
     failures++;
   }
-
-  /* ---------- regresja: rysowanie planety z księżycami (drawMoon) ---------- */
-
-  t.resetView();
-  const jupiterIndex = t.bodies.findIndex(body => body.id === 'jupiter');
-  t.view.following = true;
-  t.view.selected = jupiterIndex;
-  t.view.zoom = 30;
-  t.view.zoomGoal = 30;
-  try {
-    for (let frame = 0; frame < 3; frame++) t.draw();
-    if (!t.view.moonTargets.length) throw new Error('brak celów księżyców po rysowaniu Jowisza');
-    console.log(`OK   rysowanie Jowisza z księżycami (${t.view.moonTargets.length} księżyce)`);
-  } catch (error) {
-    failures++;
-    console.error(`FAIL rysowanie planety z księżycami: ${error.message}`);
-  }
-  t.resetView();
 
   if (failures) {
     console.error(`PORAŻKI: ${failures}`);

@@ -1,16 +1,16 @@
 /* ---------- muzyka w tle (Web Audio, syntezowana — bez plików) ----------
- * Delikatny pad akordowy (C - Am - F - G) plus pojedyncze, ciche
- * "gwiazdki". Startuje dopiero po pierwszym kliknięciu (gest użytkownika).
+ * Wesoły, majorowy pad (C - F - G - C) ze skoczną melodią-gwiazdką
+ * w tonacji C-dur. Startuje dopiero po pierwszym kliknięciu.
  */
 
 const MUSIC_CHORDS = [
  [[261.63, 'C3'], [329.63, 'E3'], [392, 'G3'], [523.25, 'C4']],
- [[220, 'A2'], [329.63, 'E3'], [440, 'A3'], [523.25, 'C4']],
- [[174.61, 'F2'], [261.63, 'C3'], [349.23, 'F3'], [440, 'A3']],
- [[196, 'G2'], [293.66, 'D3'], [392, 'G3'], [493.88, 'B3']]
+ [[174.61, 'F2'], [220, 'A2'], [349.23, 'F3'], [523.25, 'C4']],
+ [[196, 'G2'], [246.94, 'B2'], [392, 'G3'], [587.33, 'D4']],
+ [[261.63, 'C3'], [329.63, 'E3'], [392, 'G3'], [659.25, 'E4']]
 ];
-const MUSIC_TWINKLE = [1046.5, 1174.66, 1318.51, 1567.98, 1760, 2093];
-const MUSIC_CHORD_SECONDS = 7.5;
+const MUSIC_TWINKLE = [1046.5, 1174.66, 1318.51, 1396.91, 1567.98, 1760, 2093];
+const MUSIC_CHORD_SECONDS = 6.5;
 
 const music = {
  on: loadStored('kosmos3.music', '1') === '1',
@@ -33,7 +33,7 @@ function musicTick() {
    const gain = context.createGain();
    oscillator.type = voice === 3 ? 'triangle' : 'sine';
    oscillator.frequency.value = freq;
-   const peak = (voice === 3 ? .05 : .11) / (1 + voice * .15);
+   const peak = (voice === 3 ? .075 : .16) / (1 + voice * .15);
    gain.gain.setValueAtTime(.0001, music.nextChordTime);
    gain.gain.exponentialRampToValueAtTime(peak, music.nextChordTime + 1.4);
    gain.gain.setValueAtTime(peak, music.nextChordTime + MUSIC_CHORD_SECONDS - 1.8);
@@ -45,20 +45,36 @@ function musicTick() {
   });
   music.nextChordTime += MUSIC_CHORD_SECONDS;
  }
- if (Math.random() < .3) {
+ /* weso\u0142a melodia: kr\u00f3tka, skoczna nutka (dzwoneczek) w tonacji, cz\u0119\u015bciej */
+ if (Math.random() < .55) {
   const freq = MUSIC_TWINKLE[Math.floor(Math.random() * MUSIC_TWINKLE.length)];
   const start = now + Math.random() * 1.2;
   const oscillator = context.createOscillator();
   const gain = context.createGain();
-  oscillator.type = 'sine';
+  oscillator.type = 'triangle';
   oscillator.frequency.value = freq;
   gain.gain.setValueAtTime(.0001, start);
-  gain.gain.exponentialRampToValueAtTime(.045, start + .05);
-  gain.gain.exponentialRampToValueAtTime(.0001, start + 1.6);
+  gain.gain.exponentialRampToValueAtTime(.11, start + .02);
+  gain.gain.exponentialRampToValueAtTime(.0001, start + .9);
   oscillator.connect(gain);
   gain.connect(music.master);
   oscillator.start(start);
-  oscillator.stop(start + 1.8);
+  oscillator.stop(start + 1.1);
+  /* czasem druga nutka zaraz po pierwszej \u2014 skoczny motivek */
+  if (Math.random() < .5) {
+   const secondFreq = MUSIC_TWINKLE[Math.floor(Math.random() * MUSIC_TWINKLE.length)];
+   const osc2 = context.createOscillator();
+   const gain2 = context.createGain();
+   osc2.type = 'triangle';
+   osc2.frequency.value = secondFreq;
+   gain2.gain.setValueAtTime(.0001, start + .28);
+   gain2.gain.exponentialRampToValueAtTime(.09, start + .3);
+   gain2.gain.exponentialRampToValueAtTime(.0001, start + 1.1);
+   osc2.connect(gain2);
+   gain2.connect(music.master);
+   osc2.start(start + .28);
+   osc2.stop(start + 1.3);
+  }
  }
 }
 
@@ -69,7 +85,7 @@ function musicStart() {
  if (context.state === 'suspended') context.resume().catch(() => {});
  music.master = context.createGain();
  music.master.gain.value = 0;
-  music.master.gain.exponentialRampToValueAtTime(.05, context.currentTime + 1.2);
+  music.master.gain.exponentialRampToValueAtTime(.11, context.currentTime + 1.2);
  music.master.connect(context.destination);
  music.nextChordTime = context.currentTime + .3;
  music.chordIndex = 0;

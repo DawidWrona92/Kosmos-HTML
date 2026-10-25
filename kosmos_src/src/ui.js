@@ -114,7 +114,7 @@ function renderControls() {
  playButton.querySelector('.lbl').textContent = playing ? 'Stop' : 'Start';
  const outBtn = byId('zoomOutBtn');
  const inBtn = byId('zoomInBtn');
- outBtn.hidden = view.level <= -2;
+ outBtn.hidden = view.level <= -1;
  inBtn.hidden = view.level >= 0;
 }
 
@@ -255,27 +255,18 @@ function resetView() {
  renderInfo();
 }
 
-/* przejścia między poziomami z zachowaniem ciągłości obrazu:
- *   Układ (zoom MIN) <-> Ramię Oriona (zoom 2)
- *   Ramię Oriona (zoom 1) <-> Droga Mleczna (zoom 4, wycentrowana na Słońcu)
- * obraz galaktyki na -2 przy zoom 4 ma na ekranie dokładnie tę samą wielkość
- * co wycinek ¼ obrazu na -1 przy zoom 1, więc przejście jest bezszwowe */
-const LEVEL_OUT_ENTER = 2;
-const LEVEL_GALAXY_ENTER = 4;
-
 function zoomOutLevel() {
- if (view.level > -2) {
+ if (view.level > -1) {
   view.level--;
   view.galaxy = null;
   hasChosen = false;
   view.moon = null;
   view.find = null;
   view.ring = null;
-  view.zoom = view.level === -1 ? LEVEL_OUT_ENTER : LEVEL_GALAXY_ENTER;
-  view.zoomGoal = view.zoom;
+  view.zoom = 1;
+  view.zoomGoal = 1;
   view.carryX = 0;
   view.carryY = 0;
-  if (view.level === 0) setSelection(false, view.selected);
   renderInfo();
   renderControls();
   return true;
@@ -316,6 +307,7 @@ function chooseGalaxy(target) {
 function pickAt(clientX, clientY, pointerType) {
  const padding = pointerType === 'mouse' ? 10 : 22;
  if (view.level < 0) {
+  /* najpierw precyzyjne znaczniki, potem podświetlone Ramię Oriona (cały region klikalny) */
   let best = null;
   let bestRank = Infinity;
   for (const target of view.galaxyTargets) {
@@ -324,7 +316,16 @@ function pickAt(clientX, clientY, pointerType) {
    const rank = distance - target.radius;
    if (rank < bestRank) {bestRank = rank; best = target;}
   }
-  if (best) chooseGalaxy(best);
+  if (best) {chooseGalaxy(best); return;}
+  if (view.armTarget && view.galaxy !== view.armTarget.object) {
+   ctx.save();
+   const inside = ctx.isPointInPath(view.armTarget.path, clientX * view.dpr, clientY * view.dpr);
+   ctx.restore();
+   if (inside) {
+    chooseGalaxy({object: view.armTarget.object, x: view.armTarget.x, y: view.armTarget.y, radius: 10});
+    return;
+   }
+  }
   return;
  }
  if (view.following) {

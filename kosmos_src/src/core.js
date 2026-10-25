@@ -1299,55 +1299,97 @@ function drawGalaxyScene() {
  const image = buildGalaxyImage();
  const {centerX, centerY, scale} = galaxyFrame();
  const rotation = view.angle * .15;
- if (view.level === -1) {
-  /* Rami\u0119 Oriona: wycinek tego samego obrazu galaktyki wok\u00f3\u0142 S\u0142o\u0144ca.
-   * Obraz skalowany 4x wi\u0119kszy ni\u017c w widoku ca\u0142ej galaktyki \u2014 widzimy
-   * fragment ramienia z du\u017c\u0105 liczb\u0105 gwiazd, a S\u0142o\u0144ce le\u017cy w tym samym
-   * miejscu co w widoku -2. */
-  const shown = GALAXY_IMAGE_SIZE / 4;
-  const sunPos = sunImagePos();
-  ctx.save();
-  ctx.translate(centerX, centerY);
-  ctx.rotate(rotation);
-  ctx.drawImage(image, sunPos.x - shown / 2, sunPos.y - shown / 2, shown, shown, -scale, -scale, scale * 2, scale * 2);
-  ctx.restore();
-  const solar = GALAXY_OBJECTS.orion_arm[0];
-  const arm = GALAXY_OBJECTS.orion_arm[1];
-  /* Uk\u0142ad S\u0142oneczny: dok\u0142adnie na pozycji S\u0142o\u0144ca w obrazie */
-  const sunScreen = {x: centerX, y: centerY};
-  const armAngle = .9;
-  const armX = centerX + Math.cos(armAngle + rotation) * scale * .5;
-  const armY = centerY + Math.sin(armAngle + rotation) * scale * .5;
-  const targets = [
-   {object: solar, x: sunScreen.x, y: sunScreen.y, radius: Math.max(20, scale * .04), emoji: '\u2600\ufe0f'},
-   {object: arm, x: armX, y: armY, radius: Math.max(22, scale * .05), emoji: '\u2728'}
-  ];
-  for (const target of targets) {
-   ctx.font = '800 26px system-ui, sans-serif';
-   ctx.fillText(target.emoji, target.x, target.y - 6);
-   if (!discovered.has(target.object.id)) drawUnknownHint(target.x, target.y, target.radius, target.x);
-   ctx.font = '700 14px ui-rounded, system-ui, sans-serif';
-   ctx.fillStyle = '#e6f1ff';
-   ctx.fillText(target.object.name, target.x, target.y + target.radius + 18);
-   view.galaxyTargets.push(target);
-  }
-  ctx.font = '700 13px ui-rounded, system-ui, sans-serif';
-  ctx.fillStyle = '#8fb8e8';
-  ctx.fillText('\u015brodek galaktyki \u2192', centerX + scale * .8, centerY - scale * .62);
-  return;
- }
- /* Droga Mleczna + Andromeda + Voyagery */
+ /* jeden poziom galaktyczny: Droga Mleczna z pod\u015bwietlonym, klikalnym
+  * \u0142ukiem Ramienia Oriona (wzd\u0142u\u017c ramienia spiralnego od S\u0142o\u0144ca) */
  ctx.save();
  ctx.translate(centerX, centerY);
  ctx.rotate(rotation);
  ctx.drawImage(image, -scale, -scale, scale * 2, scale * 2);
  ctx.restore();
- /* znacznik S\u0142o\u0144ca \u2014 ta sama pozycja, na kt\u00f3r\u0105 wskazuje Rami\u0119 Oriona */
+ /* pozycja S\u0142o\u0144ca na obrazie galaktyki (wsp\u00f3\u0142rz\u0119dne obrazu -> ekran) */
  const sunPos = sunImagePos();
  const sunFrac = {x: sunPos.x / GALAXY_IMAGE_SIZE - .5, y: sunPos.y / GALAXY_IMAGE_SIZE - .5};
  const cosR = Math.cos(-rotation), sinR = Math.sin(-rotation);
  const sunScreenX = centerX + (sunFrac.x * cosR - sunFrac.y * sinR) * scale * 2;
  const sunScreenY = centerY + (sunFrac.x * sinR + sunFrac.y * cosR) * scale * 2;
+ /* Rami\u0119 Oriona: szeroki, pod\u015bwietlony \u0142uk wzd\u0142u\u017c ramienia od S\u0142o\u0144ca */
+ const arm = GALAXY_OBJECTS.orion_arm[1];
+ const armPath = new Path2D();
+ const armSteps = 24;
+ const armBaseAngle = 1.05;
+ for (let step = 0; step <= armSteps; step++) {
+  const t = step / armSteps;
+  const angle = armBaseAngle + t * 2.1;
+  const dist = scale * (.28 + t * 1.05);
+  const px = sunScreenX + Math.cos(angle + rotation) * dist;
+  const py = sunScreenY + Math.sin(angle + rotation) * dist * .38;
+  if (step === 0) armPath.moveTo(px, py);
+  else armPath.lineTo(px, py);
+ }
+ for (let step = armSteps; step >= 0; step--) {
+  const t = step / armSteps;
+  const angle = armBaseAngle + t * 2.1;
+  const dist = scale * (.28 + t * 1.05);
+  const width = scale * (.12 + t * .2);
+  const px = sunScreenX + Math.cos(angle + rotation) * (dist + width);
+  const py = sunScreenY + Math.sin(angle + rotation) * (dist + width) * .38;
+  armPath.lineTo(px, py);
+ }
+ armPath.closePath();
+ if (!discovered.has(arm.id)) {
+  const pulse = Math.sin(frameTime * .003) * .5 + .5;
+  ctx.save();
+  ctx.fillStyle = `rgba(140,190,255,${.1 + .12 * pulse})`;
+  ctx.strokeStyle = `rgba(160,200,255,${.25 + .3 * pulse})`;
+  ctx.lineWidth = 2;
+  ctx.fill(armPath);
+  ctx.stroke(armPath);
+  ctx.restore();
+ } else {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(140,190,255,.18)';
+  ctx.lineWidth = 1.5;
+  ctx.fill(armPath);
+  ctx.restore();
+ }
+ /* etykieta ramienia na \u015brodku \u0142uku */
+ const midT = .45;
+ const midAngle = armBaseAngle + midT * 2.1;
+ const midDist = scale * (.28 + midT * 1.05);
+ const midX = sunScreenX + Math.cos(midAngle + rotation) * midDist;
+ const midY = sunScreenY + Math.sin(midAngle + rotation) * midDist * .38;
+ ctx.font = '800 16px ui-rounded, system-ui, sans-serif';
+ ctx.textAlign = 'center';
+ ctx.fillStyle = '#dbe9ff';
+ ctx.fillText('Rami\u0119 Oriona', midX, midY - scale * .05);
+ /* \u0142uk ramienia jest klikalny w ka\u017c\u0105dym punkcie \u2014 zapisujemy\u015brodek i promie\u0144 jako cel */
+ /* bbox łuku (używany przez mock isPointInPath w testach; przeglądarka używa prawdziwej geometrii) */
+ let armMinX = Infinity, armMinY = Infinity, armMaxX = -Infinity, armMaxY = -Infinity;
+ for (let step = 0; step <= armSteps; step++) {
+  const t = step / armSteps;
+  const angle = armBaseAngle + t * 2.1;
+  const dist = scale * (.28 + t * 1.05);
+  const width = scale * (.12 + t * .2);
+  armMinX = Math.min(armMinX, sunScreenX + Math.cos(angle + rotation) * (dist + width) - scale * .12);
+  armMaxX = Math.max(armMaxX, sunScreenX + Math.cos(angle + rotation) * (dist + width) + scale * .12);
+  armMinY = Math.min(armMinY, sunScreenY + Math.sin(angle + rotation) * (dist + width) * .38 - scale * .12);
+  armMaxY = Math.max(armMaxY, sunScreenY + Math.sin(angle + rotation) * (dist + width) * .38 + scale * .12);
+ }
+ armPath._bbox = {left: armMinX, right: armMaxX, top: armMinY, bottom: armMaxY};
+ view.armTarget = {
+  object: arm, path: armPath,
+  x: midX, y: midY, radius: scale * .5
+ };
+ /* znacznik Układu Słonecznego na pozycji Słońca w galaktyce */
+ const solar = GALAXY_OBJECTS.orion_arm[0];
+ ctx.font = '800 22px system-ui, sans-serif';
+ ctx.fillText('☀️', sunScreenX, sunScreenY - 4);
+ if (!discovered.has(solar.id)) drawUnknownHint(sunScreenX, sunScreenY, 20, sunScreenX);
+ ctx.font = '700 12px ui-rounded, system-ui, sans-serif';
+ ctx.fillStyle = '#e6f1ff';
+ ctx.fillText(solar.name, sunScreenX, sunScreenY + 34);
+ view.galaxyTargets.push({object: solar, x: sunScreenX, y: sunScreenY, radius: Math.max(20, scale * .05)});
+ /* Andromeda + Voyagery (galaktyka i znacznik S\u0142o\u0144ca ju\u017c narysowane wy\u017cej) */
  const andromedaX = centerX + scale * 1.35;
  const andromedaY = centerY - scale * .9;
  const andromedaScale = scale * .38;
@@ -1388,7 +1430,7 @@ function drawGalaxyScene() {
  const voyagerY = centerY + scale * .62;
  const voyagers = GALAXY_OBJECTS.milky_way.slice(2);
  const marks = [
-  {object: GALAXY_OBJECTS.milky_way[0], x: sunScreenX, y: sunScreenY, radius: Math.max(26, scale * .07), emoji: '\u2600\ufe0f', label: 'Droga Mleczna (tu jest nasz dom!)'},
+  {object: GALAXY_OBJECTS.milky_way[0], x: centerX, y: centerY, radius: Math.max(26, scale * .07), emoji: '\ud83c\udf0c', label: 'Droga Mleczna (\u015brodek galaktyki!)'},
   {object: GALAXY_OBJECTS.milky_way[1], x: andromedaX, y: andromedaY, radius: Math.max(24, andromedaScale * .12), emoji: '\ud83c\udf00', label: 'Andromeda'},
   {object: voyagers[0], x: centerX + scale * .16, y: voyagerY, radius: 16, emoji: '\ud83d\udef0\ufe0f', label: 'Voyager 1'},
   {object: voyagers[1], x: centerX + scale * .34, y: voyagerY + scale * .1, radius: 16, emoji: '\ud83d\udef0\ufe0f', label: 'Voyager 2'}
@@ -1432,11 +1474,6 @@ canvas.addEventListener('pointermove', event => {
  if (gesture.kind === 'pinch') {
   if (pointers.size >= 2) {
    const next = clamp(gesture.startZoom * pointerDistance() / gesture.startDistance, MIN_ZOOM, MAX_ZOOM);
-   if (view.level === -2 && next >= LEVEL_GALAXY_ENTER * .999 && gesture.startZoom < LEVEL_GALAXY_ENTER && zoomInLevel()) {
-    fxPlay('whoosh');
-    gesture.startZoom = view.zoom;
-    return;
-   }
    if (view.level === -1 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && zoomInLevel()) {
     fxPlay('whoosh');
     gesture.startZoom = view.zoom;
@@ -1511,9 +1548,6 @@ canvas.addEventListener('wheel', event => {
  /* przybliżanie z poziomów galaktycznych — progi ciągłości obrazu:
   * -2 wchodzi na -1 przy zoom 4 (obraz galaktyki = wycinek z -1),
   * -1 wchodzi do Układu Słonecznego przy zoom MIN (w miejscu Słońca) */
- if (delta < 0 && view.level === -2 && view.zoomGoal >= LEVEL_GALAXY_ENTER * .999) {
-  if (zoomInLevel()) {fxPlay('whoosh'); return;}
- }
  if (delta < 0 && view.level === -1 && view.zoomGoal <= MIN_ZOOM * 1.1) {
   if (zoomInLevel()) {fxPlay('whoosh'); return;}
  }

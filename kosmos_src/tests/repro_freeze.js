@@ -28,7 +28,13 @@ function makeCtx() {
       };
       if (prop === 'createImageData') return (w, h) => ({data: new Uint8ClampedArray(Math.max(4, Math.round(w) * Math.round(h) * 4))});
       if (prop === 'measureText') return () => ({width: 10});
-      if (prop === 'isPointInPath') return () => true;
+      if (prop === 'isPointInPath') return (path, x, y) => {
+        /* przybliżenie mocka: punkt musi być w bounding boxie łuku (Path2D bez geometrii w mocku) */
+        if (path && path._bbox) {
+          return x >= path._bbox.left && x <= path._bbox.right && y >= path._bbox.top && y <= path._bbox.bottom;
+        }
+        return true;
+      };
       if (prop in t) return t[prop];
       return () => {};
     },
@@ -84,7 +90,7 @@ const windowObj = {
   },
   SpeechSynthesisUtterance: FakeUtterance,
   Image: FakeImage,
-  Path2D: class { moveTo() {} bezierCurveTo() {} quadraticCurveTo() {} closePath() {} },
+  Path2D: class { moveTo() {} lineTo() {} bezierCurveTo() {} quadraticCurveTo() {} closePath() {} },
   addEventListener() {},
   requestAnimationFrame: fn => { rafQueue.push(fn); return rafQueue.length; },
   __KOSMOS_TEST__: true
