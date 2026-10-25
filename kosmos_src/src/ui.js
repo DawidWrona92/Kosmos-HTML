@@ -251,7 +251,8 @@ function resetView() {
  view.zoomGoal = clamp(focusRadius(bodies[0]) / (bodies[0].radius * fitScale()), 1, MAX_ZOOM);
  view.angle = Math.atan2(Math.sin(view.angle), Math.cos(view.angle));
  view.angleGoal = 0;
- view.roll = 0;
+ view.localAngle = 0;
+ view.localTilt = .55;
  view.tiltGoal = defaultTilt();
  renderInfo();
 }

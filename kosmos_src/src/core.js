@@ -2,7 +2,7 @@
 const view = {
  width: 0, height: 0, dpr: 1,
  free: {left: 0, top: 0, right: 0, bottom: 0},
- angle: 0, tilt: .32, angleGoal: null, tiltGoal: null, roll: 0,
+ angle: 0, tilt: .32, angleGoal: null, tiltGoal: null, localAngle: 0, localTilt: .55,
  zoom: 1, zoomGoal: 1,
  following: false, carryX: 0, carryY: 0,
  selected: bodyIndex('earth'), find: null, moon: null, ring: null, galaxy: null,
@@ -901,7 +901,8 @@ function drawMoon(frame, parent, moon, parentX, parentY, parentRadius) {
  const moonRadius = Math.max(2.5, parentRadius * moon.size * .6);
  const orbit = parentRadius * moon.moonOrbit;
  const periodDays = Math.max(Math.abs(moon.period) * 30, 45);
- const phase = moon.startPhase + moonDays / periodDays * TAU * Math.sign(moon.period);
+ const mratio = clamp(view.localTilt, .12, .95);
+ const phase = moon.startPhase + view.localAngle + moonDays / periodDays * TAU * Math.sign(moon.period);
  ctx.save();
  ctx.translate(parentX, parentY);
  ctx.rotate(moon.tilt);
@@ -909,12 +910,12 @@ function drawMoon(frame, parent, moon, parentX, parentY, parentRadius) {
  ctx.lineWidth = 1;
  ctx.setLineDash([2, 5]);
  ctx.beginPath();
- ctx.ellipse(0, 0, orbit, orbit * .55, 0, 0, TAU);
+ ctx.ellipse(0, 0, orbit, orbit * mratio, 0, 0, TAU);
  ctx.stroke();
  ctx.setLineDash([]);
  ctx.restore();
  const localX = Math.cos(phase) * orbit;
- const localY = Math.sin(phase) * orbit * .55;
+ const localY = Math.sin(phase) * orbit * mratio;
  const cosTilt = Math.cos(moon.tilt);
  const sinTilt = Math.sin(moon.tilt);
  const x = parentX + localX * cosTilt - localY * sinTilt;
@@ -1092,7 +1093,7 @@ function drawFinds(items, frame) {
   * przy oddalaniu kamery sondy maleją razem z układem, zamiast rosnąć względem planety */
  const spriteWidth = clamp(parent.radius * .25, 30, 110);
  const horizontal = Math.max(parent.radius * 1.15, Math.min(parent.radius * 1.7 + spriteWidth * .4, freeWidth / 2 - spriteWidth * .55));
- const vertical = Math.min(horizontal * .66, freeHeight / 2 - spriteWidth * .45);
+ const vertical = Math.min(horizontal * .66 * (clamp(view.localTilt, .12, .95) / .55), freeHeight / 2 - spriteWidth * .45);
  ctx.strokeStyle = 'rgba(255,217,90,.22)';
  ctx.lineWidth = 1;
  ctx.setLineDash([3, 6]);
@@ -1101,7 +1102,7 @@ function drawFinds(items, frame) {
  ctx.stroke();
  ctx.setLineDash([]);
  list.forEach((find, order) => {
-  const angle = frameTime * .00022 + order * TAU / list.length + .6;
+  const angle = frameTime * .00022 + view.localAngle + order * TAU / list.length + .6;
   const x = parent.x + Math.cos(angle) * horizontal;
   const y = parent.y + Math.sin(angle) * vertical;
   if (!discovered.has(find.id)) drawUnknownHint(x, y, spriteWidth * .6, order);
@@ -1150,15 +1151,6 @@ function drawRipples() {
 
 function draw() {
  const frame = computeFrame();
- /* roll kamery: scena obrócona wokół centrum ekranu (obserwacja obiektu z każdej strony) */
- const rollCenterX = (view.free.left + view.free.right) / 2;
- const rollCenterY = (view.free.top + view.free.bottom) / 2;
- if (view.roll) {
-  ctx.save();
-  ctx.translate(rollCenterX, rollCenterY);
-  ctx.rotate(view.roll);
-  ctx.translate(-rollCenterX, -rollCenterY);
- }
  drawBackground();
  if (view.level < 0) {
   drawGalaxyScene(frame);
@@ -1185,7 +1177,6 @@ function draw() {
  drawLabels(items);
  drawSelectionRing();
  drawRipples();
- if (view.roll) ctx.restore();
 }
 
 /* złota obręcz wokół aktualnie zaznaczonego obiektu (planety, księżyca, sondy, pierścienia) —
@@ -1500,7 +1491,7 @@ canvas.addEventListener('pointerdown', event => {
  try {canvas.setPointerCapture(event.pointerId);} catch (error) {}
  pointers.set(event.pointerId, {x: event.clientX, y: event.clientY});
  if (pointers.size === 1) {
-  gesture = {kind: 'drag', startX: event.clientX, startY: event.clientY, angle: view.angle, tilt: view.tilt, rotation: rotationOf(bodies[view.selected]), moved: false};
+  gesture = {kind: 'drag', startX: event.clientX, startY: event.clientY, angle: view.angle, tilt: view.tilt, rotation: rotationOf(bodies[view.selected]), localTilt: view.localTilt, moved: false};
  } else if (pointers.size === 2) {
   gesture = {kind: 'pinch', startDistance: pointerDistance(), startZoom: view.zoomGoal};
  }
@@ -1540,8 +1531,9 @@ canvas.addEventListener('pointermove', event => {
  view.tiltGoal = null;
  const orbiting = view.following && view.selected !== null && bodies[view.selected].kind !== 'star';
  if (orbiting) {
-  view.roll -= deltaX * .006;
-  view.tilt = clamp(gesture.tilt + deltaY * .003, MIN_TILT, MAX_TILT);
+  /* kamera krąży po sferze wokół planety: deltaX = azymut, deltaY = wysokość */
+  view.localAngle += deltaX * .006;
+  view.localTilt = clamp(gesture.localTilt + deltaY * .004, .12, .95);
  } else {
   view.angle = gesture.angle - deltaX * .006;
   view.tilt = clamp(gesture.tilt + deltaY * .003, MIN_TILT, MAX_TILT);
