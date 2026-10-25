@@ -1626,7 +1626,6 @@ function paintSunSurface(c, size, withSpots) {
 
 function sunTexture() {
  if (sunSurface) return sunSurface;
- /* prawdziwa mapa fotosfery Słońca (zdjęcia, z plamami) — fallback: proceduralny granulat */
  const map = imageOf('sun_map');
  if (map) {
   sunSurface = document.createElement('canvas');
@@ -1642,24 +1641,53 @@ function sunTexture() {
  return sunSurface;
 }
 
+/* globus Słońca z prawdziwej mapy fotosfery (2:1) — obraca się zgodnie z rotacją,
+ * tak jak globusy planet; fallback: proceduralny granulat */
+function sunGlobe() {
+ const body = bodies[0];
+ if (body._globeCache) return body._globeCache;
+ const map = imageOf('sun_map');
+ if (!map) return null;
+ /* globeOf wymaga tekstury w textureOf (cache Uint32) — używamy globusa
+  * z fizycznej mapy przez ten sam mechanizm co planety */
+ const globe = globeOf('sun_map', 384, 0);
+ body._globeCache = globe;
+ return globe;
+}
+
 function drawSun(frame) {
  const radius = sunRadius(frame.scale);
  const x = frame.sunX;
  const y = frame.sunY;
  glow(x, y, radius, 'rgba(255,158,49,.32)');
- if (radius > 38) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, TAU);
-  ctx.clip();
-  ctx.translate(x, y);
-  ctx.rotate(frameTime * .000012);
-  /* mapa 2:1 — docięta do koła przez clip; szerokość mapy owija równik */
-  const tex = sunTexture();
-  const texAspect = tex.height / tex.width;
-  const drawW = radius * 2.84;
-  ctx.drawImage(tex, -drawW / 2, -drawW * texAspect / 2, drawW, drawW * texAspect);
-  ctx.restore();
+ if (radius > 26) {
+  const globe = sunGlobe();
+  if (globe) {
+   if (globe.lastRotation === undefined || Math.abs(globe.lastRotation - frameTime * .00001) > .0004) {
+    globe.render(frameTime * .00001);
+    globe.lastRotation = frameTime * .00001;
+   }
+   ctx.save();
+   ctx.beginPath();
+   ctx.arc(x, y, radius, 0, TAU);
+   ctx.clip();
+   ctx.drawImage(globe.canvas, x - radius, y - radius, radius * 2, radius * 2);
+   ctx.restore();
+  } else {
+   ctx.save();
+   ctx.beginPath();
+   ctx.arc(x, y, radius, 0, TAU);
+   ctx.clip();
+   ctx.translate(x, y);
+   ctx.rotate(frameTime * .000012);
+   const tex = sunTexture();
+   if (tex) {
+    const texAspect = tex.height / tex.width;
+    const drawW = radius * 2.84;
+    ctx.drawImage(tex, -drawW / 2, -drawW * texAspect / 2, drawW, drawW * texAspect);
+   } else paintSunSurface(ctx, radius * 2, true);
+   ctx.restore();
+  }
   const limb = ctx.createRadialGradient(x, y, radius * .6, x, y, radius);
   limb.addColorStop(0, 'rgba(120,20,0,0)');
   limb.addColorStop(1, 'rgba(120,20,0,.45)');
@@ -3216,11 +3244,8 @@ canvas.addEventListener('pointermove', event => {
  const deltaY = event.clientY - gesture.startY;
  if (!gesture.moved && Math.abs(deltaX) + Math.abs(deltaY) > 8) gesture.moved = true;
  if (!gesture.moved) return;
- if (view.following) {
-  const spinBody = bodies[view.selected];
-  if (spinBody.texture && !spinBody.photo) globeState.rotation[spinBody.id] = gesture.rotation - deltaX / Math.max(40, focusRadius(spinBody));
-  return;
- }
+ /* przeciąganie obraca kamerę wokół obiektu (azymut + wysokość), a nie samą
+  * planetę — planeta kręci się swoim tempem (auto-spin w frameLoop) */
  view.angleGoal = null;
  view.tiltGoal = null;
  view.angle = gesture.angle - deltaX * .006;
