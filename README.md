@@ -30,12 +30,20 @@ otwórz w przeglądarce. Nie wymaga internetu ani instalacji.
   w obraz Drogi Mlecznej (Ramię Oriona, Andromeda, sondy Voyager 1 i 2)
 - **Jedna kamera orbitalna**: przeciąganie zawsze zmienia azymut i wysokość
   (planeta, księżyce, sondy i pierścienie obracają się spójnie)
-- **28 zadań (minigry)**: plamy na prawdziwym zdjęciu Słońca, latarka (lód
-  na Merkurym, serce Plutona), wycieranie (chmury Wenus, pył z łazika),
-  polowanie na obracającym się globie (Ceres, Wielka Czerwona Plama) z kwizem,
-  kawałki pierścieni Saturna, slalom przez pas planetoid, oś Urana, Tryton,
-  kometa, różnice na Księżycu, pory roku, księżyce Galileusza, kolejność
-  planet i 12 zadań z częściami sond
+- **47 zadań (minigry), po jednym na każde odkrycie** (14 ciał, 12 sond, 15
+  księżyców, 6 obiektów galaktycznych; liczniki „Odkryto” i „Zadania” są
+  równe). Styl zadań jest dziecięcy i śmieszny (buzie, postacie), a widok
+  ogólny — naukowy. Przykłady: pory roku na dużej Ziemi z prawdziwą mapą
+  i Polską malowaną porą roku, lodowe kostki uciekające do krateru Merkurego,
+  serce Plutona, łowienie kosmicznych rybek na Europie, pizza-Io z wulkanami,
+  parasol dla Tytana, łaskotanie Enceladusa, dwie buzie Japetusa, Tryton pod
+  prąd, taniec Plutona z Charonem, mieszanie Drogi Mlecznej, przytulenie
+  Andromedy, kolorowe kable w Voyagerze 1, antena Voyagera 2 na Ziemię,
+  kolejność planet (obiekt „Nasz Układ Słoneczny”) i 12 zadań z częściami sond
+- **Widok startowy**: Słońce i planety wewnętrzne (do pasa planetoid);
+  przycisk „Cały układ” pokazuje cały Układ Słoneczny
+- **Ostrzeżenie dla rodzica**: gdy urządzenie nie ma polskiego głosu, ekran
+  startowy podpowiada, jak go doinstalować (iPad, Android, Windows, Mac)
 - **Dzienniczek i lista zadań** (📓/⭐): ukryte rzeczy pod animowaną mgławicą
 - **Ustawienia dla rodzica**: głos lektora, tempo, wysokość, efekty
   dźwiękowe, muzyka w tle
@@ -60,11 +68,13 @@ kosmos_src/
     speech.js                  lektor (Web Speech API, wybór polskiego głosu)
     ui.js                      panel info, dzienniczek, listy, ustawienia
     probes.js                  rysowane sondy (New Horizons, Giotto, Ingenuity)
-    activities.js              silnik 28 zadań (minigry)
+    activities.js              silniki zadań i zadania ciał niebieskich
+    tasks2.js                  zadania księżyców i obiektów galaktycznych
+                               (wstawiane przez build.py w znaczniku //__TASKS_MORE__)
     controls.js                przyciski, klawiatura, pętla animacji (zamyka plik)
     img/                       tekstury planet i zdjęcia sond
   tests/
-    e2e_test.js                test w przeglądarce (Playwright): 28/28 zadań, galaktyka, kamera
+    e2e_test.js                test w przeglądarce (Playwright): 47/47 zadań, galaktyka, kamera
   archive/                     stare wersje (v1, backup v2) — nie są częścią buildu
 ```
 

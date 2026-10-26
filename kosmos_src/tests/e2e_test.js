@@ -5,8 +5,8 @@
  *   node kosmos_src/tests/e2e_test.js
  *
  * Co sprawdza:
- *  - rozwiązuje wszystkie 28 zadań „palcem” (zdarzenia wskaźnika na płótnie),
- *  - sprawdza, że skróty nie zaliczają zadań (Merkury, Wenus, kwiz Ceres),
+ *  - rozwiązuje wszystkie 47 zadań „palcem” (zdarzenia wskaźnika na płótnie),
+ *  - sprawdza, że skróty nie zaliczają zadań (Merkury, Wenus, kwiz Ceres, Tryton, Voyager 1),
  *  - przechodzi 12 zadań z częściami sond na podstawie współrzędnych z danych,
  *  - zoom do galaktyki i z powrotem: ciągły, bez skoków środka kamery,
  *  - przeciąganie zmienia azymut i wysokość kamery,
@@ -45,7 +45,7 @@ const report = (ok, name, detail = '') => {
       canvasEl.dispatchEvent(new PointerEvent(type, {clientX: r.left + x * r.width / a.width, clientY: r.top + y * r.height / a.height, pointerId: 1, bubbles: true, pointerType: 'mouse'}));
     };
     window.tap = (x, y) => {ev('pointerdown', x, y); ev('pointerup', x, y);};
-    window.findItem = id => [...T.bodies, ...T.finds].find(item => item.id === id);
+    window.findItem = id => [...T.bodies, ...T.finds, ...T.allMoons, ...T.allGalaxy].find(item => item.id === id);
     window.openTask = (id, slot = 0) => {
       if (T.getActive()) T.closeActivity();
       T.openActivity(findItem(id), slot);
@@ -76,14 +76,24 @@ const report = (ok, name, detail = '') => {
   };
 
   await task('Słońce: plamy', 'sun', 0, async () => {T.getActive().spots.forEach(spot => tap(spot.x, spot.y));});
-  await task('Merkury: lód', 'mercury', 0, async () => {
-    for (const [x, y] of [[252, 77], [316, 90]]) {ev('pointerdown', x, y); await sleep(900); ev('pointerup', x, y);}
+  await task('Merkury: lodowe kostki do krateru', 'mercury', 0, async () => {
+    for (let i = 0; i < 2; i++) {
+      const d = T.getActive().debug();
+      const cube = d.cubes.find(c => !c.safe);
+      ev('pointerdown', cube.x, cube.y);
+      ev('pointermove', d.crater.x, d.crater.y);
+      ev('pointerup', d.crater.x, d.crater.y);
+      await sleep(60);
+    }
   });
-  await negative('Merkury: szybki przelot nie zalicza', 'mercury', async () => {
-    ev('pointerdown', 10, 10);
-    for (let x = 100; x < 480; x += 20) {ev('pointermove', x, 77); await sleep(16);}
-    ev('pointerup', 400, 77);
-    return isDone('mercury', 0);
+  await negative('Merkury: kostka puszczona w słońcu nie jest uratowana', 'mercury', async () => {
+    const d = T.getActive().debug();
+    const cube = d.cubes[0];
+    ev('pointerdown', cube.x, cube.y);
+    ev('pointermove', cube.x + 40, cube.y + 20);
+    ev('pointerup', cube.x + 40, cube.y + 20);
+    await sleep(60);
+    return T.getActive().debug().cubes[0].safe;
   });
   const wipe = async (id, rect) => {
     ev('pointerdown', rect.x, rect.y);
@@ -198,28 +208,157 @@ const report = (ok, name, detail = '') => {
   await task('Księżyc: 5 różnic', 'moon', 0, async () => {
     [[320, 110], [470, 42], [148, 172], [445, 178], [40, 168]].forEach(([x, y], i) => tap(x, i % 2 ? y + 212 : y));
   });
-  await task('Ziemia: pory roku', 'earth', 1, async () => {
+  await task('Ziemia: pory roku', 'earth', 0, async () => {
     const a = T.getActive();
     let last = a.angleStart;
     for (const index of a.asks) {
-      const angle = a.zones[index].angle;
-      ev('pointerdown', a.sun.x + Math.cos(last) * a.orbit, a.sun.y + Math.sin(last) * a.orbit);
-      ev('pointermove', a.sun.x + Math.cos(angle) * a.orbit, a.sun.y + Math.sin(angle) * a.orbit);
+      const phi = a.zones[index].phi;
+      const from = a.markerAt(last), to = a.markerAt(phi);
+      ev('pointerdown', from.x, from.y);
+      ev('pointermove', to.x, to.y);
       ev('pointerup', 0, 0);
-      last = angle;
+      last = phi;
       await sleep(50);
     }
   });
-  await task('Jowisz: księżyce Galileusza', 'jupiter', 1, async () => {
-    const t0 = performance.now();
-    while (performance.now() - t0 < 15000 && !isDone('jupiter', 1)) {
-      for (const moon of T.getActive().moons) tap(moon.x, moon.y);
-      await sleep(30);
-    }
-  });
-  await task('Słońce: kolejność planet', 'sun', 1, async () => {
+  await task('Układ Słoneczny: kolejność planet', 'solar_system', 0, async () => {
     const a = T.getActive();
     for (let i = 0; i < 8; i++) {tap(a.chips[i].x, a.chips[i].y); tap(a.slots[i].x, a.slots[i].y);}
+  });
+  /* ---------- nowe zadania: księżyce i obiekty galaktyczne ---------- */
+  const until = `window.until = async (cond, ms) => {const t0 = performance.now(); while (performance.now() - t0 < ms) {if (cond()) return true; await sleep(25);} return false;};`;
+  await page.evaluate(until);
+  await task('Fobos: złap pięć razy', 'phobos', 0, async () => {
+    await until(() => {const d = T.getActive().debug(); tap(d.x, d.y); return isDone('phobos', 0);}, 20000);
+  });
+  await task('Deimos: znajdź w ciemności', 'deimos', 0, async () => {
+    const c = T.getActive().debug().targets[0].center;
+    ev('pointerdown', c.x, c.y); await sleep(900); ev('pointerup', c.x, c.y);
+  });
+  await task('Io: zatkaj osiem wulkanów', 'io', 0, async () => {
+    await until(() => {T.getActive().debug().vents.forEach(v => tap(v.x, v.y)); return isDone('io', 0);}, 40000);
+  });
+  await task('Europa: złów trzy rybki', 'europa', 0, async () => {
+    await until(() => {
+      const d = T.getActive().debug();
+      if (d.pulled) return isDone('europa', 0);
+      const f = d.fish.filter(x => x.x > 30 && x.x < 530).sort((p, q) => Math.abs(p.y - d.hook.y) - Math.abs(q.y - d.hook.y))[0];
+      if (f) ev('pointerdown', f.x + f.dir * 22, f.y);
+      return isDone('europa', 0);
+    }, 70000);
+  });
+  await negative('Ganimedes: zła kolejność nie zalicza', 'ganymedes', async () => {
+    const d = T.getActive().debug();
+    const big = d.rows.find(r => r.name === 'Ganimedes');
+    tap(big.x, big.y);
+    await sleep(60);
+    return T.getActive().debug().rows.find(r => r.name === 'Ganimedes').slot !== null;
+  });
+  await task('Ganimedes: od najmniejszego do największego', 'ganymedes', 0, async () => {
+    const d = T.getActive().debug();
+    for (const name of d.order) {
+      const r = T.getActive().debug().rows.find(x => x.name === name);
+      tap(r.x, r.y);
+      await sleep(40);
+    }
+  });
+  await task('Kallisto: dziesięć kraterów', 'kallisto', 0, async () => {
+    const d = T.getActive().debug();
+    await until(() => {tap(d.cx + (Math.random() - .5) * d.R, d.cy + (Math.random() - .5) * d.R * .8); return isDone('kallisto', 0);}, 12000);
+  });
+  await task('Tytan: dwanaście kropel w parasol', 'tytan', 0, async () => {
+    await until(() => {
+      const d = T.getActive().debug();
+      const drop = d.drops.filter(x => x.y < 70).sort((p, q) => q.y - p.y)[0];
+      if (drop) tap(drop.x, 120);
+      return isDone('tytan', 0);
+    }, 60000);
+  });
+  await task('Enceladus: cztery łaskotki', 'enceladus', 0, async () => {
+    for (let i = 0; i < 4; i++) {
+      const c = T.getActive().debug().cracks[i];
+      ev('pointerdown', c.x, c.y); await sleep(1100); ev('pointerup', c.x, c.y);
+    }
+  });
+  await task('Japetus: obie buzie', 'japetus', 0, async () => {
+    const a = T.getActive();
+    for (const kind of ['dark', 'bright']) {
+      const d = a.debug();
+      let target = null;
+      for (let r = -Math.PI; r < Math.PI; r += .05) if (d.kindAt(r) === kind) {target = r; break;}
+      if (target === null) throw new Error('brak strony ' + kind);
+      const dx = (target - a.debug().rotation) / .012;
+      ev('pointerdown', 280, 170);
+      ev('pointermove', 280 + dx, 170);
+      await sleep(900);
+      ev('pointerup', 280, 170);
+    }
+  });
+  await task('Reja: wyszoruj', 'reja', 0, async () => wipe('reja', {x: 150, y: 44, w: 260, h: 260}));
+  await task('Dione: smugi', 'dione', 0, async () => hunt());
+  const dress = id => async () => {
+    for (let i = 0; i < 3; i++) {
+      const it = T.getActive().debug().items.find(x => !x.placed);
+      ev('pointerdown', it.x, it.y);
+      ev('pointermove', it.snap.x, it.snap.y);
+      ev('pointerup', it.snap.x, it.snap.y);
+      await sleep(40);
+    }
+  };
+  await page.evaluate(`window.dress = ${dress.toString()}`);
+  await task('Tytania: ubierz królową', 'tytania', 0, async () => dress()());
+  await task('Oberon: ubierz króla', 'oberon', 0, async () => dress()());
+  const lap = async (sign, laps) => {
+    const a = T.getActive(), d = a.debug();
+    const m = d.mover;
+    let ang = Math.atan2(m.y - d.center.y, m.x - d.center.x);
+    ev('pointerdown', m.x, m.y);
+    const steps = Math.ceil(laps * 2 * Math.PI / .15) + 4;
+    for (let i = 0; i < steps; i++) {
+      ang += sign * .15;
+      ev('pointermove', d.center.x + Math.cos(ang) * 150, d.center.y + Math.sin(ang) * 150);
+      await sleep(8);
+    }
+    ev('pointerup', 0, 0);
+  };
+  await page.evaluate(`window.lap = ${lap.toString()}`);
+  await negative('Tryton: ruch zgodnie z prądem nie zalicza', 'tryton', async () => {await lap(1, 1.2); return isDone('tryton', 0);});
+  await task('Tryton: pod prąd', 'tryton', 0, async () => lap(-1, 1));
+  await task('Charon: taniec', 'charon', 0, async () => lap(1, 1.5));
+  await task('Droga Mleczna: mieszanie', 'milky_way', 0, async () => lap(-1, 2));
+  await task('Ramię Oriona: Słońce', 'orion_arm', 0, async () => {
+    const c = T.getActive().debug().targets[0].center;
+    ev('pointerdown', c.x, c.y); await sleep(900); ev('pointerup', c.x, c.y);
+  });
+  await task('Andromeda: przytulenie', 'andromeda', 0, async () => {
+    const d = T.getActive().debug();
+    ev('pointerdown', d.an.x, d.an.y);
+    ev('pointermove', d.mw.x + 120, d.mw.y);
+    ev('pointerup', 0, 0);
+    await until(() => isDone('andromeda', 0), 6000);
+  });
+  await negative('Voyager 1: zły kolor nie zalicza', 'voyager1', async () => {
+    const d = T.getActive().debug();
+    const plug = d.plugs[0];
+    const wrong = d.sockets.find(s => s.color !== plug.color);
+    ev('pointerdown', plug.x, plug.y); ev('pointermove', wrong.x, wrong.y); ev('pointerup', wrong.x, wrong.y);
+    await sleep(60);
+    return T.getActive().debug().plugs[0].placed;
+  });
+  await task('Voyager 1: kolorowe kable', 'voyager1', 0, async () => {
+    const d = T.getActive().debug();
+    for (const plug of d.plugs) {
+      const socket = d.sockets.find(s => s.color === plug.color);
+      ev('pointerdown', plug.x, plug.y); ev('pointermove', socket.x, socket.y); ev('pointerup', socket.x, socket.y);
+      await sleep(40);
+    }
+  });
+  await task('Voyager 2: antena na Ziemię', 'voyager2_gal', 0, async () => {
+    const d = T.getActive().debug();
+    ev('pointerdown', d.earth.x, d.earth.y);
+    await sleep(1000);
+    ev('pointerup', 0, 0);
+    await until(() => isDone('voyager2_gal', 0), 6000);
   });
 
   /* ---------- sondy: części ---------- */
@@ -238,7 +377,7 @@ const report = (ok, name, detail = '') => {
   }
   await page.evaluate(() => {if (T.getActive()) T.closeActivity();});
   const total = await page.evaluate(() => ({done: T.doneTasks.size, all: T.TOTAL_TASKS}));
-  report(total.done === total.all && total.all === 28, 'wszystkie zadania zaliczone', `${total.done}/${total.all}`);
+  report(total.done === total.all && total.all === 47, 'wszystkie zadania zaliczone', `${total.done}/${total.all}`);
 
   /* ---------- kamera: galaktyka ---------- */
   const state = () => page.evaluate(() => {

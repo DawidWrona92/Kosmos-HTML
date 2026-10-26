@@ -427,9 +427,32 @@ function pickAt(clientX, clientY, pointerType) {
 
 /* ---------- ustawienia dla rodzica ---------- */
 
+/* uwaga dla rodzica: bez polskiego głosu lektor czyta po angielsku albo wcale */
+function voiceHelp() {
+ const ua = navigator.userAgent || '';
+ if (/iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'Na iPadzie: Ustawienia, Dostępność, Treść mówiona, Głosy, Polski (pobierz głos). Potem zamknij i otwórz stronę ponownie.';
+ if (/Android/i.test(ua)) return 'Na Androidzie: Ustawienia, Zarządzanie ogólne, Zamiana tekstu na mowę, zainstaluj dane głosowe języka polskiego.';
+ if (/Windows/i.test(ua)) return 'Na Windowsie: Ustawienia, Czas i język, Mowa, Dodaj głosy, Polski. W Chrome pomaga też głos „Google polski” (potrzebny internet), a w Edge głosy „Zofia” i „Marek”.';
+ if (/Mac/i.test(ua)) return 'Na Macu: Ustawienia systemu, Dostępność, Treść mówiona, Głos systemowy, Zarządzaj głosami, Polski.';
+ return 'Doinstaluj polski głos w ustawieniach systemu (zwykle w sekcji Dostępność albo Mowa).';
+}
+
+function updateVoiceWarning(settled) {
+ const box = byId('voiceWarn');
+ if (!box) return;
+ let message = '';
+ if (!speech.supported) message = 'Ta przeglądarka nie umie czytać na głos, więc ciekawostki będą tylko napisane. Najlepiej działa Safari na iPadzie albo Chrome i Edge na komputerze.';
+ else if (settled && !polishVoices().length) message = 'Na tym urządzeniu nie ma polskiego głosu, więc lektor może czytać po angielsku albo milczeć. ' + voiceHelp();
+ box.hidden = !message || voiceWarnDismissed;
+ if (message) box.innerHTML = `<b>Dla rodzica</b>${escapeHtml(message)}`;
+}
+/* głosy na iPadzie i w Chrome ładują się z opóźnieniem, więc oceniamy je dopiero po chwili */
+setTimeout(() => {voicesSettled = true; updateVoiceWarning(true);}, 1800);
+
 function renderSettings() {
  const select = byId('voiceSelect');
  if (!select) return;
+ updateVoiceWarning(voicesSettled || speech.voices.length > 0);
  const candidates = polishVoices();
  const active = currentVoice();
  byId('voiceInfo').textContent = !speech.supported

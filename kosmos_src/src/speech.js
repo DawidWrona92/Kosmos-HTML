@@ -11,6 +11,10 @@ const speech = {
  holder: null
 };
 
+/* stan ostrzeżenia dla rodzica (używa go ui.js) */
+let voiceWarnDismissed = false;
+let voicesSettled = false;
+
 const FEMALE_VOICE = /zosia|zofia|ewa\b|paulina|agnieszka|maja\b|ola\b|ada\b|sabina|monika|kasia|natalia|joanna|iwona|krystyna|google polski|female|kobiet/i;
 const MALE_VOICE = /marek|krzysztof|jacek|adam\b|piotr|jakub|bartosz|stefan|janusz|tomasz|zbigniew|\bmale\b|m[eę]sk/i;
 

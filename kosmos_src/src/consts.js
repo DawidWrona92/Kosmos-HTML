@@ -1,5 +1,7 @@
 const TAU = Math.PI * 2;
 const MAX_ORBIT = 700;
+/* widok startowy: Słońce i planety do pasa planetoid */
+const START_RADIUS = 250;
 const MIN_TILT = .12;
 const MAX_TILT = .95;
 const MIN_ZOOM = .5;

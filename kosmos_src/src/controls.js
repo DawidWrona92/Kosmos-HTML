@@ -30,6 +30,7 @@ byId('dots').addEventListener('click', event => {
 });
 byId('startButton').addEventListener('click', () => {
  byId('start').hidden = true;
+ voiceWarnDismissed = true;
  musicStart();
  sayNow('Cześć! Dotknij którąś planetę, a opowiem Ci o niej coś ciekawego.');
 });
@@ -92,7 +93,7 @@ resize();
 view.tilt = defaultTilt();
 /* start: kamera przypięta do Słońca */
 setSelection(true, 0);
-view.zoom = view.zoomGoal = clamp(focusRadius(bodies[0]) / (bodies[0].radius * fitScale()), 1, MAX_ZOOM);
+view.zoom = view.zoomGoal = clamp((MAX_ORBIT + 16) / START_RADIUS, 1, MAX_ZOOM);
 renderInfo();
 renderNotebook();
 renderControls();

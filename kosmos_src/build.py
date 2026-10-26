@@ -3,7 +3,7 @@
 
 Kolejność: head.html, consts.js, fx.js, music.js, assets.js, sky.js, data.js,
 core.js (ze speech.js i ui.js w znacznikach //__SPEECH__ oraz //__UI__),
-probes.js, activities.js, controls.js. Obrazy z src/img/ lądują w assets.js
+probes.js, activities.js (z tasks2.js w znaczniku //__TASKS_MORE__), controls.js. Obrazy z src/img/ lądują w assets.js
 jako data URI.
 """
 import base64
@@ -47,7 +47,7 @@ def main():
         read('data.js'),
         core,
         read('probes.js'),
-        read('activities.js'),
+        read('activities.js').replace('//__TASKS_MORE__', read('tasks2.js')),
         read('controls.js'),
     ]
     OUT.write_text('\n'.join(parts), encoding='utf-8')

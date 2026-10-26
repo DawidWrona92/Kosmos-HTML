@@ -53,7 +53,7 @@ function layout() {
  if (free.right - free.left < 200) free.right = free.left + 200;
  if (free.bottom - free.top < 140) free.bottom = free.top + 140;
  view.free = free;
- if (view.following && view.selected !== null && view.zoomGoal > MIN_ZOOM * 2) view.zoomGoal = focusGoal();
+ if (hasChosen && view.following && view.selected !== null && view.zoomGoal > MIN_ZOOM * 2) view.zoomGoal = focusGoal();
 }
 
 function defaultTilt() {

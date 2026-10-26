@@ -662,40 +662,6 @@ function createSunspotsActivity() {
  };
 }
 
-function createMercuryActivity() {
- const width = 560, height = 340, cx = 280, cy = 176, radius = 138;
- const ice = [
-  {x: cx - radius * .2, y: cy - radius * .72, rx: radius * .2, ry: radius * .09, text: 'Jest! To lód w ciemnym kraterze. Szukaj drugiego.'},
-  {x: cx + radius * .26, y: cy - radius * .62, rx: radius * .15, ry: radius * .075, text: 'Jest drugi!'}
- ];
- return createTorchActivity({
-  title: '🔦 Znajdź lód na Merkurym',
-  lead: 'Merkury jest bardzo ciemny. Zaświeć latarką i znajdź lód w kraterach przy biegunie. Przytrzymaj światło na lodzie, aż się zaświeci!',
-  width, height,
-  paintScene(c) {
-   paintActStars(c, width, height, 90);
-   drawActBall(c, 'mercury', cx, cy, radius, '#9b8d7a');
-   ice.forEach(patch => {
-    c.fillStyle = 'rgba(210,235,250,.9)';
-    c.beginPath();
-    c.ellipse(patch.x, patch.y, patch.rx, patch.ry, 0, 0, TAU);
-    c.fill();
-    c.fillStyle = 'rgba(120,170,215,.55)';
-    c.beginPath();
-    c.ellipse(patch.x, patch.y + patch.ry * .25, patch.rx * .7, patch.ry * .55, 0, 0, TAU);
-    c.fill();
-   });
-  },
-  targets: ice.map(patch => ({
-   center: {x: patch.x, y: patch.y},
-   test: point => ((point.x - patch.x) / (patch.rx * 2.2)) ** 2 + ((point.y - patch.y) / (patch.ry * 3.4)) ** 2 <= 1,
-   mark: c => {c.strokeStyle = '#7ee787'; c.lineWidth = 4; c.beginPath(); c.ellipse(patch.x, patch.y, patch.rx + 8, patch.ry + 8, 0, 0, TAU); c.stroke();},
-   foundText: patch.text
-  })),
-  doneText: 'Znalazłaś lód! W głębokich kraterach na biegunach Merkurego leży prawdziwy lód. Słońce tam nigdy nie zagląda, więc lód się nie topi. Znalazła go sonda MESSENGER.'
- });
-}
-
 function createVenusActivity() {
  const width = 560, height = 340;
  return createWipeActivity({
@@ -1770,90 +1736,314 @@ function createMoonActivity() {
  return {title: '🌙 Księżyc: znajdź 5 różnic', lead, width, height, start: render, onDown: tap, onMove: () => {}, onUp: () => {}, repeatText: lead};
 }
 
+/* ---------- Ziemia: pory roku ----------
+ * Po lewej widok z góry (Słońce w środku, Ziemia na orbicie), po prawej duża
+ * Ziemia „tak, jak widzi ją Słońce”. Mapa jest prawdziwa i obraca się tak, że
+ * Polska stoi w południe. Pochylenie osi widać wprost: latem północ patrzy na
+ * Słońce, zimą od niego ucieka. Pora roku jest namalowana na samej Polsce. */
+
+const SEASON_LOOK = {
+ spring: {emoji: '🌷', tint: [120, 205, 80], dots: [255, 170, 205], sky: ['#6fb4f0', '#cfe8ff'], ground: '#7cc35a', name: 'wiosna'},
+ summer: {emoji: '😎', tint: [46, 168, 58], dots: [255, 226, 70], sky: ['#3d8fe8', '#9fd4ff'], ground: '#3aa13e', name: 'lato'},
+ autumn: {emoji: '🍂', tint: [214, 124, 30], dots: [190, 60, 30], sky: ['#7d8fa8', '#c9cdd6'], ground: '#b0762a', name: 'jesień'},
+ winter: {emoji: '⛄', tint: [244, 248, 255], dots: [170, 205, 245], sky: ['#9db0c4', '#e6eef6'], ground: '#f2f6fb', name: 'zima'}
+};
+
 function createSeasonsActivity() {
- const width = 560, height = 340;
+ const width = 620, height = 400;
  const bg = makeLayer(width, height);
- paintActStars(bg.ctx, width, height, 90);
- const sun = {x: 280, y: 190, r: 26};
- const orbit = 96;
+ paintActStars(bg.ctx, width, height, 110);
+ const EPS = 23.4 * Math.PI / 180;
+ const sinE = Math.sin(EPS), cosE = Math.cos(EPS);
+ const POLAND = {lat: 52 * Math.PI / 180, lon: 19 * Math.PI / 180};
+ const diagram = {x: 172, y: 122, r: 78};
+ const earthBox = {x: 472, y: 196, r: 118};
+ const sky = {x: 18, y: 262, w: 268, h: 122};
  const zones = [
-  {angle: -Math.PI / 2, emoji: '🌸', name: 'Wiosna', ask: 'wiosna', text: 'Wiosna — przyroda budzi się do życia, drzewa kwitną, a ptaki śpiewają.'},
-  {angle: 0, emoji: '☀️', name: 'Lato', ask: 'lato', text: 'Lato — jest najcieplej, bo północna część Ziemi jest przechylona w stronę Słońca. To czas wakacji i kąpieli w jeziorze!'},
-  {angle: Math.PI / 2, emoji: '🍂', name: 'Jesień', ask: 'jesień', text: 'Jesień — liście na drzewach robią się kolorowe i opadają.'},
-  {angle: Math.PI, emoji: '❄️', name: 'Zima', ask: 'zima', text: 'Zima — jest zimno, bo północna część Ziemi jest odwrócona od Słońca. Czasem pada śnieg i można lepić bałwana!'}
+  {phi: 3 * Math.PI / 2, key: 'spring', emoji: '🌷', name: 'Wiosna', ask: 'wiosna', text: 'Wiosna! Północ Ziemi jest pochylona bokiem do Słońca. Dzień i noc są prawie równe, robi się coraz cieplej, drzewa kwitną, a ptaki śpiewają.'},
+  {phi: 0, key: 'summer', emoji: '☀️', name: 'Lato', ask: 'lato', text: 'Lato! Północ Ziemi jest pochylona w stronę Słońca. Słońce stoi wysoko i mocno grzeje, a dni są długie. To czas wakacji i kąpieli w jeziorze!'},
+  {phi: Math.PI / 2, key: 'autumn', emoji: '🍂', name: 'Jesień', ask: 'jesień', text: 'Jesień! Północ Ziemi znowu jest pochylona bokiem do Słońca. Robi się coraz chłodniej, a liście zmieniają kolory i spadają.'},
+  {phi: Math.PI, key: 'winter', emoji: '❄️', name: 'Zima', ask: 'zima', text: 'Zima! Północ Ziemi jest odwrócona od Słońca. Słońce stoi nisko i słabo grzeje, a dni są krótkie. Pada śnieg i można lepić bałwana!'}
  ];
  /* kolejność pytań: lato, zima, wiosna, jesień */
  const asks = [1, 3, 0, 2];
  let askIndex = 0;
- const angleStart = -Math.PI / 2;
- let angle = angleStart;
+ const angleStart = 3 * Math.PI / 2;
+ let phi = angleStart;
  let dragging = false;
  const done = new Set();
- const lead = 'Ziemia krąży wokół Słońca i jej oś jest przechylona. Przeciągnij Ziemię w miejsce, o które zapytam, i puść palec. Zacznijmy od lata!';
+ const lead = 'Ziemia krąży wokół Słońca, a jej oś jest przechylona w tę samą stronę. Po prawej widzisz Ziemię tak, jak widzi ją Słońce. Przeciągnij Ziemię na orbicie tam, gdzie o to poproszę. Zaczynamy od lata!';
  const angleDiff = (a, b) => {
   const delta = Math.abs(a - b) % TAU;
   return Math.min(delta, TAU - delta);
  };
- const askText = () => `Gdzie w Polsce jest teraz ${zones[asks[askIndex]].ask}? Przeciągnij tam Ziemię.`;
+ const askText = () => `Gdzie jest teraz ${zones[asks[askIndex]].ask}? Przeciągnij tam Ziemię.`;
+ const markerAt = angle => ({x: diagram.x + Math.cos(angle) * diagram.r, y: diagram.y - Math.sin(angle) * diagram.r});
+ /* pora roku najbliższa bieżącemu położeniu */
+ const seasonAt = angle => zones.reduce((best, zone) => angleDiff(angle, zone.phi) < angleDiff(angle, best.phi) ? zone : best, zones[0]);
+ const sunElevation = angle => Math.PI / 2 - POLAND.lat + EPS * Math.cos(angle);
+
+ /* ---- duża Ziemia: obliczana piksel po pikselu z prawdziwej mapy ---- */
+ const S = 340, half = S / 2;
+ const nxA = new Float32Array(S * S), nyA = new Float32Array(S * S), nzA = new Float32Array(S * S);
+ const insideA = new Uint8Array(S * S);
+ for (let y = 0; y < S; y++) {
+  for (let x = 0; x < S; x++) {
+   const nx = (x + .5 - half) / half, ny = -(y + .5 - half) / half;
+   const d = nx * nx + ny * ny;
+   const index = y * S + x;
+   if (d > 1) continue;
+   insideA[index] = 1;
+   nxA[index] = nx; nyA[index] = ny; nzA[index] = Math.sqrt(1 - d);
+  }
+ }
+ const globe = document.createElement('canvas');
+ globe.width = S; globe.height = S;
+ const globeCtx = globe.getContext('2d');
+ const globeData = globeCtx.createImageData(S, S);
+ const globePixels = new Uint32Array(globeData.data.buffer);
+ const texture = textureOf('earth_map');
+ let globeOf_phi = null;
+ let basis = null;
+ const computeBasis = angle => {
+  const sp = Math.sin(angle), cp = Math.cos(angle);
+  /* osie kamery (patrzy ze Słońca) zapisane w układzie ciała Ziemi: A (długość 0), F, N (biegun) */
+  const xc = [sp, 0, cp], zc = [-cp, 0, sp];
+  const A = [cosE, sinE, 0], F = [0, 0, -1], N = [-sinE, cosE, 0];
+  const dot = (u, v) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  const bx = [dot(xc, A), dot(xc, F), dot(xc, N)];
+  const by = [sinE, 0, cosE];
+  const bz = [dot(zc, A), dot(zc, F), dot(zc, N)];
+  const lonSub = Math.atan2(dot(zc, F), dot(zc, A));
+  return {bx, by, bz, lonSub, axis: {x: -sinE * sp, y: cosE, z: sinE * cp}};
+ };
+ const mixWeights = angle => {
+  const weights = zones.map(zone => Math.pow(Math.max(0, Math.cos(angle - zone.phi)), 2));
+  const sum = weights.reduce((a, b) => a + b, 0) || 1;
+  return weights.map(weight => weight / sum);
+ };
+ const renderGlobe = angle => {
+  basis = computeBasis(angle);
+  globeOf_phi = angle;
+  const {bx, by, bz, lonSub} = basis;
+  const offset = POLAND.lon - lonSub;
+  const weights = mixWeights(angle);
+  let tint = [0, 0, 0];
+  zones.forEach((zone, i) => SEASON_LOOK[zone.key].tint.forEach((value, k) => {tint[k] += value * weights[i];}));
+  const near = seasonAt(angle);
+  const dots = SEASON_LOOK[near.key].dots;
+  const cosLatP = Math.cos(POLAND.lat), sinLatP = Math.sin(POLAND.lat);
+  const edgeOuter = Math.cos(25 * Math.PI / 180), edgeInner = Math.cos(13 * Math.PI / 180);
+  const tw = texture ? texture.width : 1, th = texture ? texture.height : 1;
+  for (let index = 0; index < S * S; index++) {
+   if (!insideA[index]) {globePixels[index] = 0; continue;}
+   const nx = nxA[index], ny = nyA[index], nz = nzA[index];
+   const bA = nx * bx[0] + ny * by[0] + nz * bz[0];
+   const bF = nx * bx[1] + ny * by[1] + nz * bz[1];
+   const bN = nx * bx[2] + ny * by[2] + nz * bz[2];
+   const lat = Math.asin(bN < -1 ? -1 : bN > 1 ? 1 : bN);
+   let lon = Math.atan2(bF, bA) + offset;
+   if (lon > Math.PI) lon -= TAU; else if (lon < -Math.PI) lon += TAU;
+   let r, g, b;
+   if (texture) {
+    const u = Math.min(tw - 1, Math.floor((lon / TAU + .5) * tw));
+    const v = Math.min(th - 1, Math.max(0, Math.floor((.5 - lat / Math.PI) * th)));
+    const c = texture.data[v * tw + u];
+    r = c & 255; g = (c >>> 8) & 255; b = (c >>> 16) & 255;
+    if (Math.abs(lat - POLAND.lat) < .5 && Math.abs(lon - POLAND.lon) < .9) {
+     const cl = Math.cos(lat);
+     const dotP = cl * cosLatP * Math.cos(lon - POLAND.lon) + Math.sin(lat) * sinLatP;
+     if (dotP > edgeOuter) {
+      let w = (dotP - edgeOuter) / (edgeInner - edgeOuter);
+      w = w > 1 ? 1 : w;
+      w = w * w * (3 - 2 * w);
+      const speck = ((Math.floor(u / 3) * 73856093) ^ (Math.floor(v / 3) * 19349663)) >>> 0;
+      if (w > .55 && speck % 100 < 13) {r = dots[0]; g = dots[1]; b = dots[2];}
+      else {
+       const k = .82 * w;
+       r = r + (tint[0] - r) * k; g = g + (tint[1] - g) * k; b = b + (tint[2] - b) * k;
+      }
+     }
+    }
+   } else {r = 40; g = 110; b = 190;}
+   const shade = .3 + .7 * Math.pow(nz, .55);
+   globePixels[index] = (255 << 24) | ((b * shade | 0) << 16) | ((g * shade | 0) << 8) | (r * shade | 0);
+  }
+  globeCtx.putImageData(globeData, 0, 0);
+ };
+
+ /* ---- rysowanie ---- */
+ const drawSunFace = (c, x, y, r) => {
+  const glow = c.createRadialGradient(x, y, r * .4, x, y, r * 2.3);
+  glow.addColorStop(0, 'rgba(255,170,60,.55)');
+  glow.addColorStop(1, 'rgba(255,170,60,0)');
+  c.fillStyle = glow;
+  c.beginPath(); c.arc(x, y, r * 2.3, 0, TAU); c.fill();
+  const g = c.createRadialGradient(x - r * .3, y - r * .35, r * .1, x, y, r);
+  g.addColorStop(0, '#fff3a0'); g.addColorStop(.6, '#ffb43a'); g.addColorStop(1, '#e8741a');
+  c.fillStyle = g;
+  c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+  c.fillStyle = '#5a2b00';
+  c.beginPath(); c.arc(x - r * .34, y - r * .15, r * .1, 0, TAU); c.arc(x + r * .34, y - r * .15, r * .1, 0, TAU); c.fill();
+  c.strokeStyle = '#5a2b00'; c.lineWidth = 2.2; c.lineCap = 'round';
+  c.beginPath(); c.arc(x, y + r * .06, r * .46, .25, Math.PI - .25); c.stroke();
+ };
+ const drawSky = (c, season, elevation) => {
+  const look = SEASON_LOOK[season.key];
+  c.save();
+  c.beginPath(); c.roundRect(sky.x, sky.y, sky.w, sky.h, 14); c.clip();
+  const g = c.createLinearGradient(0, sky.y, 0, sky.y + sky.h);
+  g.addColorStop(0, look.sky[0]); g.addColorStop(1, look.sky[1]);
+  c.fillStyle = g;
+  c.fillRect(sky.x, sky.y, sky.w, sky.h);
+  const groundTop = sky.y + sky.h - 34;
+  const sunX = sky.x + sky.w * .78 - (elevation / 1.2) * 26;
+  const sunY = groundTop - 6 - (elevation / 1.2) * (groundTop - sky.y - 30);
+  const strong = clamp(elevation / 1.1, .25, 1);
+  const sg = c.createRadialGradient(sunX, sunY, 2, sunX, sunY, 40);
+  sg.addColorStop(0, `rgba(255,236,120,${.35 + .5 * strong})`);
+  sg.addColorStop(1, 'rgba(255,236,120,0)');
+  c.fillStyle = sg;
+  c.beginPath(); c.arc(sunX, sunY, 40, 0, TAU); c.fill();
+  c.fillStyle = season.key === 'winter' ? '#fff6cf' : '#ffe34d';
+  c.beginPath(); c.arc(sunX, sunY, 11 + strong * 3, 0, TAU); c.fill();
+  c.fillStyle = look.ground;
+  c.fillRect(sky.x, groundTop, sky.w, 40);
+  /* cień drzewa: im niżej Słońce, tym dłuższy */
+  const treeX = sky.x + sky.w * .42;
+  const shadow = clamp(20 / Math.tan(Math.max(.12, elevation)), 12, 120);
+  c.fillStyle = 'rgba(20,30,10,.28)';
+  c.beginPath(); c.ellipse(treeX - shadow / 2 - 4, groundTop + 9, shadow / 2, 5, 0, 0, TAU); c.fill();
+  c.fillStyle = '#6b4423';
+  c.fillRect(treeX - 4, groundTop - 36, 8, 42);
+  const crown = {spring: '#a8dc82', summer: '#2f9a3c', autumn: '#e0861c', winter: null}[season.key];
+  if (crown) {
+   c.fillStyle = crown;
+   [[0, -50, 22], [-14, -38, 16], [14, -38, 16]].forEach(([dx, dy, rr]) => {c.beginPath(); c.arc(treeX + dx, groundTop + dy, rr, 0, TAU); c.fill();});
+   if (season.key === 'spring') {
+    c.fillStyle = '#ffb5d0';
+    [[-10, -56], [8, -48], [-2, -38], [16, -40], [-18, -42]].forEach(([dx, dy]) => {c.beginPath(); c.arc(treeX + dx, groundTop + dy, 3.2, 0, TAU); c.fill();});
+   }
+   if (season.key === 'autumn') {
+    c.fillStyle = '#c0391b';
+    [[-22, -12], [26, -6], [10, -2]].forEach(([dx, dy]) => {c.beginPath(); c.ellipse(treeX + dx, groundTop + dy, 4, 2.4, .6, 0, TAU); c.fill();});
+   }
+  } else {
+   c.strokeStyle = '#6b4423'; c.lineWidth = 3; c.lineCap = 'round';
+   [[-22, -64], [0, -76], [22, -64], [-10, -56], [12, -56]].forEach(([dx, dy]) => {c.beginPath(); c.moveTo(treeX, groundTop - 30); c.lineTo(treeX + dx, groundTop + dy); c.stroke();});
+   c.fillStyle = '#fff';
+   [[-22, -64], [0, -76], [22, -64]].forEach(([dx, dy]) => {c.beginPath(); c.arc(treeX + dx, groundTop + dy, 3.5, 0, TAU); c.fill();});
+  }
+  c.font = '30px system-ui, sans-serif';
+  c.textAlign = 'center';
+  const friend = {spring: '🐦', summer: '🏖️', autumn: '☔', winter: '⛄'}[season.key];
+  c.fillText(friend, sky.x + sky.w * .14, groundTop + 26);
+  c.restore();
+  c.strokeStyle = 'rgba(180,210,255,.55)'; c.lineWidth = 2;
+  c.beginPath(); c.roundRect(sky.x, sky.y, sky.w, sky.h, 14); c.stroke();
+  c.fillStyle = '#fff'; c.font = '800 13px system-ui, sans-serif'; c.textAlign = 'left';
+  c.fillText('Niebo nad Polską', sky.x + 10, sky.y + 18);
+ };
+ const drawEarthView = (c, angle, season) => {
+  if (globeOf_phi !== angle) renderGlobe(angle);
+  const {axis} = basis;
+  const R = earthBox.r;
+  /* poświata atmosfery */
+  const halo = c.createRadialGradient(earthBox.x, earthBox.y, R * .92, earthBox.x, earthBox.y, R * 1.2);
+  halo.addColorStop(0, 'rgba(120,180,255,.55)'); halo.addColorStop(1, 'rgba(120,180,255,0)');
+  c.fillStyle = halo;
+  c.beginPath(); c.arc(earthBox.x, earthBox.y, R * 1.2, 0, TAU); c.fill();
+  const tip = k => ({x: earthBox.x + axis.x * R * k, y: earthBox.y - axis.y * R * k});
+  const stick = (k, front, color) => {
+   const end = tip(k);
+   c.strokeStyle = color; c.lineWidth = 3; c.lineCap = 'round';
+   c.setLineDash(front ? [] : [2, 6]);
+   c.beginPath(); c.moveTo(earthBox.x, earthBox.y); c.lineTo(end.x, end.y); c.stroke();
+   c.setLineDash([]);
+  };
+  /* część osi za Ziemią rysujemy przed globusem, część przed nią — po globusie */
+  const northFront = axis.z > 0;
+  if (!northFront) stick(1.26, false, 'rgba(255,229,138,.7)');
+  if (northFront) stick(-1.26, false, 'rgba(255,255,255,.35)');
+  c.drawImage(globe, earthBox.x - R, earthBox.y - R, R * 2, R * 2);
+  if (northFront) stick(1.26, true, '#ffe58a'); else stick(-1.26, true, 'rgba(255,255,255,.85)');
+  const north = tip(1.26);
+  c.fillStyle = northFront ? '#ffe58a' : 'rgba(255,229,138,.6)';
+  c.beginPath(); c.arc(north.x, north.y, 6, 0, TAU); c.fill();
+  c.fillStyle = '#fff'; c.font = '800 14px system-ui, sans-serif'; c.textAlign = 'center';
+  c.fillText('N', north.x + (axis.x >= 0 ? 15 : -15), north.y + 5);
+  /* pinezka na Polsce */
+  const {bx, by, bz, lonSub} = basis;
+  const bp = [Math.cos(POLAND.lat) * Math.cos(lonSub), Math.cos(POLAND.lat) * Math.sin(lonSub), Math.sin(POLAND.lat)];
+  const px = bp[0] * bx[0] + bp[1] * bx[1] + bp[2] * bx[2];
+  const py = bp[0] * by[0] + bp[1] * by[1] + bp[2] * by[2];
+  const pz = bp[0] * bz[0] + bp[1] * bz[1] + bp[2] * bz[2];
+  const spot = {x: earthBox.x + px * R, y: earthBox.y - py * R, visible: pz > .04};
+  if (spot.visible) {
+   const bounce = Math.sin(performance.now() * .005) * 3;
+   c.fillStyle = '#e8283c';
+   c.strokeStyle = '#fff'; c.lineWidth = 2;
+   c.beginPath(); c.arc(spot.x, spot.y, 5.5, 0, TAU); c.fill(); c.stroke();
+   const by2 = spot.y - 32 + bounce;
+   c.fillStyle = 'rgba(255,255,255,.95)';
+   c.beginPath(); c.arc(spot.x, by2, 17, 0, TAU); c.fill();
+   c.beginPath(); c.moveTo(spot.x - 6, by2 + 14); c.lineTo(spot.x, spot.y - 6); c.lineTo(spot.x + 6, by2 + 14); c.fill();
+   c.font = '22px system-ui, sans-serif'; c.textAlign = 'center';
+   c.fillStyle = '#000';
+   c.fillText(SEASON_LOOK[season.key].emoji, spot.x, by2 + 8);
+  }
+  c.fillStyle = '#fff'; c.font = '800 14px system-ui, sans-serif'; c.textAlign = 'center';
+  c.fillText('Tak Ziemię widzi Słońce', earthBox.x, 24);
+  if (spot.visible) {
+   c.fillStyle = '#ff9aa6'; c.font = '800 13px system-ui, sans-serif';
+   c.fillText('czerwona kropka: Polska', earthBox.x, earthBox.y + R + 20);
+  }
+ };
  const render = () => {
   actCtx.drawImage(bg.canvas, 0, 0, width, height);
-  actCtx.strokeStyle = 'rgba(104,171,239,.35)';
-  actCtx.lineWidth = 1.5;
-  actCtx.setLineDash([4, 7]);
-  actCtx.beginPath();
-  actCtx.arc(sun.x, sun.y, orbit, 0, TAU);
-  actCtx.stroke();
+  const season = seasonAt(phi);
+  /* orbita i Słońce */
+  actCtx.strokeStyle = 'rgba(104,171,239,.45)'; actCtx.lineWidth = 2; actCtx.setLineDash([4, 7]);
+  actCtx.beginPath(); actCtx.arc(diagram.x, diagram.y, diagram.r, 0, TAU); actCtx.stroke();
   actCtx.setLineDash([]);
-  const glow = actCtx.createRadialGradient(sun.x, sun.y, 4, sun.x, sun.y, sun.r * 2.4);
-  glow.addColorStop(0, 'rgba(255,170,60,.5)');
-  glow.addColorStop(1, 'rgba(255,170,60,0)');
-  actCtx.fillStyle = glow;
-  actCtx.beginPath();
-  actCtx.arc(sun.x, sun.y, sun.r * 2.4, 0, TAU);
-  actCtx.fill();
-  const sg = actCtx.createRadialGradient(sun.x - 8, sun.y - 9, 2, sun.x, sun.y, sun.r);
-  sg.addColorStop(0, '#fff3a0');
-  sg.addColorStop(.6, '#ffb43a');
-  sg.addColorStop(1, '#e06a1a');
-  actCtx.fillStyle = sg;
-  actCtx.beginPath();
-  actCtx.arc(sun.x, sun.y, sun.r, 0, TAU);
-  actCtx.fill();
+  drawSunFace(actCtx, diagram.x, diagram.y, 22);
   zones.forEach((zone, index) => {
-   const lx = sun.x + Math.cos(zone.angle) * (orbit + 62);
-   const ly = sun.y + Math.sin(zone.angle) * (orbit + 42) + 5;
-   actCtx.textAlign = 'center';
+   const at = {x: diagram.x + Math.cos(zone.phi) * (diagram.r + 12), y: diagram.y - Math.sin(zone.phi) * (diagram.r + 12)};
    actCtx.font = '700 15px system-ui, sans-serif';
-   actCtx.fillStyle = done.has(index) ? '#7ee787' : '#e6f1ff';
-   actCtx.fillText(`${zone.emoji} ${zone.name}${done.has(index) ? ' ✓' : ''}`, lx, ly);
+   actCtx.fillStyle = done.has(index) ? '#7ee787' : (zone === season ? '#ffe58a' : '#cfe0f5');
+   const label = `${zone.emoji} ${zone.name}${done.has(index) ? ' ✓' : ''}`;
+   if (Math.abs(Math.cos(zone.phi)) > .5) {
+    actCtx.textAlign = Math.cos(zone.phi) > 0 ? 'left' : 'right';
+    actCtx.fillText(label, at.x + (Math.cos(zone.phi) > 0 ? 2 : -2), at.y + 5);
+   } else {
+    actCtx.textAlign = 'center';
+    actCtx.fillText(label, at.x, at.y + (Math.sin(zone.phi) > 0 ? -4 : 16));
+   }
   });
-  const ex = sun.x + Math.cos(angle) * orbit;
-  const ey = sun.y + Math.sin(angle) * orbit;
-  drawActBall(actCtx, 'earth_photo', ex, ey, 17, '#268de0', 0);
-  /* oś Ziemi pochylona zawsze w tę samą stronę — biegun północny (żółta kropka) wskazuje „w lewo, w górę” */
-  const tx = Math.sin(.4) * 28, ty = Math.cos(.4) * 28;
-  actCtx.strokeStyle = 'rgba(255,255,255,.85)';
-  actCtx.lineWidth = 2;
-  actCtx.beginPath();
-  actCtx.moveTo(ex + tx, ey + ty);
-  actCtx.lineTo(ex - tx, ey - ty);
-  actCtx.stroke();
+  /* Ziemia na orbicie: oś zawsze pokazuje w lewo (to jest cała tajemnica pór roku) */
+  const e = markerAt(phi);
+  const stub = 30;
+  actCtx.strokeStyle = '#ffe58a'; actCtx.lineWidth = 3; actCtx.lineCap = 'round';
+  actCtx.beginPath(); actCtx.moveTo(e.x, e.y); actCtx.lineTo(e.x - stub * sinE * 1.9, e.y); actCtx.stroke();
   actCtx.fillStyle = '#ffe58a';
-  actCtx.beginPath();
-  actCtx.arc(ex - tx, ey - ty, 3.5, 0, TAU);
-  actCtx.fill();
-  if (done.size < zones.length) {
-   actCtx.fillStyle = '#ffe58a';
-   actCtx.font = '800 15px system-ui, sans-serif';
-   actCtx.textAlign = 'center';
-   actCtx.fillText(askText(), width / 2, 24);
-  }
+  actCtx.beginPath(); actCtx.arc(e.x - stub * sinE * 1.9, e.y, 4.5, 0, TAU); actCtx.fill();
+  drawActBall(actCtx, 'earth_photo', e.x, e.y, 17, '#268de0', 0);
+  actCtx.strokeStyle = dragging ? '#ffe58a' : 'rgba(255,255,255,.55)'; actCtx.lineWidth = 2.5;
+  actCtx.beginPath(); actCtx.arc(e.x, e.y, 22, 0, TAU); actCtx.stroke();
+  drawEarthView(actCtx, phi, season);
+  drawSky(actCtx, season, sunElevation(phi));
+  actCtx.textAlign = 'center';
+  actCtx.fillStyle = '#ffe58a';
+  actCtx.font = '800 16px system-ui, sans-serif';
+  if (askIndex < asks.length) wrapActText(actCtx, askText(), 452, 360, 300, 20);
+  else {actCtx.fillStyle = '#7ee787'; actCtx.fillText('Brawo! Możesz kręcić Ziemią dalej.', 452, 362);}
  };
  const release = () => {
   if (!dragging) return;
   dragging = false;
-  const zoneIndex = zones.findIndex(zone => angleDiff(angle, zone.angle) < .5);
-  if (zoneIndex < 0) return;
+  if (askIndex >= asks.length) {render(); return;}
+  const zoneIndex = zones.findIndex(zone => angleDiff(phi, zone.phi) < .5);
+  if (zoneIndex < 0) {render(); return;}
   const asked = asks[askIndex];
   if (zoneIndex === asked) {
    done.add(zoneIndex);
@@ -1861,13 +2051,14 @@ function createSeasonsActivity() {
    askIndex++;
    render();
    if (askIndex >= asks.length) {
-    finishActivity(`${zones[zoneIndex].text} Brawo, ustawiłaś Ziemię we wszystkich porach roku! Pory roku są dlatego, że Ziemia krąży wokół Słońca, a jej oś jest przechylona. Raz bardziej do Słońca zwrócona jest północ, a raz południe.`);
+    finishActivity(`${zones[zoneIndex].text} Brawo, odwiedziłaś wszystkie cztery pory roku! Pamiętaj: lato nie jest dlatego, że Ziemia jest bliżej Słońca. Pory roku robi przechylona oś, bo raz Słońce świeci na północ mocniej, a raz słabiej.`);
    } else {
     logActivity(`${zones[zoneIndex].text} Teraz: ${askText()}`);
    }
   } else {
    fxPlay('miss');
    sayNow(`Tu jest ${zones[zoneIndex].ask}. ${askText()}`);
+   render();
   }
  };
  return {
@@ -1875,128 +2066,24 @@ function createSeasonsActivity() {
   lead, width, height,
   start: render,
   onDown: point => {
-   const ex = sun.x + Math.cos(angle) * orbit;
-   const ey = sun.y + Math.sin(angle) * orbit;
-   if (Math.hypot(point.x - ex, point.y - ey) > 34) return;
+   const e = markerAt(phi);
+   if (Math.hypot(point.x - e.x, point.y - e.y) > 38) return;
    dragging = true;
+   render();
   },
   onMove: point => {
    if (!dragging) return;
-   angle = Math.atan2(point.y - sun.y, point.x - sun.x);
+   phi = Math.atan2(-(point.y - diagram.y), point.x - diagram.x);
+   if (phi < 0) phi += TAU;
    render();
   },
   onUp: release,
   repeatText: lead,
-  sun, orbit, zones, angleStart, asks
+  get hintText() {return askText();},
+  zones, asks, angleStart, markerAt, diagram,
+  debug: () => ({phi, askIndex, done: [...done], season: seasonAt(phi).key})
  };
 }
-
-/* ---------- Jowisz (zadanie 2): księżyce Galileusza ---------- */
-
-const GALILEAN_MOONS = [
- {name: 'Io', color: '#e8c07a', radius: 8, orbit: 108, period: 12, phase: .5, ordinal: 'najbliższy', text: 'ma ponad 400 wulkanów! Wyrzucają one siarkę, która maluje Io na żółto i pomarańczowo.'},
- {name: 'Europa', color: '#d8e4f0', radius: 7, orbit: 138, period: 18, phase: 2.1, ordinal: 'drugi od Jowisza', text: 'pod grubą skorupą lodu może być ocean wody. A gdzie jest woda, tam może być życie!'},
- {name: 'Ganimedes', color: '#b09a7a', radius: 10, orbit: 168, period: 26, phase: 4, ordinal: 'trzeci od Jowisza', text: 'to największy księżyc w całym Układzie Słonecznym — większy nawet od planety Merkury!'},
- {name: 'Kallisto', color: '#8a7a66', radius: 8, orbit: 198, period: 36, phase: 1.2, ordinal: 'najdalszy', text: 'jest cały pokryty kraterami. To jeden z najstarszych księżyców Jowisza.'}
-];
-
-function createGalileanActivity() {
- const width = 560, height = 340;
- const bg = makeLayer(width, height);
- paintActStars(bg.ctx, width, height, 100);
- const center = {x: 280, y: 170};
- const jupiterRadius = 58;
- const moons = GALILEAN_MOONS.map(moon => ({...moon, x: 0, y: 0}));
- const found = new Set();
- let next = 0;
- const lead = 'To Jowisz i cztery jego wielkie księżyce, które odkrył Galileusz. Łap je po kolei — od tego, który jest najbliżej Jowisza, do tego, który jest najdalej!';
- const place = now => {
-  moons.forEach(moon => {
-   const angle = moon.phase + now * .0002 * (36 / moon.period);
-   moon.x = center.x + Math.cos(angle) * moon.orbit;
-   moon.y = center.y + Math.sin(angle) * moon.orbit * .55;
-  });
- };
- const render = () => {
-  actCtx.drawImage(bg.canvas, 0, 0, width, height);
-  actCtx.strokeStyle = 'rgba(104,171,239,.25)';
-  actCtx.lineWidth = 1;
-  actCtx.setLineDash([3, 6]);
-  moons.forEach(moon => {
-   actCtx.beginPath();
-   actCtx.ellipse(center.x, center.y, moon.orbit, moon.orbit * .55, 0, 0, TAU);
-   actCtx.stroke();
-  });
-  actCtx.setLineDash([]);
-  drawActBall(actCtx, 'jupiter', center.x, center.y, jupiterRadius, '#d5b18a', 0);
-  moons.forEach((moon, index) => {
-   const gradient = actCtx.createRadialGradient(moon.x - moon.radius * .35, moon.y - moon.radius * .4, moon.radius * .2, moon.x, moon.y, moon.radius * 1.2);
-   gradient.addColorStop(0, moon.color);
-   gradient.addColorStop(1, '#070b16');
-   actCtx.fillStyle = gradient;
-   actCtx.beginPath();
-   actCtx.arc(moon.x, moon.y, moon.radius, 0, TAU);
-   actCtx.fill();
-   actCtx.textAlign = 'center';
-   actCtx.font = '700 14px system-ui, sans-serif';
-   actCtx.fillStyle = found.has(index) ? '#7ee787' : '#e6f1ff';
-   actCtx.fillText(found.has(index) ? moon.name : '?', moon.x, moon.y - moon.radius - 6);
-   if (found.has(index)) strokeHit(moon.x, moon.y, moon.radius + 5, moon.radius + 5, 0);
-  });
-  if (found.size < moons.length) {
-   actCtx.fillStyle = '#ffe58a';
-   actCtx.font = '800 15px system-ui, sans-serif';
-   actCtx.textAlign = 'center';
-   actCtx.fillText(`Teraz złap księżyc: ${moons[next].ordinal}`, width / 2, 24);
-  }
- };
- const tap = point => {
-  let index = -1;
-  let best = Infinity;
-  moons.forEach((moon, i) => {
-   const distance = Math.hypot(point.x - moon.x, point.y - moon.y);
-   if (distance <= moon.radius + 14 && distance < best) {index = i; best = distance;}
-  });
-  if (index < 0 || found.has(index)) return;
-  if (index !== next) {
-   fxPlay('miss');
-   sayNow(index > next ? `To nie ten. Ten krąży dalej od Jowisza. Szukaj księżyca na najmniejszej orbicie, którego jeszcze nie złapałaś.` : 'Ten już masz. Szukaj kolejnego, dalej od Jowisza.');
-   return;
-  }
-  found.add(index);
-  next++;
-  fxPlay('ok');
-  render();
-  logActivity(`${moons[index].name} ${moons[index].text}`);
-  if (found.size === moons.length) {
-   finishActivity('Złapałaś wszystkie cztery księżyce w dobrej kolejności! Io, Europa, Ganimedes i Kallisto. Galileusz zobaczył je w 1610 roku przez pierwszy teleskop. Im bliżej Jowisza, tym szybciej księżyc krąży!');
-  }
- };
- return {
-  title: '🪐 Księżyce Galileusza',
-  lead, width, height,
-  start: () => {place(performance.now()); render();},
-  onDown: tap,
-  onMove: () => {},
-  onUp: () => {},
-  frame: (dt, now) => {place(now); render();},
-  repeatText: lead,
-  moons
- };
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* ---------- Księżyc: znajdź różnice (scena z poprzedniej wersji) ---------- */
 
@@ -2286,9 +2373,10 @@ function createOrderActivity() {
 /* ---------- Ziemia (zadanie 2): pory roku ---------- */
 
 
-/* ---------- Jowisz (zadanie 2): księżyce Galileusza ---------- */
 
 
+
+//__TASKS_MORE__
 
 /* ---------- rejestr i sterowanie ---------- */
 
@@ -2308,7 +2396,26 @@ const activityFactories = {
  belt: createBeltActivity,
  order: createOrderActivity,
  seasons: createSeasonsActivity,
- galilean: createGalileanActivity
+ phobos: createPhobosActivity,
+ deimos: createDeimosActivity,
+ io: createIoActivity,
+ europa: createEuropaActivity,
+ ganymedes: createGanymedeActivity,
+ kallisto: createCallistoActivity,
+ tytan: createTitanActivity,
+ enceladus: createEnceladusActivity,
+ japetus: createIapetusActivity,
+ reja: createRheaActivity,
+ dione: createDioneActivity,
+ tytania: createTitaniaActivity,
+ oberon: createOberonActivity,
+ tryton: createTritonActivity,
+ charon: createCharonActivity,
+ orion: createOrionActivity,
+ milkyway: createMilkyWayActivity,
+ andromeda: createAndromedaActivity,
+ voyager1: createVoyager1Activity,
+ voyager2: createVoyager2Activity
 };
 
 /* gdy dziecko długo nic nie robi, lektor powtarza polecenie */
