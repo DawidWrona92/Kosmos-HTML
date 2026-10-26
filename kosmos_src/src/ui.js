@@ -219,13 +219,22 @@ function chooseFind(target) {
  readFrom(0, true);
 }
 
+/* docelowy zoom bieżącego celu kamery: księżyc, znajdźka, pierścień albo sama planeta */
+function focusGoal() {
+ if (view.selected === null) return view.zoomGoal;
+ if (view.moon) return moonZoom(view.moon);
+ if (view.find) return clamp(followZoom(view.selected) * 1.4, MIN_ZOOM, MAX_ZOOM);
+ if (view.ring) return clamp(followZoom(view.selected) * .8, MIN_ZOOM, MAX_ZOOM);
+ return followZoom(view.selected);
+}
+
 function moonZoom(moon) {
  /* kadr zależy od rozmiaru księżyca: zawsze wypełnia podobną część ekranu,
   * niezależnie od tego, czy to wielki Ganimedes, czy maleńki Deimos */
  const parent = bodies[view.selected];
  const base = Math.min(view.free.right - view.free.left, view.free.bottom - view.free.top);
  const unit = parent.radius * fitScale() * 1.25 * moon.size * .6;
- return clamp(base * .2 / unit, followZoom(view.selected) * 1.2, MAX_ZOOM);
+ return clamp(base * .22 / unit, followZoom(view.selected) * 1.2, MAX_ZOOM);
 }
 
 function chooseMoon(target) {

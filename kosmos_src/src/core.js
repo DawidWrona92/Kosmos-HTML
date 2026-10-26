@@ -53,7 +53,7 @@ function layout() {
  if (free.right - free.left < 200) free.right = free.left + 200;
  if (free.bottom - free.top < 140) free.bottom = free.top + 140;
  view.free = free;
- if (view.following && view.selected !== null && view.zoomGoal > MIN_ZOOM * 2) view.zoomGoal = followZoom(view.selected);
+ if (view.following && view.selected !== null && view.zoomGoal > MIN_ZOOM * 2) view.zoomGoal = focusGoal();
 }
 
 function defaultTilt() {
@@ -529,11 +529,11 @@ function drawSun(frame) {
 }
 
 function drawOrbits(frame) {
- ctx.lineWidth = 1;
+ ctx.lineWidth = 1.4;
  bodies.forEach((body, index) => {
   if (body.kind === 'star' || body.kind === 'moon') return;
   const selected = index === view.selected;
-  ctx.strokeStyle = selected ? 'rgba(88,185,255,.6)' : 'rgba(104,171,239,.29)';
+  ctx.strokeStyle = selected ? 'rgba(88,185,255,.85)' : 'rgba(120,180,245,.5)';
   ctx.setLineDash(body.kind === 'planet' || body.kind === 'belt' ? [] : [4, 6]);
   ctx.beginPath();
   if (body.kind === 'comet') {
@@ -552,7 +552,7 @@ function drawOrbits(frame) {
  bodies.forEach((body, index) => {
   if (body.kind !== 'moon') return;
   const parentOffset = bodyOffset(bodies[bodyIndex(body.parentId)], frame.scale);
-  ctx.strokeStyle = index === view.selected ? 'rgba(88,185,255,.6)' : 'rgba(104,171,239,.29)';
+  ctx.strokeStyle = index === view.selected ? 'rgba(88,185,255,.85)' : 'rgba(120,180,245,.5)';
   ctx.setLineDash([3, 5]);
   ctx.beginPath();
   ctx.ellipse(frame.sunX + parentOffset.x, frame.sunY + parentOffset.y, body.moonOrbit * frame.scale, body.moonOrbit * frame.scale * view.tilt, 0, 0, TAU);
@@ -846,8 +846,42 @@ function drawTexturedBall(body, x, y, radius, frame) {
  return true;
 }
 
+/* skały pokazywane po przybliżeniu pasa planetoid — wyraźne bryły zamiast kilku kropek */
+const beltField = Array.from({length: 70}, (value, index) => ({
+ angle: Math.random() * TAU, distance: .1 + Math.sqrt(Math.random()) * 1.5, size: .05 + Math.random() * .12,
+ speed: (.015 + Math.random() * .05) * (index % 2 ? 1 : -1), spin: Math.random() * TAU,
+ shape: Array.from({length: 8}, () => .75 + Math.random() * .45), tone: 120 + Math.floor(Math.random() * 60)
+}));
+
 function drawBeltTarget(item) {
  /* widoczny „biegun” pasa — duży przezroczysty cel do kliknięcia; kropki rysuje drawAsteroids */
+ if (view.following && view.selected === item.index && item.radius > 60) {
+  const ratio = clamp(view.tilt, MIN_TILT, MAX_TILT);
+  const time = frameTime * .001;
+  beltField.forEach(rock => {
+   const angle = rock.angle + time * rock.speed;
+   const x = item.x + Math.cos(angle) * rock.distance * item.radius;
+   const y = item.y + Math.sin(angle) * rock.distance * item.radius * (.35 + ratio * .6);
+   const size = rock.size * item.radius;
+   ctx.save();
+   ctx.translate(x, y);
+   ctx.rotate(rock.spin + time * rock.speed * 2);
+   ctx.fillStyle = `rgb(${rock.tone},${rock.tone - 6},${rock.tone - 14})`;
+   ctx.beginPath();
+   rock.shape.forEach((factor, point) => {
+    const around = point / rock.shape.length * TAU;
+    if (point === 0) ctx.moveTo(Math.cos(around) * size * factor, Math.sin(around) * size * factor);
+    else ctx.lineTo(Math.cos(around) * size * factor, Math.sin(around) * size * factor);
+   });
+   ctx.closePath();
+   ctx.fill();
+   ctx.fillStyle = 'rgba(255,255,255,.18)';
+   ctx.beginPath();
+   ctx.arc(-size * .25, -size * .25, size * .4, 0, TAU);
+   ctx.fill();
+   ctx.restore();
+  });
+ }
  drawAttention(item.x, item.y, item.radius, item.index);
 }
 
@@ -906,23 +940,50 @@ function drawProbeSprite(find, x, y, width) {
  drawProbeIcon(x, y, width / 5, 0);
 }
 
+/* orbity księżyców i sond wybranej planety — rysowane przed planetą, żeby jej nie przecinały */
+function drawFocusOrbits(planetItems) {
+ const parent = planetItems.find(item => item.index === view.selected);
+ if (!parent || !view.following || parent.radius < 40) return;
+ const mratio = clamp(view.tilt, MIN_TILT, MAX_TILT);
+ ctx.save();
+ ctx.lineWidth = 1.5;
+ ctx.strokeStyle = 'rgba(150,190,235,.5)';
+ ctx.setLineDash([2, 5]);
+ (MOONS[parent.body.id] || []).forEach(moon => {
+  ctx.save();
+  ctx.translate(parent.x, parent.y);
+  ctx.rotate(moon.tilt);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, parent.radius * moon.moonOrbit, parent.radius * moon.moonOrbit * mratio, 0, 0, TAU);
+  ctx.stroke();
+  ctx.restore();
+ });
+ if (finds.some(find => find.parentId === parent.body.id)) {
+  const geometry = findOrbitGeometry(parent);
+  ctx.strokeStyle = 'rgba(255,217,90,.4)';
+  ctx.setLineDash([3, 6]);
+  ctx.beginPath();
+  ctx.ellipse(parent.x, parent.y, geometry.horizontal, geometry.vertical, 0, 0, TAU);
+  ctx.stroke();
+ }
+ ctx.restore();
+}
+
+function findOrbitGeometry(parent) {
+ const freeWidth = view.free.right - view.free.left;
+ const freeHeight = view.free.bottom - view.free.top;
+ const spriteWidth = clamp(parent.radius * .25, 30, 110);
+ const horizontal = Math.max(parent.radius * 1.15, Math.min(parent.radius * 1.7 + spriteWidth * .4, freeWidth / 2 - spriteWidth * .55));
+ const vertical = Math.min(horizontal * .66 * (clamp(view.tilt, MIN_TILT, MAX_TILT) / .55), freeHeight / 2 - spriteWidth * .45);
+ return {spriteWidth, horizontal, vertical};
+}
+
 function drawMoon(frame, parent, moon, parentX, parentY, parentRadius) {
  const moonRadius = Math.max(2.5, parentRadius * moon.size * .6);
  const orbit = parentRadius * moon.moonOrbit;
  const periodDays = Math.max(Math.abs(moon.period) * 30, 45);
  const mratio = clamp(view.tilt, MIN_TILT, MAX_TILT);
  const phase = moon.startPhase + view.angle + moonDays / periodDays * TAU * Math.sign(moon.period);
- ctx.save();
- ctx.translate(parentX, parentY);
- ctx.rotate(moon.tilt);
- ctx.strokeStyle = 'rgba(150,180,215,.28)';
- ctx.lineWidth = 1;
- ctx.setLineDash([2, 5]);
- ctx.beginPath();
- ctx.ellipse(0, 0, orbit, orbit * mratio, 0, 0, TAU);
- ctx.stroke();
- ctx.setLineDash([]);
- ctx.restore();
  const localX = Math.cos(phase) * orbit;
  const localY = Math.sin(phase) * orbit * mratio;
  const cosTilt = Math.cos(moon.tilt);
@@ -1107,16 +1168,7 @@ function drawFinds(items, frame) {
  if (!list.length) return;
  /* rozmiar sondy skaluje się z planetą (25% jej promienia, min 30 px) —
   * przy oddalaniu kamery sondy maleją razem z układem, zamiast rosnąć względem planety */
- const spriteWidth = clamp(parent.radius * .25, 30, 110);
- const horizontal = Math.max(parent.radius * 1.15, Math.min(parent.radius * 1.7 + spriteWidth * .4, freeWidth / 2 - spriteWidth * .55));
- const vertical = Math.min(horizontal * .66 * (clamp(view.tilt, MIN_TILT, MAX_TILT) / .55), freeHeight / 2 - spriteWidth * .45);
- ctx.strokeStyle = 'rgba(255,217,90,.22)';
- ctx.lineWidth = 1;
- ctx.setLineDash([3, 6]);
- ctx.beginPath();
- ctx.ellipse(parent.x, parent.y, horizontal, vertical, 0, 0, TAU);
- ctx.stroke();
- ctx.setLineDash([]);
+ const {spriteWidth, horizontal, vertical} = findOrbitGeometry(parent);
  list.forEach((find, order) => {
   const angle = frameTime * .00022 + view.angle + order * TAU / list.length + .6;
   const x = parent.x + Math.cos(angle) * horizontal;
@@ -1192,7 +1244,13 @@ function draw() {
 }
 
 function drawSolarScene(frame) {
- if (view.zoom < 14) drawOrbits(frame);
+ const orbitFade = clamp((14 - view.zoom) / 6, 0, 1);
+ if (orbitFade > 0) {
+  ctx.save();
+  ctx.globalAlpha = orbitFade;
+  drawOrbits(frame);
+  ctx.restore();
+ }
  if (view.zoom < 40) drawAsteroids(frame);
  const items = [];
  bodies.forEach((body, index) => {
@@ -1202,6 +1260,7 @@ function drawSolarScene(frame) {
  });
  const planetItems = items.filter(Boolean);
  view.targets = planetItems;
+ drawFocusOrbits(planetItems);
  const behind = planetItems.filter(item => item.y < frame.sunY).sort((a, b) => a.y - b.y);
  const inFront = planetItems.filter(item => item.y >= frame.sunY).sort((a, b) => a.y - b.y);
  const paint = item => item.body.kind === 'comet' ? drawComet(item, frame) : item.body.kind === 'belt' ? drawBeltTarget(item) : drawPlanet(item, frame);

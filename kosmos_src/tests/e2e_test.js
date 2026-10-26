@@ -171,9 +171,9 @@ const report = (ok, name, detail = '') => {
   });
   await task('Neptun: Tryton', 'neptune', 0, async () => {
     const t0 = performance.now();
-    while (performance.now() - t0 < 15000 && !isDone('neptune', 0)) {
-      const a = (performance.now() + 16) * .0009;
-      tap(280 + Math.cos(a) * 209, 170 + Math.sin(a) * 115);
+    while (performance.now() - t0 < 20000 && !isDone('neptune', 0)) {
+      const triton = T.getActive().debug();
+      if (!triton.behind) tap(triton.x, triton.y);
       await sleep(30);
     }
   });
@@ -291,6 +291,15 @@ const report = (ok, name, detail = '') => {
   await page.waitForTimeout(300);
   const after = await page.evaluate(() => ({angle: T.view.angle, tilt: T.view.tilt}));
   report(Math.abs(after.angle - before.angle) > .1 && Number.isFinite(after.tilt) && Number.isFinite(after.angle), 'przeciąganie obraca kamerę', JSON.stringify(after));
+
+  /* ---------- zbliżenie na księżyc ---------- */
+  await page.evaluate(() => {T.choose(T.bodies.findIndex(body => body.id === 'jupiter'));});
+  await page.waitForTimeout(3000);
+  const planetRadius = await page.evaluate(() => T.view.moonTargets[0].radius);
+  await page.evaluate(() => {T.chooseMoon(T.view.moonTargets[0]);});
+  await page.waitForTimeout(3000);
+  const moonRadius = await page.evaluate(() => T.view.moonTargets.find(target => target.moon === T.view.moon).radius);
+  report(moonRadius > planetRadius * 2.5, 'wybór księżyca przybliża go', `promień ${planetRadius.toFixed(0)} -> ${moonRadius.toFixed(0)} px`);
 
   report(errors.length === 0, 'brak błędów w konsoli', errors.slice(0, 3).join(' | '));
   await browser.close();

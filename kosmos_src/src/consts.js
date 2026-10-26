@@ -1,5 +1,5 @@
 const TAU = Math.PI * 2;
-const MAX_ORBIT = 1080;
+const MAX_ORBIT = 700;
 const MIN_TILT = .12;
 const MAX_TILT = .95;
 const MIN_ZOOM = .5;
