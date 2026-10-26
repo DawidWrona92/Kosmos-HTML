@@ -68,7 +68,7 @@ const bodies = [
    facts: [
     'Pierścienie Saturna to miliardy kawałków lodu i skał — od ziarenek piasku po bryły wielkości domu!',
     'Wyglądają jak ogromne, płaskie pierścienie wokół planety, ale nie są jedną litą obręczą. To jak miliardy malutkich księżyców krążących razem.',
-    'Pierścienie są bardzo cienkie — mają zaledwie kilkanaście metrów grubości, a rozciągają się na setki tysięcy kilometrów!'
+    'Pierścienie są bardzo cienkie — mają zaledwie około 10 metrów grubości, a rozciągają się na setki tysięcy kilometrów!'
    ]},
   facts: [
    'Saturn ma wspaniałe pierścienie. Składają się z miliardów kawałków lodu i skał. Są wśród nich ziarenka wielkości piasku i bryły wielkie jak dom.',
@@ -84,7 +84,7 @@ const bodies = [
    'Uran jest błękitno-zielony. Gaz zwany metanem pochłania w nim czerwone światło i zostaje niebieskozielony kolor. Uran ma też 13 cienkich, ciemnych pierścieni.',
    'Atmosfera Urana jest najzimniejsza w całym Układzie Słonecznym. Jest w niej nawet około 224 stopni poniżej zera. Brrr!',
    'Uran był pierwszą planetą odkrytą przez teleskop. W 1781 roku znalazł go William Herschel. Wcześniej ludzie znali tylko planety, które widać gołym okiem.',
-   'Rok na Uranie trwa 84 nasze lata. Każda pora roku ciągnie się tam ponad 20 lat! Uran ma 28 znanych księżyców, a nazwano je od bohaterów sztuk Szekspira.'
+   'Rok na Uranie trwa 84 nasze lata. Każda pora roku ciągnie się tam ponad 20 lat! Uran ma 29 znanych księżyców, a nazwano je od bohaterów sztuk Szekspira.'
   ]},
  {id: 'neptune', kind: 'planet', name: 'Neptun', type: 'Ósma planeta od Słońca', color: '#356ce0', radius: 12, orbit: 500, period: 60190, startPhase: .3, texture: 'neptune', activity: 'neptune',
   facts: [
@@ -158,7 +158,7 @@ const finds = [
   ]},
  {id: 'juno', parentId: 'jupiter', name: 'Sonda Juno', type: 'Sonda kosmiczna', intro: 'Sonda Juno.', sprite: 'juno', activity: 'parts',
   facts: [
-   'Sonda Juno krąży wokół Jowisza od 2016 roku. Zagląda pod jego chmury i bada, co jest w środku. Zrobiła też wiele pięknych zdjęć tej planety.',
+   'Sonda Juno przyleciała do Jowisza w 2016 roku i krążyła wokół niego. Zaglądała pod jego chmury i badała, co jest w środku. Zrobiła też wiele pięknych zdjęć tej planety.',
    'Juno zasilają trzy wielkie panele słoneczne. Słońce świeci tam 25 razy słabiej niż u nas. Dlatego panele muszą być takie ogromne.',
    'Na pokładzie Juno lecą trzy figurki z klocków LEGO. Przedstawiają Galileusza, rzymskiego boga Jowisza i jego żonę Junonę. To od niej sonda wzięła imię.'
   ]},
@@ -190,7 +190,7 @@ const finds = [
   facts: [
    'W 1986 roku europejska sonda Giotto podleciała do jądra komety Halleya. Zbliżyła się do niego na około 600 kilometrów.',
    'Jądro okazało się ciemne jak węgiel i ma kształt ziemniaka, długiego na około 15 kilometrów. Z jego powierzchni tryskały strumienie gazu i pyłu.',
-   'Pył uderzył w sondę i trochę nią zakręcił, ale po pół godziny Giotto znów mogła do nas wysyłać dane. Nazwano ją od malarza Giotta, który namalował kometę na obrazie.'
+   'Pył uderzył w sondę i trochę nią zakręcił, ale po około pół godzinie Giotto znów mogła do nas wysyłać dane. Nazwano ją od malarza Giotta, który namalował kometę na obrazie.'
   ]}
 ];
 
@@ -290,7 +290,7 @@ const MOONS = {
   {id: 'kallisto', parentId: 'jupiter', name: 'Kallisto', type: 'Księżyc Jowisza', intro: 'Kallisto.', color: '#8a7a66', texture: 'kallisto', size: .4, moonOrbit: 4.6, period: 16.7, startPhase: 1.2, tilt: -.2,
    facts: [
     'Kallisto jest cały pokryty kraterami — to jeden z najstarszych księżyców Jowisza.',
-    'Jego największy krater nazywa się Valhalla. Ma wielkość Polski!',
+    'Jego największa blizna po uderzeniu nazywa się Valhalla. Wygląda jak tarcza strzelnicza z ogromnymi pierścieniami — razem ma ponad 3 tysiące kilometrów szerokości!',
     'Kallisto jest daleko od Jowisza, więc nie jest tak mocno rozgrzewany — to zimny, spokojny świat.'
    ]}
  ],
@@ -299,7 +299,7 @@ const MOONS = {
    facts: [
     'Tytan to największy księżyc Saturna — większy od planety Merkury!',
     'Ma gęstą, pomarańczową atmosferę i prawdziwe jeziora. Tylko że zamiast wody płynie w nich ciekły gaz!',
-    'Sonda Huygens wylądowała na Tytanie w 2005 roku. To był pierwszy lądownik na księżycu innej planety!'
+    'Sonda Huygens wylądowała na Tytanie w 2005 roku. To było pierwsze lądowanie na księżycu w zewnętrznej części Układu Słonecznego!'
    ]},
   {id: 'enceladus', parentId: 'saturn', name: 'Enceladus', type: 'Księżyc Saturna', intro: 'Enceladus.', color: '#eef4fa', texture: 'enceladus', size: .22, moonOrbit: 1.9, period: 1.37, startPhase: .8, tilt: -.6,
    facts: [
@@ -310,13 +310,13 @@ const MOONS = {
   {id: 'japetus', parentId: 'saturn', name: 'Japetus', type: 'Księżyc Saturna', intro: 'Japetus.', color: '#6e5f50', texture: 'japetus', size: .28, moonOrbit: 3.4, period: 79.3, startPhase: 4.6, tilt: 1.4,
    facts: [
     'Japetus ma dwie twarze — jedna połowa jest biała jak śnieg, a druga czarna jak węgiel!',
-    'Ciemna strona zbiera pył z pierścieni Saturna. Dlatego wygląda jak księżyc pomalowany na pół.',
+    'Ciemna strona zbiera ciemny pył, który leci do niego z dalszych, małych księżyców Saturna. Dlatego Japetus wygląda jak pomalowany na pół.',
     'Na równiku Japetusa biegnie wielki grzbiet — jak szew na piłce. Naukowcy wciąż nie wiedzą, skąd się wziął!'
    ]},
   {id: 'reja', parentId: 'saturn', name: 'Reja', type: 'Księżyc Saturna', intro: 'Reja.', color: '#c8ccd4', texture: 'reja', size: .3, moonOrbit: 2.1, period: 4.52, startPhase: 1.9, tilt: -.3,
    facts: [
     'Reja to drugi co do wielkości księżyc Saturna. Jest szara i pełna kraterów.',
-    'Reja może mieć własne, słabe pierścienie! To pierwszy księżyc, przy którym je znaleziono.',
+    'Reja jest zbudowana głównie z lodu i skał. Jest tam tak zimno, że lód jest twardy jak kamień.',
     'Krąży blisko Saturna, więc okrąża go w niecałe 5 dni.'
    ]},
   {id: 'dione', parentId: 'saturn', name: 'Dione', type: 'Księżyc Saturna', intro: 'Dione.', color: '#dde2ea', texture: 'dione', size: .28, moonOrbit: 2.8, period: 2.74, startPhase: 5.4, tilt: .5,
@@ -353,7 +353,7 @@ const MOONS = {
    facts: [
     'Charon to największy księżyc Plutona. Jest tak duży, że Pluton i Charon krążą razem wokół wspólnego punktu — jak w tańcu!',
     'Charon ma na sobie wielki ciemny obszar na biegunie. Naukowcy nazwali go Mordorem — tak jak złośliwą krainę z bajki!',
-    'Na Charonie jest wielki kanion. Gdyby przeciągnąć go dalej, okrążyłby cały księżyc. Zrobiła go wielka szczelina w lodzie.'
+    'Na Charonie jest wielki kanion. Ma prawie 2 tysiące kilometrów długości — to prawie połowa drogi dookoła Charona. Zrobiła go wielka szczelina w lodzie.'
    ]}
  ]
 };
@@ -364,13 +364,13 @@ const GALAXY_OBJECTS = {
   {id: 'solar_system', name: 'Nasz Układ Słoneczny', type: 'Układ planetarny', intro: 'Nasz Układ Słoneczny.', emoji: '☀️',
    facts: [
     'To nasz dom w kosmosie! Słońce to gwiazda, a wokół niego krąży osiem planet — w tym nasza Ziemia.',
-    'Nasz Układ Słoneczny leży w Ramieniu Oriona — jednym z wielkich ramion naszej galaktyki, Drogi Mlecznej.',
+    'Nasz Układ Słoneczny leży w Ramieniu Oriona — niewielkiej odnodze jednego z wielkich ramion naszej galaktyki, Drogi Mlecznej.',
     'Światło ze Słońca leci do Ziemi osiem minut. Do najbliższej gwiazdy leciałoby ponad cztery lata!'
    ]},
-  {id: 'orion_arm', name: 'Ramię Oriona', type: 'Ramię spiralne galaktyki', intro: 'Ramię Oriona.', emoji: '🌌',
+  {id: 'orion_arm', name: 'Ramię Oriona', type: 'Odnoga ramienia galaktyki', intro: 'Ramię Oriona.', emoji: '🌌',
    facts: [
-    'Ramię Oriona to jedno z wielkich ramion Drogi Mlecznej — naszej galaktyki. Ma kształt długiej, zakrzywionej wstęgi pełnej gwiazd.',
-    'Mieszkają w nim miliardy gwiazd — w tym nasze Słońce. Między gwiazdami unoszą się wielkie obłoki gazu i pyłu, w których rodzą się nowe gwiazdy.',
+    'Ramię Oriona to niewielka odnoga w ramionach Drogi Mlecznej — naszej galaktyki. Ma kształt długiej, zakrzywionej wstęgi pełnej gwiazd.',
+    'Mieszka w nim mnóstwo gwiazd — w tym nasze Słońce. Między gwiazdami unoszą się wielkie obłoki gazu i pyłu, w których rodzą się nowe gwiazdy.',
     'Układ Słoneczny nie jest w centrum galaktyki — leży bliżej jej brzegu, w spokojnym zakątku Ramienia Oriona.'
    ]}
  ],

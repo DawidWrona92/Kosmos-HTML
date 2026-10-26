@@ -25,12 +25,17 @@ otwórz w przeglądarce. Nie wymaga internetu ani instalacji.
 - **Pierścienie Saturna** — klikalne, z opisem (lód i skały, nie lita obręcz)
 - **Sfera niebieska**: prawdziwe gwiazdy (Wielki Wóz, Kasjopea, Orion,
   Łabędź, Skorpion), obracające się razem z kamerą
-- **2 poziomy galaktyczne** (przyciski ➖/➕, kółko myszy lub pinch):
-  - *Ramię Oriona* — Układ Słoneczny na ramieniu Drogi Mlecznej
-  - *Droga Mleczna + Andromeda + sondy Voyager 1 i 2*
-- **27 zadań (minigry)**: znajdź część, latarka, wycieranie pyłu,
-  różnice na Księżycu, przeciągnij Urana i kometę, ułóż planety po kolei,
-  pory roku na orbicie Ziemi, złap księżyce Galileusza
+- **Ciągłe oddalanie do galaktyki** (przyciski ➖/➕, kółko myszy lub pinch):
+  jeden zoom, bez przełączania poziomów — Układ Słoneczny płynnie przechodzi
+  w obraz Drogi Mlecznej (Ramię Oriona, Andromeda, sondy Voyager 1 i 2)
+- **Jedna kamera orbitalna**: przeciąganie zawsze zmienia azymut i wysokość
+  (planeta, księżyce, sondy i pierścienie obracają się spójnie)
+- **28 zadań (minigry)**: plamy na prawdziwym zdjęciu Słońca, latarka (lód
+  na Merkurym, serce Plutona), wycieranie (chmury Wenus, pył z łazika),
+  polowanie na obracającym się globie (Ceres, Wielka Czerwona Plama) z kwizem,
+  kawałki pierścieni Saturna, slalom przez pas planetoid, oś Urana, Tryton,
+  kometa, różnice na Księżycu, pory roku, księżyce Galileusza, kolejność
+  planet i 12 zadań z częściami sond
 - **Dzienniczek i lista zadań** (📓/⭐): ukryte rzeczy pod animowaną mgławicą
 - **Ustawienia dla rodzica**: głos lektora, tempo, wysokość, efekty
   dźwiękowe, muzyka w tle
@@ -55,11 +60,11 @@ kosmos_src/
     speech.js                  lektor (Web Speech API, wybór polskiego głosu)
     ui.js                      panel info, dzienniczek, listy, ustawienia
     probes.js                  rysowane sondy (New Horizons, Giotto, Ingenuity)
-    activities.js              silnik 27 zadań (minigry)
+    activities.js              silnik 28 zadań (minigry)
     controls.js                przyciski, klawiatura, pętla animacji (zamyka plik)
     img/                       tekstury planet i zdjęcia sond
   tests/
-    smoke_test.js              test end-to-end: 27/27 zadań + poziomy galaktyczne
+    e2e_test.js                test w przeglądarce (Playwright): 28/28 zadań, galaktyka, kamera
   archive/                     stare wersje (v1, backup v2) — nie są częścią buildu
 ```
 
@@ -67,7 +72,7 @@ kosmos_src/
 
 ```
 python3 kosmos_src/build.py        # buduje kosmos_src/kosmos_dla_corki.html
-node kosmos_src/tests/smoke_test.js  # test: wszystkie zadania + poziomy galaktyczne
+node kosmos_src/tests/e2e_test.js    # wymaga Playwright (npm i playwright)
 ```
 
 ## Historia projektu

@@ -16,7 +16,8 @@ let activitySlot = 0;
 byId('activityBtn').addEventListener('click', () => {
  const item = currentItem();
  if (!item.activity && !item.activity2) return;
- activitySlot = item.activity && !doneTasks.has(item.id) ? 0 : item.activity2 ? 1 : 0;
+ activitySlot = pickSlot(item);
+ lastSlotOf[item.id] = activitySlot;
  openActivity(item, activitySlot);
 });
 byId('fact').addEventListener('click', () => {
@@ -77,6 +78,7 @@ function frameLoop(now) {
   const spinBody = bodies[view.selected];
   if (spinBody.texture && !spinBody.photo && !(gesture && gesture.moved)) globeState.rotation[spinBody.id] = rotationOf(spinBody) + dt * .06;
  }
+ if (view.moon && !(gesture && gesture.moved)) moonSpin[view.moon.id] = (moonSpin[view.moon.id] || 0) + dt * .12;
  for (let index = ripples.length - 1; index >= 0; index--) {
   ripples[index].life += dt;
   if (ripples[index].life >= ripples[index].max) ripples.splice(index, 1);

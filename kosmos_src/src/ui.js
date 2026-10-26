@@ -11,7 +11,9 @@ function escapeHtml(text) {
 function renderFact(highlightIndex) {
  const factElement = byId('fact');
  if (!hasChosen) {
-  factElement.innerHTML = '<span class="s big">Dotknij planetę, Słońce albo kometę.</span>';
+  factElement.innerHTML = view.level < 0
+   ? '<span class="s big">Dotknij Drogę Mleczną, Andromedę albo sondę Voyager.</span>'
+   : '<span class="s big">Dotknij planetę, Słońce albo kometę.</span>';
   byId('dots').innerHTML = '';
   return;
  }
@@ -98,7 +100,24 @@ function renderInfo() {
   icon.style.background = photo ? `url(${photo}) center/cover` : `radial-gradient(circle at 30% 28%,${lighten(body.color, 1.5)},${body.color} 48%,#060b18)`;
  }
  byId('activityBtn').hidden = !(item.activity || item.activity2);
+ updateActivityLabel(item);
  renderFact(-1);
+}
+
+/* które zadanie otworzy przycisk: pierwsze niezaliczone; gdy oba zaliczone — drugie niż ostatnio otwarte */
+const lastSlotOf = {};
+function pickSlot(item) {
+ if (!item.activity2) return 0;
+ if (!item.activity) return 1;
+ if (!doneTasks.has(item.id)) return 0;
+ if (!doneTasks.has(`${item.id}#2`)) return 1;
+ return lastSlotOf[item.id] === 0 ? 1 : 0;
+}
+
+function updateActivityLabel(item) {
+ const label = byId('activityBtn').querySelector('.lbl');
+ if (!label || !item) return;
+ label.textContent = item.activity && item.activity2 ? `Zadanie ${pickSlot(item) + 1} z 2` : 'Zadanie';
 }
 
 function renderNotebook() {
@@ -176,6 +195,8 @@ function choose(index) {
  fxPlay('whoosh');
  setSelection(true, index);
  view.zoomGoal = followZoom(index);
+ /* kamera unosi się nieco nad płaszczyznę orbit, żeby pierścienie i orbity księżyców były otwarte */
+ if (bodies[index].kind !== 'star' && view.tilt < .5) view.tiltGoal = .5;
  factIndex = 0;
  globeState.velocity = 0;
  markDiscovered(bodies[index].id);
@@ -199,10 +220,12 @@ function chooseFind(target) {
 }
 
 function moonZoom(moon) {
- /* stały względny kadr: klik w księżyc przybliża zawsze tak samo względem
-  * planety (mnożnik zoomu planety), niezależnie od rozmiaru księżyca i orbity —
-  * zmiana obiektu nie zmienia odległości kamery */
- return clamp(followZoom(view.selected) * 1.5, MIN_ZOOM, MAX_ZOOM);
+ /* kadr zależy od rozmiaru księżyca: zawsze wypełnia podobną część ekranu,
+  * niezależnie od tego, czy to wielki Ganimedes, czy maleńki Deimos */
+ const parent = bodies[view.selected];
+ const base = Math.min(view.free.right - view.free.left, view.free.bottom - view.free.top);
+ const unit = parent.radius * fitScale() * 1.25 * moon.size * .6;
+ return clamp(base * .2 / unit, followZoom(view.selected) * 1.2, MAX_ZOOM);
 }
 
 function chooseMoon(target) {
@@ -244,52 +267,50 @@ function resetView() {
  view.ring = null;
  view.galaxy = null;
  view.level = 0;
- /* kamera przypięta do Słońca — pierwszego obiektu */
+ /* „Cały układ”: Słońce w środku, widać wszystkie orbity */
  setSelection(true, 0);
  view.carryX = 0;
  view.carryY = 0;
- view.zoomGoal = clamp(focusRadius(bodies[0]) / (bodies[0].radius * fitScale()), 1, MAX_ZOOM);
+ view.zoomGoal = 1;
  view.angle = Math.atan2(Math.sin(view.angle), Math.cos(view.angle));
  view.angleGoal = 0;
- view.localAngle = 0;
- view.localTilt = .55;
  view.tiltGoal = defaultTilt();
  renderInfo();
 }
 
-function zoomOutLevel() {
- if (view.level > -1) {
-  view.level--;
-  view.galaxy = null;
-  hasChosen = false;
-  view.moon = null;
-  view.find = null;
-  view.ring = null;
-  view.zoom = 1;
-  view.zoomGoal = 1;
-  view.carryX = 0;
-  view.carryY = 0;
-  renderInfo();
-  renderControls();
-  return true;
- }
- return false;
+/* poziom (Układ Słoneczny / galaktyka) wynika wyłącznie z bieżącego zoomu —
+ * dzięki temu przełączanie nigdy się nie „zacina” i jest symetryczne */
+function syncLevel() {
+ const level = galaxyAlpha() > .5 ? -1 : 0;
+ if (level === view.level) return;
+ view.level = level;
+ view.galaxy = null;
+ view.moon = null;
+ view.find = null;
+ view.ring = null;
+ hasChosen = false;
+ stopSpeech();
+ setReading(false);
+ highlightSentence(-1);
+ renderInfo();
+ renderControls();
 }
 
+/* przycisk „Oddal”: płynnie do całej Drogi Mlecznej */
+function zoomOutLevel() {
+ if (view.zoomGoal <= GALAXY_MIN_ZOOM * 1.001) return false;
+ view.moon = null;
+ view.find = null;
+ view.ring = null;
+ view.zoomGoal = GALAXY_MIN_ZOOM;
+ return true;
+}
+
+/* przycisk „Przybliż”: z powrotem do Układu Słonecznego (do ostatnio oglądanego obiektu) */
 function zoomInLevel() {
- if (view.level < 0) {
-  view.level++;
-  view.galaxy = null;
-  hasChosen = false;
-  view.zoom = view.level === -1 ? 1 : MIN_ZOOM * 1.1;
-  view.zoomGoal = view.zoom;
-  view.carryX = 0;
-  view.carryY = 0;
-  renderInfo();
-  renderControls();
-  return true;
- }
- return false;
+ if (view.zoomGoal > MIN_ZOOM * 2) return false;
+ view.zoomGoal = view.following && view.selected !== null ? followZoom(view.selected) : 1;
+ return true;
 }
 
 function chooseGalaxy(target) {

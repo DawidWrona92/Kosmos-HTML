@@ -2,7 +2,7 @@
 const view = {
  width: 0, height: 0, dpr: 1,
  free: {left: 0, top: 0, right: 0, bottom: 0},
- angle: 0, tilt: .32, angleGoal: null, tiltGoal: null, localAngle: 0, localTilt: .55,
+ angle: 0, tilt: .32, angleGoal: null, tiltGoal: null,
  zoom: 1, zoomGoal: 1,
  following: false, carryX: 0, carryY: 0,
  selected: bodyIndex('earth'), find: null, moon: null, ring: null, galaxy: null,
@@ -53,7 +53,7 @@ function layout() {
  if (free.right - free.left < 200) free.right = free.left + 200;
  if (free.bottom - free.top < 140) free.bottom = free.top + 140;
  view.free = free;
- if (view.following && view.selected !== null) view.zoomGoal = followZoom(view.selected);
+ if (view.following && view.selected !== null && view.zoomGoal > MIN_ZOOM * 2) view.zoomGoal = followZoom(view.selected);
 }
 
 function defaultTilt() {
@@ -119,7 +119,7 @@ function bodyOffset(body, scaleValue) {
  }
  if (body.kind === 'moon') {
   const parentOffset = bodyOffset(bodies[bodyIndex(body.parentId)], scaleValue);
-  const phase = body.startPhase + moonDays / Math.max(Math.abs(body.period) * 30, 45) * TAU * Math.sign(body.period);
+  const phase = body.startPhase + view.angle + moonDays / Math.max(Math.abs(body.period) * 30, 45) * TAU * Math.sign(body.period);
   return {
    x: parentOffset.x + Math.cos(phase) * body.moonOrbit * scaleValue,
    y: parentOffset.y + Math.sin(phase) * body.moonOrbit * scaleValue * view.tilt,
@@ -174,9 +174,16 @@ function computeFrame() {
  const sub = subTargetOffset();
  const centerX = (view.free.left + view.free.right) / 2 + target.x + view.carryX;
  const centerY = (view.free.top + view.free.bottom) / 2 + target.y + view.carryY;
- return sub
-  ? {scale: scaleValue, sunX: centerX - sub.x, sunY: centerY - sub.y}
-  : {scale: scaleValue, sunX: centerX, sunY: centerY};
+ let sunX = sub ? centerX - sub.x : centerX;
+ let sunY = sub ? centerY - sub.y : centerY;
+ /* oddalanie do galaktyki: środek kadru glisuje ze Słońca na środek Drogi Mlecznej */
+ const pan = galaxyPanWeight();
+ if (pan > 0) {
+  const offset = sunGalaxyOffset();
+  sunX += offset.x * pan;
+  sunY += offset.y * pan;
+ }
+ return {scale: scaleValue, sunX, sunY};
 }
 
 function focusRadius(body) {
@@ -222,6 +229,7 @@ function updateCamera(dt) {
  const decay = Math.exp(-dt * 6);
  view.carryX *= decay;
  view.carryY *= decay;
+ syncLevel();
 }
 
 /* ---------- rysowanie ---------- */
@@ -253,8 +261,9 @@ function heartPath(centerX, centerY, size) {
  return path;
 }
 
-function drawBackground() {
+function drawBackground(fade = 1) {
  ctx.fillStyle = '#020611';
+ ctx.globalAlpha = fade;
  /* zapas przy rotacji roll — pokrywa rogi ekranu po obrocie sceny */
  ctx.fillRect(-view.width, -view.height, view.width * 3, view.height * 3);
  /* projekcja sferyczna: gwiazdy leżą na odległej sferze niebieskiej i
@@ -275,7 +284,7 @@ function drawBackground() {
  };
  const depth = .25 + .35 * (1 - tilt) + .4 * Math.min(1, Math.max(0, Math.log2(view.zoom + 1) / 8));
  for (const constellation of SKY_CONSTELLATIONS) {
-  ctx.strokeStyle = `rgba(120,160,220,${.14 * depth})`;
+  ctx.strokeStyle = `rgba(120,160,220,${.14 * depth * fade})`;
   ctx.lineWidth = 1;
   ctx.beginPath();
   let drawing = false;
@@ -293,24 +302,24 @@ function drawBackground() {
   const projected = project(star);
   if (projected.depth <= 0) continue;
   if (projected.screenX < -8 || projected.screenX > view.width + 8 || projected.screenY < -8 || projected.screenY > view.height + 8) continue;
-  ctx.globalAlpha = star.alpha * depth;
+  ctx.globalAlpha = star.alpha * depth * fade;
   ctx.beginPath();
   ctx.arc(projected.screenX, projected.screenY, star.size, 0, TAU);
   ctx.fill();
   if (star.bright) {
-   ctx.globalAlpha = star.alpha * depth * .5;
+   ctx.globalAlpha = star.alpha * depth * fade * .5;
    ctx.beginPath();
    ctx.arc(projected.screenX, projected.screenY, star.size * 2.4, 0, TAU);
    ctx.fill();
   }
  }
- ctx.globalAlpha = 1;
- ctx.globalAlpha = 1;
+ ctx.globalAlpha = fade;
  const nebula = ctx.createRadialGradient(view.width * .42, view.height * .4, 0, view.width * .42, view.height * .4, Math.max(view.width, view.height) * .7);
  nebula.addColorStop(0, 'rgba(16,45,95,.18)');
  nebula.addColorStop(1, 'rgba(0,0,0,0)');
  ctx.fillStyle = nebula;
  ctx.fillRect(0, 0, view.width, view.height);
+ ctx.globalAlpha = 1;
 }
 
 /* szara, pulsująca wskazówka nieodkrytego obiektu + znak zapytania —
@@ -901,8 +910,8 @@ function drawMoon(frame, parent, moon, parentX, parentY, parentRadius) {
  const moonRadius = Math.max(2.5, parentRadius * moon.size * .6);
  const orbit = parentRadius * moon.moonOrbit;
  const periodDays = Math.max(Math.abs(moon.period) * 30, 45);
- const mratio = clamp(view.localTilt, .12, .95);
- const phase = moon.startPhase + view.localAngle + moonDays / periodDays * TAU * Math.sign(moon.period);
+ const mratio = clamp(view.tilt, MIN_TILT, MAX_TILT);
+ const phase = moon.startPhase + view.angle + moonDays / periodDays * TAU * Math.sign(moon.period);
  ctx.save();
  ctx.translate(parentX, parentY);
  ctx.rotate(moon.tilt);
@@ -933,12 +942,19 @@ function drawMoon(frame, parent, moon, parentX, parentY, parentRadius) {
  view.moonTargets.push({moon, x, y, radius: moonRadius + 7});
 }
 
+/* obrót wybranego księżyca wokół własnej osi (reszta stoi w miejscu) */
+const moonSpin = {};
+
 function drawMoonBody(x, y, radius, moon, sunAngle) {
  const lumpy = moon.id === 'phobos' || moon.id === 'deimos';
  /* prawdziwa mapa księżyca (globus jak przy planetach), z fallbackiem na gradient */
  const globe = moon.texture && radius >= 5 ? globeOf(moon.texture, radius > 60 ? 256 : 128, 0) : null;
  if (globe) {
-  globe.render(moon.startPhase);
+  const rotation = moon.startPhase + (moonSpin[moon.id] || 0);
+  if (globe.lastRotation === undefined || Math.abs(globe.lastRotation - rotation) > .0004) {
+   globe.render(rotation);
+   globe.lastRotation = rotation;
+  }
   ctx.save();
   ctx.beginPath();
   if (lumpy) ctx.ellipse(x, y, radius * 1.14, radius * .8, moon.startPhase % TAU, 0, TAU);
@@ -953,7 +969,7 @@ function drawMoonBody(x, y, radius, moon, sunAngle) {
   shade.addColorStop(.55, 'rgba(2,4,12,.1)');
   shade.addColorStop(1, 'rgba(2,4,12,.7)');
   ctx.fillStyle = shade;
-  if (lumpy) {ctx.ellipse(x, y, radius * 1.14, radius * .8, moon.startPhase % TAU, 0, TAU); ctx.fill();}
+  if (lumpy) {ctx.beginPath(); ctx.ellipse(x, y, radius * 1.14, radius * .8, moon.startPhase % TAU, 0, TAU); ctx.fill();}
   else {ctx.beginPath(); ctx.arc(x, y, radius, 0, TAU); ctx.fill();}
   ctx.restore();
   return;
@@ -1093,7 +1109,7 @@ function drawFinds(items, frame) {
   * przy oddalaniu kamery sondy maleją razem z układem, zamiast rosnąć względem planety */
  const spriteWidth = clamp(parent.radius * .25, 30, 110);
  const horizontal = Math.max(parent.radius * 1.15, Math.min(parent.radius * 1.7 + spriteWidth * .4, freeWidth / 2 - spriteWidth * .55));
- const vertical = Math.min(horizontal * .66 * (clamp(view.localTilt, .12, .95) / .55), freeHeight / 2 - spriteWidth * .45);
+ const vertical = Math.min(horizontal * .66 * (clamp(view.tilt, MIN_TILT, MAX_TILT) / .55), freeHeight / 2 - spriteWidth * .45);
  ctx.strokeStyle = 'rgba(255,217,90,.22)';
  ctx.lineWidth = 1;
  ctx.setLineDash([3, 6]);
@@ -1102,7 +1118,7 @@ function drawFinds(items, frame) {
  ctx.stroke();
  ctx.setLineDash([]);
  list.forEach((find, order) => {
-  const angle = frameTime * .00022 + view.localAngle + order * TAU / list.length + .6;
+  const angle = frameTime * .00022 + view.angle + order * TAU / list.length + .6;
   const x = parent.x + Math.cos(angle) * horizontal;
   const y = parent.y + Math.sin(angle) * vertical;
   if (!discovered.has(find.id)) drawUnknownHint(x, y, spriteWidth * .6, order);
@@ -1121,7 +1137,9 @@ function drawLabels(items) {
   const isSelected = item.index === view.selected;
   ctx.font = `${isSelected ? 800 : 700} ${fontSize}px ui-rounded, system-ui, sans-serif`;
   const width = ctx.measureText(item.body.name).width;
-  const labelY = item.y - item.radius - (isSelected ? 18 : 12);
+  /* nieodkryte obiekty mają nad sobą znak zapytania — podpis wędruje wyżej, żeby się nie nakładały */
+  const hintLift = discovered.has(item.body.id) ? 0 : clamp(item.radius * .45, 12, 26) * 1.5;
+  const labelY = item.y - item.radius - (isSelected ? 18 : 12) - hintLift;
   const box = {left: item.x - width / 2 - 3, right: item.x + width / 2 + 3, top: labelY - fontSize, bottom: labelY + 3};
   const collides = placed.some(other => box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top);
   if (collides && !isSelected) continue;
@@ -1151,11 +1169,29 @@ function drawRipples() {
 
 function draw() {
  const frame = computeFrame();
+ const galaxy = galaxyAlpha();
  drawBackground();
- if (view.level < 0) {
-  drawGalaxyScene(frame);
-  return;
+ if (galaxy < 1) drawSolarScene(frame);
+ else {
+  view.targets = [];
+  view.findTargets = [];
+  view.moonTargets = [];
+  view.ringTarget = null;
+  view.sunTarget = null;
  }
+ if (galaxy > 0) {
+  /* przenikanie: tło + galaktyka narastają nad Układem Słonecznym */
+  drawBackground(galaxy);
+  drawGalaxyScene(frame, galaxy);
+ } else {
+  view.galaxyTargets = [];
+  view.armTarget = null;
+ }
+ drawSelectionRing();
+ drawRipples();
+}
+
+function drawSolarScene(frame) {
  if (view.zoom < 14) drawOrbits(frame);
  if (view.zoom < 40) drawAsteroids(frame);
  const items = [];
@@ -1175,8 +1211,6 @@ function draw() {
  items[0] = view.sunTarget;
  drawFinds(items, frame);
  drawLabels(items);
- drawSelectionRing();
- drawRipples();
 }
 
 /* złota obręcz wokół aktualnie zaznaczonego obiektu (planety, księżyca, sondy, pierścienia) —
@@ -1213,7 +1247,9 @@ function drawSelectionRing() {
 const GALAXY_IMAGE_SIZE = 1024;
 /* pozycja S\u0142o\u0144ca na obrazie galaktyki (u\u0142amek jej promienia) \u2014 Rami\u0119 Oriona,
  * oko\u0142o 26 000 lat \u015bwietlnych od centrum, na jednym z ramion spiralnych */
-const SUN_GALAXY_POS = {x: .52, y: -.38};
+const SUN_GALAXY_POS = {x: .09, y: .48};
+/* kierunek ramienia spiralnego w okolicy Słońca na obrazie (rad) */
+const ARM_TANGENT = -.16;
 
 let galaxyImage = null;
 
@@ -1225,7 +1261,17 @@ function buildGalaxyImage() {
   galaxyImage = document.createElement('canvas');
   galaxyImage.width = GALAXY_IMAGE_SIZE;
   galaxyImage.height = GALAXY_IMAGE_SIZE;
-  galaxyImage.getContext('2d').drawImage(photo, 0, 0, GALAXY_IMAGE_SIZE, GALAXY_IMAGE_SIZE);
+  const photoCtx = galaxyImage.getContext('2d');
+  photoCtx.drawImage(photo, 0, 0, GALAXY_IMAGE_SIZE, GALAXY_IMAGE_SIZE);
+  /* miękka okrągła maska — znika kwadratowa krawędź zdjęcia */
+  const half = GALAXY_IMAGE_SIZE / 2;
+  const mask = photoCtx.createRadialGradient(half, half, half * .62, half, half, half);
+  mask.addColorStop(0, 'rgba(0,0,0,1)');
+  mask.addColorStop(1, 'rgba(0,0,0,0)');
+  photoCtx.globalCompositeOperation = 'destination-in';
+  photoCtx.fillStyle = mask;
+  photoCtx.fillRect(0, 0, GALAXY_IMAGE_SIZE, GALAXY_IMAGE_SIZE);
+  photoCtx.globalCompositeOperation = 'source-over';
   return galaxyImage;
  }
  galaxyImage = document.createElement('canvas');
@@ -1311,168 +1357,145 @@ function buildGalaxyImage() {
  return galaxyImage;
 }
 
-/* wsp\u00f3\u0142rz\u0119dna S\u0142o\u0144ca na obrazie galaktyki */
-function sunImagePos() {
- return {x: GALAXY_IMAGE_SIZE * (.5 + SUN_GALAXY_POS.x * .5), y: GALAXY_IMAGE_SIZE * (.5 + SUN_GALAXY_POS.y * .5)};
-}
+/* ---------- galaktyka: ciągłe oddalanie zakotwiczone w Słońcu ----------
+ * Nie ma przełączania poziomów. Gdy Układ Słoneczny kurczy się poniżej
+ * GALAXY_FADE_FROM, wokół Słońca (które cały czas stoi w tym samym punkcie)
+ * wyłania się obraz Drogi Mlecznej, a środek kadru płynnie przesuwa się
+ * ze Słońca na środek galaktyki. Przybliżanie to dokładnie ten sam ruch
+ * odwrócony — dlatego oddalanie i przybliżanie zawsze się zgadzają. */
 
-function galaxyFrame() {
- const centerX = (view.free.left + view.free.right) / 2 + view.carryX;
- const centerY = (view.free.top + view.free.bottom) / 2 + view.carryY;
+function galaxyProgress(zoom = view.zoom) {
+ return clamp(Math.log(GALAXY_FADE_FROM / zoom) / Math.log(GALAXY_FADE_FROM / GALAXY_MIN_ZOOM), 0, 1);
+}
+const galaxyAlpha = () => smoothstep(galaxyProgress() / .45);
+const galaxyPanWeight = () => smoothstep((galaxyProgress() - .2) / .8);
+
+/* połowa boku obrazu galaktyki w pikselach — rośnie proporcjonalnie do zoomu */
+function galaxyScale() {
  const extent = Math.min(view.free.right - view.free.left, view.free.bottom - view.free.top) / 2;
- const scale = extent * view.zoom * .9;
- return {centerX, centerY, scale};
+ return extent * .8 * view.zoom / GALAXY_MIN_ZOOM;
+}
+const galaxyRotation = () => view.angle * .15;
+
+/* wektor od środka galaktyki do Słońca, w pikselach, z uwzględnieniem obrotu */
+function sunGalaxyOffset() {
+ const scale = galaxyScale();
+ const rotation = galaxyRotation();
+ const cos = Math.cos(rotation), sin = Math.sin(rotation);
+ return {x: (cos * SUN_GALAXY_POS.x - sin * SUN_GALAXY_POS.y) * scale, y: (sin * SUN_GALAXY_POS.x + cos * SUN_GALAXY_POS.y) * scale};
 }
 
-function drawGalaxyScene() {
+function drawGalaxyScene(frame, alpha) {
  view.galaxyTargets = [];
+ view.armTarget = null;
  const image = buildGalaxyImage();
- const {centerX, centerY, scale} = galaxyFrame();
- const rotation = view.angle * .15;
- /* jeden poziom galaktyczny: Droga Mleczna z pod\u015bwietlonym, klikalnym
-  * \u0142ukiem Ramienia Oriona (wzd\u0142u\u017c ramienia spiralnego od S\u0142o\u0144ca) */
+ const scale = galaxyScale();
+ const rotation = galaxyRotation();
+ const sun = {x: frame.sunX, y: frame.sunY};
+ const offset = sunGalaxyOffset();
+ const center = {x: sun.x - offset.x, y: sun.y - offset.y};
+ /* obraz galaktyki jest dodawany do tła (czarne tło zdjęcia nic nie zmienia,
+  * więc nie widać krawędzi kwadratu, a gwiazdy tła prześwitują) */
  ctx.save();
- ctx.translate(centerX, centerY);
+ ctx.globalCompositeOperation = 'lighter';
+ ctx.globalAlpha = alpha;
+ ctx.translate(center.x, center.y);
  ctx.rotate(rotation);
  ctx.drawImage(image, -scale, -scale, scale * 2, scale * 2);
  ctx.restore();
- /* pozycja S\u0142o\u0144ca na obrazie galaktyki (wsp\u00f3\u0142rz\u0119dne obrazu -> ekran) */
- const sunPos = sunImagePos();
- const sunFrac = {x: sunPos.x / GALAXY_IMAGE_SIZE - .5, y: sunPos.y / GALAXY_IMAGE_SIZE - .5};
- const cosR = Math.cos(-rotation), sinR = Math.sin(-rotation);
- const sunScreenX = centerX + (sunFrac.x * cosR - sunFrac.y * sinR) * scale * 2;
- const sunScreenY = centerY + (sunFrac.x * sinR + sunFrac.y * cosR) * scale * 2;
- /* Rami\u0119 Oriona: szeroki, pod\u015bwietlony \u0142uk wzd\u0142u\u017c ramienia od S\u0142o\u0144ca */
+ /* Andromeda — leży poza Drogą Mleczną, w tym samym układzie współrzędnych */
+ const andromeda = {x: center.x + scale * .95, y: center.y - scale * .85, half: scale * .3};
+ const andromedaPhoto = imageOf('andromeda');
+ ctx.save();
+ ctx.globalCompositeOperation = 'lighter';
+ ctx.globalAlpha = alpha;
+ ctx.translate(andromeda.x, andromeda.y);
+ ctx.rotate(rotation * -.7);
+ ctx.drawImage(andromedaPhoto || image, -andromeda.half, -andromeda.half, andromeda.half * 2, andromeda.half * 2);
+ ctx.restore();
+ if (alpha <= .5) return;
+ const labelAlpha = clamp((alpha - .5) / .5, 0, 1);
+ /* Ramię Oriona — krótka odnoga spiralna, w której leży Słońce; klikalna elipsa wzdłuż ramienia */
  const arm = GALAXY_OBJECTS.orion_arm[1];
+ const armAngle = ARM_TANGENT + rotation;
+ const armLength = scale * .36;
+ const armWidth = Math.max(scale * .075, 11);
  const armPath = new Path2D();
- const armSteps = 24;
- const armBaseAngle = 1.05;
- for (let step = 0; step <= armSteps; step++) {
-  const t = step / armSteps;
-  const angle = armBaseAngle + t * 2.1;
-  const dist = scale * (.28 + t * 1.05);
-  const px = sunScreenX + Math.cos(angle + rotation) * dist;
-  const py = sunScreenY + Math.sin(angle + rotation) * dist * .38;
-  if (step === 0) armPath.moveTo(px, py);
-  else armPath.lineTo(px, py);
- }
- for (let step = armSteps; step >= 0; step--) {
-  const t = step / armSteps;
-  const angle = armBaseAngle + t * 2.1;
-  const dist = scale * (.28 + t * 1.05);
-  const width = scale * (.12 + t * .2);
-  const px = sunScreenX + Math.cos(angle + rotation) * (dist + width);
-  const py = sunScreenY + Math.sin(angle + rotation) * (dist + width) * .38;
-  armPath.lineTo(px, py);
- }
- armPath.closePath();
+ armPath.ellipse(sun.x, sun.y, armLength, armWidth, armAngle, 0, TAU);
+ const armCos = Math.cos(armAngle), armSin = Math.sin(armAngle);
+ const armHalfX = Math.hypot(armLength * armCos, armWidth * armSin);
+ const armHalfY = Math.hypot(armLength * armSin, armWidth * armCos);
+ armPath._bbox = {left: sun.x - armHalfX, right: sun.x + armHalfX, top: sun.y - armHalfY, bottom: sun.y + armHalfY};
+ ctx.save();
+ ctx.globalAlpha = labelAlpha;
  if (!discovered.has(arm.id)) {
   const pulse = Math.sin(frameTime * .003) * .5 + .5;
-  ctx.save();
   ctx.fillStyle = `rgba(140,190,255,${.1 + .12 * pulse})`;
-  ctx.strokeStyle = `rgba(160,200,255,${.25 + .3 * pulse})`;
+  ctx.strokeStyle = `rgba(160,200,255,${.3 + .35 * pulse})`;
   ctx.lineWidth = 2;
   ctx.fill(armPath);
   ctx.stroke(armPath);
-  ctx.restore();
  } else {
-  ctx.save();
-  ctx.strokeStyle = 'rgba(140,190,255,.18)';
+  ctx.strokeStyle = 'rgba(160,200,255,.28)';
   ctx.lineWidth = 1.5;
-  ctx.fill(armPath);
-  ctx.restore();
+  ctx.setLineDash([5, 6]);
+  ctx.stroke(armPath);
+  ctx.setLineDash([]);
  }
- /* etykieta ramienia na \u015brodku \u0142uku */
- const midT = .45;
- const midAngle = armBaseAngle + midT * 2.1;
- const midDist = scale * (.28 + midT * 1.05);
- const midX = sunScreenX + Math.cos(midAngle + rotation) * midDist;
- const midY = sunScreenY + Math.sin(midAngle + rotation) * midDist * .38;
- ctx.font = '800 16px ui-rounded, system-ui, sans-serif';
- ctx.textAlign = 'center';
+ ctx.font = '800 15px ui-rounded, system-ui, sans-serif';
  ctx.fillStyle = '#dbe9ff';
- ctx.fillText('Rami\u0119 Oriona', midX, midY - scale * .05);
- /* \u0142uk ramienia jest klikalny w ka\u017c\u0105dym punkcie \u2014 zapisujemy\u015brodek i promie\u0144 jako cel */
- /* bbox łuku (używany przez mock isPointInPath w testach; przeglądarka używa prawdziwej geometrii) */
- let armMinX = Infinity, armMinY = Infinity, armMaxX = -Infinity, armMaxY = -Infinity;
- for (let step = 0; step <= armSteps; step++) {
-  const t = step / armSteps;
-  const angle = armBaseAngle + t * 2.1;
-  const dist = scale * (.28 + t * 1.05);
-  const width = scale * (.12 + t * .2);
-  armMinX = Math.min(armMinX, sunScreenX + Math.cos(angle + rotation) * (dist + width) - scale * .12);
-  armMaxX = Math.max(armMaxX, sunScreenX + Math.cos(angle + rotation) * (dist + width) + scale * .12);
-  armMinY = Math.min(armMinY, sunScreenY + Math.sin(angle + rotation) * (dist + width) * .38 - scale * .12);
-  armMaxY = Math.max(armMaxY, sunScreenY + Math.sin(angle + rotation) * (dist + width) * .38 + scale * .12);
- }
- armPath._bbox = {left: armMinX, right: armMaxX, top: armMinY, bottom: armMaxY};
- view.armTarget = {
-  object: arm, path: armPath,
-  x: midX, y: midY, radius: scale * .5
- };
- /* znacznik Układu Słonecznego na pozycji Słońca w galaktyce */
+ /* podpis przy prawym końcu ramienia, poza elipsą i poza podpisami sond */
+ const armLabelX = sun.x + armCos * (armLength + 10);
+ const armLabelY = sun.y + armSin * (armLength + 10) + 5;
+ ctx.textAlign = 'left';
+ ctx.fillText('Ramię Oriona', armLabelX, armLabelY);
+ ctx.restore();
+ view.armTarget = {object: arm, path: armPath, x: armLabelX, y: armLabelY, radius: armLength};
+ /* znaczniki: Słońce, Voyagery (tuż obok Słońca), środek galaktyki i Andromeda */
  const solar = GALAXY_OBJECTS.orion_arm[0];
- ctx.font = '800 22px system-ui, sans-serif';
- ctx.fillText('☀️', sunScreenX, sunScreenY - 4);
- if (!discovered.has(solar.id)) drawUnknownHint(sunScreenX, sunScreenY, 20, sunScreenX);
- ctx.font = '700 12px ui-rounded, system-ui, sans-serif';
- ctx.fillStyle = '#e6f1ff';
- ctx.fillText(solar.name, sunScreenX, sunScreenY + 34);
- view.galaxyTargets.push({object: solar, x: sunScreenX, y: sunScreenY, radius: Math.max(20, scale * .05)});
- /* Andromeda + Voyagery (galaktyka i znacznik S\u0142o\u0144ca ju\u017c narysowane wy\u017cej) */
- const andromedaX = centerX + scale * 1.35;
- const andromedaY = centerY - scale * .9;
- const andromedaScale = scale * .38;
- /* prawdziwe zdjęcie M31 (Stellarium) — fallback: przyciemniona Droga Mleczna */
- const andromedaPhoto = imageOf('andromeda');
- if (andromedaPhoto) {
-  ctx.save();
-  ctx.translate(andromedaX, andromedaY);
-  ctx.rotate(rotation * -.7);
-  ctx.drawImage(andromedaPhoto, -andromedaScale, -andromedaScale, andromedaScale * 2, andromedaScale * 2);
-  ctx.restore();
- } else {
-  ctx.save();
-  ctx.translate(andromedaX, andromedaY);
-  ctx.rotate(rotation * -.7);
-  ctx.drawImage(image, -andromedaScale, -andromedaScale, andromedaScale * 2, andromedaScale * 2);
-  ctx.restore();
-  const andromedaDim = ctx.createRadialGradient(andromedaX, andromedaY, andromedaScale * .1, andromedaX, andromedaY, andromedaScale);
-  andromedaDim.addColorStop(0, 'rgba(2,6,17,0)');
-  andromedaDim.addColorStop(1, 'rgba(2,6,17,.55)');
-  ctx.fillStyle = andromedaDim;
-  ctx.beginPath();
-  ctx.arc(andromedaX, andromedaY, andromedaScale, 0, TAU);
-  ctx.fill();
- }
- ctx.strokeStyle = 'rgba(150,180,220,.35)';
- ctx.lineWidth = 1;
- ctx.setLineDash([3, 6]);
- ctx.beginPath();
- ctx.moveTo(centerX + scale * .5, centerY - scale * .3);
- ctx.lineTo(andromedaX - andromedaScale * .5, andromedaY + andromedaScale * .25);
- ctx.stroke();
- ctx.setLineDash([]);
- ctx.textAlign = 'center';
- ctx.font = '700 13px ui-rounded, system-ui, sans-serif';
- ctx.fillStyle = '#9fb8d8';
- ctx.fillText('2,5 miliona lat \u015bwietlnych', (centerX + andromedaX) / 2, (centerY + andromedaY) / 2 - 12);
- const voyagerY = centerY + scale * .62;
  const voyagers = GALAXY_OBJECTS.milky_way.slice(2);
  const marks = [
-  {object: GALAXY_OBJECTS.milky_way[0], x: centerX, y: centerY, radius: Math.max(26, scale * .07), emoji: '\ud83c\udf0c', label: 'Droga Mleczna (\u015brodek galaktyki!)'},
-  {object: GALAXY_OBJECTS.milky_way[1], x: andromedaX, y: andromedaY, radius: Math.max(24, andromedaScale * .12), emoji: '\ud83c\udf00', label: 'Andromeda'},
-  {object: voyagers[0], x: centerX + scale * .16, y: voyagerY, radius: 16, emoji: '\ud83d\udef0\ufe0f', label: 'Voyager 1'},
-  {object: voyagers[1], x: centerX + scale * .34, y: voyagerY + scale * .1, radius: 16, emoji: '\ud83d\udef0\ufe0f', label: 'Voyager 2'}
+  {object: GALAXY_OBJECTS.milky_way[0], x: center.x, y: center.y, radius: Math.max(26, scale * .07), emoji: '🌌', label: 'Droga Mleczna', sub: 'nasza galaktyka', above: true},
+  {object: GALAXY_OBJECTS.milky_way[1], x: andromeda.x, y: andromeda.y, radius: Math.max(24, andromeda.half * .3), emoji: '🌀', label: 'Galaktyka Andromedy', sub: '2,5 miliona lat świetlnych'},
+  {object: voyagers[0], x: sun.x + 34, y: sun.y - 34, radius: 15, emoji: '🛰️', label: 'Voyager 1', side: 'right'},
+  {object: voyagers[1], x: sun.x + 34, y: sun.y + 34, radius: 15, emoji: '🛰️', label: 'Voyager 2', side: 'right'},
+  {object: solar, x: sun.x, y: sun.y, radius: Math.max(20, scale * .05), emoji: '☀️', label: solar.name, side: 'left'}
  ];
  for (const mark of marks) {
+  ctx.save();
+  ctx.globalAlpha = labelAlpha;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
   ctx.font = '800 22px system-ui, sans-serif';
-  ctx.fillText(mark.emoji, mark.x, mark.y - 4);
+  ctx.fillText(mark.emoji, mark.x, mark.y + 8);
+  ctx.restore();
   if (!discovered.has(mark.object.id)) drawUnknownHint(mark.x, mark.y, mark.radius + 1, mark.x);
+  ctx.save();
+  ctx.globalAlpha = labelAlpha;
   ctx.font = '700 12px ui-rounded, system-ui, sans-serif';
   ctx.fillStyle = '#e6f1ff';
-  ctx.fillText(mark.label, mark.x, mark.y + mark.radius + 14);
-  view.galaxyTargets.push({...mark, object: mark.object});
+  ctx.shadowColor = 'rgba(0,0,10,.9)';
+  ctx.shadowBlur = 5;
+  if (mark.side === 'right') {
+   ctx.textAlign = 'left';
+   ctx.fillText(mark.label, mark.x + mark.radius + 6, mark.y + 4);
+  } else if (mark.side === 'left') {
+   ctx.textAlign = 'right';
+   ctx.fillText(mark.label, mark.x - mark.radius - 6, mark.y + 4);
+  } else {
+   ctx.textAlign = 'center';
+   const first = mark.above ? mark.y - mark.radius - (mark.sub ? 22 : 10) : mark.y + mark.radius + 14;
+   /* podpis nie wychodzi poza ekran */
+   const half = Math.max(ctx.measureText(mark.label).width, mark.sub ? ctx.measureText(mark.sub).width : 0) / 2 + 8;
+   const labelX = clamp(mark.x, Math.min(half, view.width / 2), Math.max(view.width - half, view.width / 2));
+   ctx.fillText(mark.label, labelX, first);
+   if (mark.sub) {
+    ctx.fillStyle = '#c3d6ee';
+    ctx.fillText(mark.sub, labelX, first + 14);
+   }
+  }
+  ctx.restore();
+  view.galaxyTargets.push({object: mark.object, x: mark.x, y: mark.y, radius: mark.radius});
  }
 }
 //__UI__
@@ -1491,7 +1514,7 @@ canvas.addEventListener('pointerdown', event => {
  try {canvas.setPointerCapture(event.pointerId);} catch (error) {}
  pointers.set(event.pointerId, {x: event.clientX, y: event.clientY});
  if (pointers.size === 1) {
-  gesture = {kind: 'drag', startX: event.clientX, startY: event.clientY, angle: view.angle, tilt: view.tilt, rotation: rotationOf(bodies[view.selected]), localTilt: view.localTilt, moved: false};
+  gesture = {kind: 'drag', startX: event.clientX, startY: event.clientY, angle: view.angle, tilt: view.tilt, rotation: rotationOf(bodies[view.selected]), moved: false};
  } else if (pointers.size === 2) {
   gesture = {kind: 'pinch', startDistance: pointerDistance(), startZoom: view.zoomGoal};
  }
@@ -1503,19 +1526,10 @@ canvas.addEventListener('pointermove', event => {
  if (!gesture) return;
  if (gesture.kind === 'pinch') {
   if (pointers.size >= 2) {
-   const next = clamp(gesture.startZoom * pointerDistance() / gesture.startDistance, MIN_ZOOM, MAX_ZOOM);
-   if (view.level === -1 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && zoomInLevel()) {
-    fxPlay('whoosh');
-    gesture.startZoom = view.zoom;
-    return;
-   }
-   if (view.level === 0 && next <= MIN_ZOOM * 1.001 && gesture.startZoom > MIN_ZOOM * 1.01 && zoomOutLevel()) {
-    fxPlay('whoosh');
-    gesture.startZoom = view.zoom;
-    return;
-   }
+   /* pinch to ten sam ciągły zoom co kółko myszy — bez przełączania poziomów */
+   const next = clamp(gesture.startZoom * pointerDistance() / gesture.startDistance, GALAXY_MIN_ZOOM, MAX_ZOOM);
    view.zoomGoal = next;
-   view.zoom = view.zoomGoal;
+   view.zoom = next;
   }
   return;
  }
@@ -1523,21 +1537,14 @@ canvas.addEventListener('pointermove', event => {
  const deltaY = event.clientY - gesture.startY;
  if (!gesture.moved && Math.abs(deltaX) + Math.abs(deltaY) > 8) gesture.moved = true;
  if (!gesture.moved) return;
- /* przeciąganie obraca kamerę: przy Słońcu/widoku ogólnym zmienia fazę orbitalną
-  * (planety krążą wokół Słońca), a przy zaznaczonej planecie — roll sceny
-  * wokół niej (widać orbity i księżyce krążące wokół planety); planety
-  * kręcą się swoim tempem (auto-spin) */
+ /* przeciąganie obraca kamerę wokół punktu, na którym stoi kadr: deltaX = azymut,
+  * deltaY = wysokość. Działa tak samo przy Słońcu, planecie, księżycu i w galaktyce —
+  * przy zaznaczonej planecie to ona zostaje w środku, a Słońce i reszta układu
+  * krążą wokół niej, więc kamera naprawdę „krąży po sferze”. */
  view.angleGoal = null;
  view.tiltGoal = null;
- const orbiting = view.following && view.selected !== null && bodies[view.selected].kind !== 'star';
- if (orbiting) {
-  /* kamera krąży po sferze wokół planety: deltaX = azymut, deltaY = wysokość */
-  view.localAngle += deltaX * .006;
-  view.localTilt = clamp(gesture.localTilt + deltaY * .004, .12, .95);
- } else {
-  view.angle = gesture.angle - deltaX * .006;
-  view.tilt = clamp(gesture.tilt + deltaY * .003, MIN_TILT, MAX_TILT);
- }
+ view.angle = gesture.angle - deltaX * .006;
+ view.tilt = clamp(gesture.tilt + deltaY * .003, MIN_TILT, MAX_TILT);
 });
 
 function endPointer(event) {
@@ -1577,16 +1584,7 @@ canvas.addEventListener('wheel', event => {
   view.zoomGoal = planetZoom;
   return;
  }
- /* oddalanie: planeta -> Układ Słoneczny -> Ramię Oriona -> Droga Mleczna */
- if (delta > 0 && view.zoomGoal <= MIN_ZOOM * 1.001) {
-  if (zoomOutLevel()) {fxPlay('whoosh'); return;}
- }
- /* przybliżanie z poziomów galaktycznych — progi ciągłości obrazu:
-  * -2 wchodzi na -1 przy zoom 4 (obraz galaktyki = wycinek z -1),
-  * -1 wchodzi do Układu Słonecznego przy zoom MIN (w miejscu Słońca) */
- if (delta < 0 && view.level === -1 && view.zoomGoal <= MIN_ZOOM * 1.1) {
-  if (zoomInLevel()) {fxPlay('whoosh'); return;}
- }
- view.zoomGoal = clamp(view.zoomGoal * Math.exp(-delta * .0015), MIN_ZOOM, MAX_ZOOM);
+ /* jeden ciągły zoom: planeta -> Układ Słoneczny -> Droga Mleczna i z powrotem */
+ view.zoomGoal = clamp(view.zoomGoal * Math.exp(-delta * .0018), GALAXY_MIN_ZOOM, MAX_ZOOM);
 }, {passive: false});
 

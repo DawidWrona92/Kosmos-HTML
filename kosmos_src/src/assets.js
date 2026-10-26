@@ -33,8 +33,9 @@ function textureOf(key) {
 const globeCache = {};
 
 /* globus: kula obracana z mapy powierzchni (odwzorowanie równoodległościowe) */
-function globeOf(key, size, tiltAngle) {
- const cacheKey = `${key}:${size}`;
+function globeOf(key, size, tiltAngle, variant = '') {
+ /* klucz uwzględnia nachylenie i wariant, żeby globus zadania nie nadpisywał globusa ze sceny */
+ const cacheKey = `${key}:${size}:${tiltAngle === undefined ? 'd' : tiltAngle}:${variant}`;
  if (globeCache[cacheKey]) return globeCache[cacheKey];
  const texture = textureOf(key);
  if (!texture) return null;
